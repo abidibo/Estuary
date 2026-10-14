@@ -308,7 +308,7 @@ Semantics:
 
 ### C4. Model types (identity and snapshot)
 
-Crate `estuary-engine`, module `model`. All types are `Clone + Debug + PartialEq`. Persisted types are also `Serialize + Deserialize`. Identity types (`AppKey`, `DeviceKey`, `ChannelId`, `VirtualMicId`, `RouteTarget`, `MatrixSource`, `MatrixDest`, `CellKey`, `MeterTarget`, `WarnedNode`) are additionally `Eq + Hash` (amended: used as map keys by the UI and engine).
+Crate `estuary-engine`, module `model`. All types are `Clone + Debug + PartialEq`. Persisted types are also `Serialize + Deserialize`. Enum variants that carry data are **struct variants** (`RouteTarget::Device { key }`, `RouteTarget::Channel { id }`, `MatrixSource::Channel { id }` / `Input { key }` / `Denoised { key }`, `MatrixDest::Output { key }` / `VirtualMic { id }`), because serde's internally tagged form used by C6 (`{ kind = "channel", id = "…" }`) can't serialize tuple variants holding strings (amended at M2). Identity types (`AppKey`, `DeviceKey`, `ChannelId`, `VirtualMicId`, `RouteTarget`, `MatrixSource`, `MatrixDest`, `CellKey`, `MeterTarget`, `WarnedNode`) are additionally `Eq + Hash` (amended: used as map keys by the UI and engine).
 
 ```rust
 /// Stable application identity (C7). Serialized as a plain string: "bin:spotify", "name:Firefox".
@@ -740,7 +740,7 @@ Latency budget (amended): a cell adds 0 samples. The denoiser adds `DENOISE_BLOC
 At connect, before `Connected`:
 
 1. **PipeWire version** from the core info. If < 1.0 → `Unsupported(PipeWireTooOld)`.
-2. **WirePlumber ≥ 0.5 (amended):** detected by the presence of the `sm-settings` metadata (introduced in WP 0.5). The WirePlumber client's version property is informational only, used for display. If neither the WirePlumber client nor `sm-settings` is present at initial sync, wait up to 5 s before reporting `Unsupported(NoWirePlumber)`, and re-evaluate on later registry changes. A WirePlumber client without `sm-settings` → `Unsupported(WirePlumberTooOld)`.
+2. **WirePlumber ≥ 0.5 (amended):** detected by the presence of the `sm-settings` metadata (introduced in WP 0.5). The WirePlumber client's version property (`application.version`, live-verified at M2.1; its `core.version` is the libpipewire version and must not be used) is informational only, used for display. If neither the WirePlumber client nor `sm-settings` is present at initial sync, wait up to 5 s before reporting `Unsupported(NoWirePlumber)`, and re-evaluate on later registry changes. A WirePlumber client without `sm-settings` → `Unsupported(WirePlumberTooOld)`.
 3. **Write probe:** on the `default` metadata, `set_property(0, "estuary.probe", Some("Spa:String"), Some("1"))`, then delete it with `set_property(0, "estuary.probe", None, None)`, followed by a core `sync`. A core error for the metadata proxy before the `done` reply → `PermissionDenied` (F2). Metadata writes are the narrowest permission Estuary needs; node creation is exercised implicitly later and reported as `SetupIssue` on failure.
 
 The UI maps each non-`Connected` state to a full-page `adw::StatusPage` with an explanation and, where useful, a docs link. The app remains open so it can recover on reconnect.
@@ -899,7 +899,7 @@ These are design assumptions that the named sub-spec **must verify with a live e
 - **UNVERIFIED-2 (engine, M5): device volume.** Check, for both output **and input** devices, whether `Node::set_param(Props{channelVolumes})` on ALSA/BlueZ device nodes propagates to the device route the way `wpctl set-volume` does. If not, set the volume through the device's `Route` param (as pavucontrol does through pipewire-pulse).
 - **UNVERIFIED-3 (engine, M4): meter streams and GNOME Shell.** Check whether meter streams light up GNOME Shell's microphone-in-use indicator without `application.id=org.PulseAudio.pavucontrol`. If the indicator ignores `stream.monitor` streams anyway, drop the borrowed id.
 - **UNVERIFIED-4 (engine, M8): idle virtual mic.** Check that an `Audio/Source/Virtual` null sink with only cell links into it, and a recording app linked out of it, gets scheduled correctly (no silence or stalls) when the cells' sources are driven by a different hardware clock.
-- **UNVERIFIED-5 (engine, M2): WirePlumber version.** Confirm the client property that carries the WirePlumber version on 0.5.x, for the C13 check.
+- **~~UNVERIFIED-5~~ resolved at M2.1 (docs/experiments.md): WirePlumber version is the client's `application.version`.** Original item: Confirm the client property that carries the WirePlumber version on 0.5.x, for the C13 check.
 - **UNVERIFIED-6 (packaging, M12): module-loopback in the runtime.** Not needed by Approach A. Recorded only so nobody depends on it.
 
 ## Amendment log
@@ -910,7 +910,7 @@ Reconciliation pass after the five sub-specs were drafted (2026-10-14). Every am
 |---|---|---|
 | C1 | Versions: `toml` 1, `rubato` 5.0.1, `gettext-rs` 0.8, `sha2` 0.11, `nnnoiseless` without default features, `log` with `release_max_level_debug`. Mandatory `panic = "unwind"`. `deny(unsafe_code)` in dsp. `ESTUARY_LOCALEDIR` / `ESTUARY_PROFILE` | packaging, dsp |
 | C3 | Defined `EngineError`, `UnsupportedReason`, `WarnedNode`, `EngineWarning` (warnings name their node), `SetupIssue` (+ `key()`/`cell()`/`message()`), `VirtualDeviceUsage`/`UsageKind`, `Backoff`. Added `Command::SetVadGate` | engine, ui, desktop |
-| C4 | Outputs/inputs include foreign virtual devices; identity types are `Eq + Hash` | engine, ui |
+| C4 | Outputs/inputs include foreign virtual devices; identity types are `Eq + Hash`; data-carrying variants are struct variants (C6 serde shape, M2) | engine, ui |
 | C5 | `estuary.instance` ownership; rename recreates the node; AUX0/AUX1 fallback; denoised meters linked by the reconciler | engine |
 | C7 | `python3.N` generic; settle grace window; narrowed link-based external detection | engine |
 | C8 | Disabled cells have no node (ramp out, then destroy); denoised meter links in the desired set | engine, ui |

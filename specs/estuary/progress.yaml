@@ -28,25 +28,25 @@ steps:
     completed_at: '2026-10-14T14:52:00+02:00'
 - id: 2
   title: M2 Engine core (read-only)
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T15:07:21+02:00'
+  completed_at: '2026-10-14T15:07:21+02:00'
   tasks:
   - id: '2.1'
     description: Complete estuary-engine steps M2.1-M2.10 (specs/estuary-engine/progress.yaml)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T15:07:21+02:00'
+    completed_at: '2026-10-14T15:07:21+02:00'
   - id: '2.2'
     description: Record UNVERIFIED-5 outcome (WirePlumber version property) and amend master C13 if needed
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T15:07:21+02:00'
+    completed_at: '2026-10-14T15:07:21+02:00'
   - id: '2.3'
     description: 'Exit check: live smoke test (`cargo test -p estuary-engine --features live-pw -- --ignored`) connects, reports Connected with PW/WP versions and emits a Snapshot listing devices'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T15:07:21+02:00'
+    completed_at: '2026-10-14T15:07:21+02:00'
 - id: 3
   title: M3 UI shell + live Apps list
   status: pending

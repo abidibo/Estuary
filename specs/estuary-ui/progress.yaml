@@ -2,1051 +2,1058 @@ feature: estuary-ui
 spec: specs/estuary-ui/spec.md
 created: 2026-10-14
 status: pending
-started_at: ~
-completed_at: ~
+started_at: null
+completed_at: null
 steps:
-  - id: "M3.1"
-    title: "Crate dependencies and module skeleton"
+- id: M3.1
+  title: Crate dependencies and module skeleton
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M3.1.1
+    description: Write crates/estuary/Cargo.toml using only workspace deps (relm4, gtk, adw, estuary-engine, async-channel, serde, toml, thiserror, tracing, tracing-subscriber, uuid, gettext-rs) plus dev-dep
+      tempfile
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M3.1.1"
-        description: "Write crates/estuary/Cargo.toml using only workspace deps (relm4, gtk, adw, estuary-engine, async-channel, serde, toml, thiserror, tracing, tracing-subscriber, uuid, gettext-rs) plus dev-dep tempfile"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.1.2"
-        description: "Create empty module files per the spec layout (app.rs, config.rs, i18n.rs, state/*, pages/*, widgets/*, dialogs/*) and declare them in main.rs"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.1.3"
-        description: "Add #![forbid(unsafe_code)] to crates/estuary/src/main.rs and confirm cargo build + clippy -D warnings pass"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M3.2"
-    title: "i18n"
+    started_at: null
+    completed_at: null
+  - id: M3.1.2
+    description: Create empty module files per the spec layout (app.rs, config.rs, i18n.rs, state/*, pages/*, widgets/*, dialogs/*) and declare them in main.rs
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M3.2.1"
-        description: "Implement i18n::init() in i18n.rs (setlocale, bindtextdomain with ESTUARY_LOCALEDIR fallback /usr/share/locale, bind_textdomain_codeset, textdomain \"estuary\")"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.2.2"
-        description: "Implement i18n() and i18n_f() positional \"{}\" substitution after translation"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.2.3"
-        description: "Implement ni18n_f() on top of ngettext with placeholder substitution"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.2.4"
-        description: "Unit-test i18n_f/ni18n_f placeholder substitution (no GTK)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.2.5"
-        description: "Document string conventions in a module doc comment: every literal wrapped, no format! on templates, // Translators: comments"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.2.6"
-        description: "Provide Italian translations for every UI msgid in it.po at the M12 hand-off (po/ build and install are owned by packaging; profile/devel styling is packaging M12.6)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.2.7"
-        description: "Add a check (script or CI step) that greps crates/estuary/src for user-visible string literals not wrapped in i18n*/ni18n_f"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M3.3"
-    title: "Root component and window"
+    started_at: null
+    completed_at: null
+  - id: M3.1.3
+    description: 'Add #![forbid(unsafe_code)] to crates/estuary/src/main.rs and confirm cargo build + clippy -D warnings pass'
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M3.3.1"
-        description: "Define AppInit and the AppModel struct in app.rs with the desktop-required fields (engine, config, quit, quit_timers, hold, tray, background, env, denied_notice_shown_this_session, notice_open) and UI fields"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.3.2"
-        description: "Define the AppMsg enum with all desktop-required variants plus UI variants (Edit, SetCloseAction, MeterTargets, SaveTick, WelcomeChosen, RestartEngine, WindowShown)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.3.3"
-        description: "Implement AppModel::init_root building adw::ApplicationWindow (960x640, hide_on_close false) with ToastOverlay, ToolbarView, HeaderBar + ViewSwitcher, Banner, root_stack and ViewSwitcherBar"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.3.4"
-        description: "Add adw::Breakpoint (max-width 550sp) revealing the bottom ViewSwitcherBar"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.3.5"
-        description: "Connect root notify::visible to send AppMsg::WindowShown and trigger MeterVisibility::schedule_recompute"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.3.6"
-        description: "Add win.show-apps (<Alt>1) and win.show-matrix (<Alt>2) actions and the primary menu model (app.preferences, app.about, app.quit)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.3.7"
-        description: "Implement the app.about action presenting adw::AboutDialog (app id, MIT OR Apache-2.0, repo link)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.3.8"
-        description: "Implement AppModel::show_toast(&str) adding a 3 s adw::Toast"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.3.9"
-        description: "Write main.rs: tracing-subscriber with ESTUARY_LOG filter, i18n::init(), desktop::app::build_application(), RelmApp::from_app(app).visible_on_activate(true).run::<AppModel>(AppInit)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M3.4"
-    title: "Engine startup and event forwarding"
+    started_at: null
+    completed_at: null
+  - id: M3.1.4
+    description: Export estuary-engine test fixtures behind feature `test-util` (cfg(any(test, feature = "test-util"))) when UI tests first need them (moved from engine M2.10.3)
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M3.4.1"
-        description: "In AppModel::init call ConfigStore::load(config::config_file()) and queue LoadOutcome notices in UiState.pending_notices"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.4.2"
-        description: "In AppModel::init detect DesktopEnv, acquire the hold, call install_actions, install_close_handler, spawn_tray (→ TrayReady) and install_signal_handlers"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.4.3"
-        description: "Start the engine with Engine::start(EngineConfig{..}); on Err keep engine None and route to the Fatal handling"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.4.4"
-        description: "Implement the relm4::spawn_local event-forwarding loop with Fatal(EngineError::ThreadGone) on channel close"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.4.5"
-        description: "Send the initial Command::SetSetup (empty Setup when the welcome is pending)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.4.6"
-        description: "Spawn apply_autostart at startup when the welcome is not pending (result → AutostartApplied)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.4.7"
-        description: "Implement the AppMsg::Engine dispatch table in AppModel::update (Connection, Snapshot, MeterAssignments, ExternalRetarget, SetupIssues, Restored, QuitCheck, TeardownComplete, Warning, Fatal)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.4.8"
-        description: "Implement AppModel::dispatch_edit (apply_edit → send commands, add toasts, schedule_save, push_setup_to_pages)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.4.9"
-        description: "Implement push_setup_to_pages sending Update{snapshot, setup} to AppsPage and MatrixPage"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M3.5"
-    title: "Connection status pages"
+    started_at: null
+    completed_at: null
+- id: M3.2
+  title: i18n
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M3.2.1
+    description: Implement i18n::init() in i18n.rs (setlocale, bindtextdomain with ESTUARY_LOCALEDIR fallback /usr/share/locale, bind_textdomain_codeset, textdomain "estuary")
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M3.5.1"
-        description: "Implement pages/status.rs status_page(state, fatal) -> adw::StatusPage for Connecting (gtk::Spinner), Unsupported, PermissionDenied and Fatal"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.5.2"
-        description: "Write gettext-wrapped titles/descriptions for each UnsupportedReason variant with found versions"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.5.3"
-        description: "Add the \"Learn more\" button opening the README URL with gtk::UriLauncher"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.5.4"
-        description: "Switch root_stack between status and main on ConnectionState changes; make main insensitive and show a header spinner while Reconnecting"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M3.6"
-    title: "Apps page: read-only list"
+    started_at: null
+    completed_at: null
+  - id: M3.2.2
+    description: Implement i18n() and i18n_f() positional "{}" substitution after translation
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M3.6.1"
-        description: "Implement the AppsPage SimpleComponent (AppsMsg, AppsOutput) with ScrolledWindow → adw::Clamp(720) → \"Playing now\" boxed ListBox"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.6.2"
-        description: "Implement the AppRow FactoryComponent (ParentWidget gtk::ListBox) as adw::ActionRow with icon fallback, title, subtitle with stream count"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.6.3"
-        description: "Implement row reconciliation in AppsMsg::Update using rows.guard(): remove vanished keys, insert new rows at index, send AppRowMsg::Update to existing rows (no clear())"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.6.4"
-        description: "Add the empty-state adw::StatusPage \"Nothing is playing\""
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.6.5"
-        description: "Add the \"Outputs\" group listing present hardware outputs with name, meter placeholder and volume"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M3.6.6"
-        description: "Set accessible labels on row meters, volume scales and dropdowns"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M4.1"
-    title: "Ballistics (pure)"
+    started_at: null
+    completed_at: null
+  - id: M3.2.3
+    description: Implement ni18n_f() on top of ngettext with placeholder substitution
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M4.1.1"
-        description: "Implement widgets/peak_meter/ballistics.rs constants (FLOOR_DB, RELEASE_DB_PER_S, HOLD_S, STALE_S, WARN_DB, CLIP_DB) and lin_to_db"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M4.1.2"
-        description: "Implement ballistics::step with instant attack, 20 dB/s release, 1.5 s hold"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M4.1.3"
-        description: "Implement ballistics::zone and ballistics::fraction (powf 1.5 curve)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M4.1.4"
-        description: "Unit-test step (attack, release, hold expiry, stale decay), zone thresholds and fraction bounds"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M4.2"
-    title: "`PeakMeter` widget"
+    started_at: null
+    completed_at: null
+  - id: M3.2.4
+    description: Unit-test i18n_f/ni18n_f placeholder substitution (no GTK)
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M4.2.1"
-        description: "Create the PeakMeter glib subclass (imp.rs, NAME EstuaryPeakMeter, parent gtk::Widget) with the MeterState RefCell"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M4.2.2"
-        description: "Implement the public wrapper new(orientation), bind(bank, slots), unbind(), set_failed(bool) in widgets/peak_meter/mod.rs"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M4.2.3"
-        description: "Implement the tick callback: MeterBank::read per slot, max across slots, seq staleness, ballistics::step, queue_draw on > 0.1 dB change"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M4.2.4"
-        description: "Install/remove the tick callback on bind/unbind and map/unmap"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M4.2.5"
-        description: "Implement snapshot() drawing L/R bars, zone-colored segments, 2 px hold tick and background"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M4.2.6"
-        description: "Implement measure() (min 6x48, natural 8x120) and the failed-state \"—\" label with \"Level unavailable\" tooltip"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M4.2.7"
-        description: "Set AccessibleRole::Meter without value updates and add the high-contrast outline"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M4.3"
-    title: "Meter binding"
+    started_at: null
+    completed_at: null
+  - id: M3.2.5
+    description: 'Document string conventions in a module doc comment: every literal wrapped, no format! on templates, // Translators: comments'
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M4.3.1"
-        description: "Store MeterAssignments in UiState.meter_slots and broadcast BindMeters(Arc<HashMap>) to AppsPage and MatrixPage"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M4.3.2"
-        description: "In each page keep HashMap<MeterTarget, PeakMeter> and bind/unbind meters on BindMeters (AppsPage forwards via rows.broadcast)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M4.3.3"
-        description: "Handle Warning(MeterFailed(target)) by calling set_failed(true) until the next assignment containing the target"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M4.4"
-    title: "Visibility tracking → `SetMeterTargets`"
+    started_at: null
+    completed_at: null
+  - id: M3.2.6
+    description: Provide Italian translations for every UI msgid in it.po at the M12 hand-off (po/ build and install are owned by packaging; profile/devel styling is packaging M12.6)
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M4.4.1"
-        description: "Implement MeterVisibility (register, clear_page, schedule_recompute with 100 ms debounce) in widgets/meter_visibility.rs"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M4.4.2"
-        description: "Implement the recompute: empty when the window is hidden, else mapped meters intersecting the scroller ordered top-to-bottom, left-to-right, deduped"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M4.4.3"
-        description: "Connect triggers: scroller adjustments value-changed/changed, ViewStack visible-child, window visible/is-active, page rebuilds"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M4.4.4"
-        description: "Send AppMsg::MeterTargets on change and forward Command::SetMeterTargets from AppModel::update"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M5.1"
-    title: "Volume math (pure)"
+    started_at: null
+    completed_at: null
+  - id: M3.2.7
+    description: Add a check (script or CI step) that greps crates/estuary/src for user-visible string literals not wrapped in i18n*/ni18n_f
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M5.1.1"
-        description: "Implement slider_to_linear / linear_to_slider (cubic) in state/volume.rs"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M5.1.2"
-        description: "Implement set_volume_level (balance-preserving) and volume_level"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M5.1.3"
-        description: "Implement clamp_db (NaN → 0, clamp -60..+6, round 0.1) and format_db (U+2212 minus, localized decimal separator)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M5.1.4"
-        description: "Unit-test round-trip within 1e-6, balance preservation, clamp_db limits and NaN"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M5.2"
-    title: "Edit model (pure core)"
+    started_at: null
+    completed_at: null
+- id: M3.3
+  title: Root component and window
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M3.3.1
+    description: Define AppInit and the AppModel struct in app.rs with the desktop-required fields (engine, config, quit, quit_timers, hold, tray, background, env, denied_notice_shown_this_session, notice_open)
+      and UI fields
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M5.2.1"
-        description: "Define the Edit enum, EditOutcome and ToastSpec in state/edit.rs"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M5.2.2"
-        description: "Implement apply_edit for AssignApp, ExternalRetarget (no-op guard) and ForgetAppRule, adding known_devices for device targets"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M5.2.3"
-        description: "Implement apply_edit for AppVolume, DeviceVolume, ChannelVolume, MicVolume (fast-path commands, save only on commit)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M5.2.4"
-        description: "Implement apply_edit for AddChannel/RenameChannel/DeleteChannel with F6 rule rewrite and plural toast"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M5.2.5"
-        description: "Implement apply_edit for AddMic/RenameMic/DeleteMic with default names and trimming/length rules"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M5.2.6"
-        description: "Implement apply_edit for ToggleCell, SetCellGain (fast path vs commit) and RemoveCell"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M5.2.7"
-        description: "Implement apply_edit for ForgetDevice (only when offline; removes cells, denoisers, denoised cells; rewrites rules)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M5.2.8"
-        description: "Implement apply_edit for SetDenoise and SetVadGate (Command::SetVadGate during drag, SetSetup on commit)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M5.2.9"
-        description: "Implement apply_edit for ApplyPreset (setup replace + first_run_done)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M5.2.10"
-        description: "Unit-test every Edit variant including the F6 rewrite and the ExternalRetarget no-op"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M5.3"
-    title: "Output dropdown"
+    started_at: null
+    completed_at: null
+  - id: M3.3.2
+    description: Define the AppMsg enum with all desktop-required variants plus UI variants (Edit, SetCloseAction, MeterTargets, SaveTick, WelcomeChosen, RestartEngine, WindowShown)
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M5.3.1"
-        description: "Implement build_target_choices(snapshot, setup, group) -> Vec<TargetChoice> (Default, present channels, present outputs, unavailable current target)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M5.3.2"
-        description: "Build the gtk::DropDown with StringList and a SignalListItemFactory showing title + subtitle and dimmed \"(disconnected)\" entries"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M5.3.3"
-        description: "Guard programmatic set_selected with an updating flag so it never emits TargetSelected"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M5.3.4"
-        description: "Emit Edit::AssignApp on TargetSelected and disable the dropdown with tooltip when movable == false"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M5.4"
-    title: "App and device volume sliders"
+    started_at: null
+    completed_at: null
+  - id: M3.3.3
+    description: Implement AppModel::init_root building adw::ApplicationWindow (960x640, hide_on_close false) with ToastOverlay, ToolbarView, HeaderBar + ViewSwitcher, Banner, root_stack and ViewSwitcherBar
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M5.4.1"
-        description: "Add the 0..1 gtk::Scale with percent tooltip and mute toggle button to AppRow"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M5.4.2"
-        description: "Add a GestureDrag dragging flag so snapshots don't overwrite the knob during drag"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M5.4.3"
-        description: "Implement the 30 Hz throttle for VolumeChanged → Edit::AppVolume"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M5.4.4"
-        description: "Wire device rows in the Outputs group to Edit::DeviceVolume with the same throttle"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M5.5"
-    title: "External retarget"
+    started_at: null
+    completed_at: null
+  - id: M3.3.4
+    description: Add adw::Breakpoint (max-width 550sp) revealing the bottom ViewSwitcherBar
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M5.5.1"
-        description: "Route Event::ExternalRetarget to dispatch_edit(Edit::ExternalRetarget) without a toast"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M5.6"
-    title: "Remembered apps"
+    started_at: null
+    completed_at: null
+  - id: M3.3.5
+    description: Connect root notify::visible to send AppMsg::WindowShown and trigger MeterVisibility::schedule_recompute
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M5.6.1"
-        description: "Implement the RememberedRow FactoryComponent (pages/apps/remembered.rs) with display name, target label and trash button"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M5.6.2"
-        description: "Populate the \"Remembered apps\" group from app_rules not present in the snapshot and hide it when empty"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M5.6.3"
-        description: "Emit Edit::ForgetAppRule from the trash button with accessible label \"Forget {}\""
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M6.1"
-    title: "`ConfigStore::load`"
+    started_at: null
+    completed_at: null
+  - id: M3.3.6
+    description: Add win.show-apps (<Alt>1) and win.show-matrix (<Alt>2) actions and the primary menu model (app.preferences, app.about, app.quit)
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M6.1.1"
-        description: "Define ConfigStore, LoadOutcome, ConfigError and config_file() in config.rs with the engine setup re-exports"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M6.1.2"
-        description: "Implement load: NotFound → defaults/Fresh"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M6.1.3"
-        description: "Implement newer-schema detection via toml::Value → lenient load + read_only + NewerSchema"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M6.1.4"
-        description: "Implement corrupt handling: rename to config.toml.broken-<timestamp> with collision suffix, return Recovered"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M6.1.5"
-        description: "Implement repair through setup::sanitize returning Repaired without writing back"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M6.1.6"
-        description: "Implement file(), file_mut(), settings(), update_settings(), is_read_only(), welcome_pending(), attach()"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M6.1.7"
-        description: "Unit-test load in a tempfile dir: missing, valid, corrupt (backup name pattern), newer schema, repaired"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M6.2"
-    title: "Save"
+    started_at: null
+    completed_at: null
+  - id: M3.3.7
+    description: Implement the app.about action presenting adw::AboutDialog (app id, MIT OR Apache-2.0, repo link)
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M6.2.1"
-        description: "Implement schedule_save with 500 ms glib::timeout_add_local_once emitting AppMsg::SaveTick (skip when read-only or unattached)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M6.2.2"
-        description: "Implement flush_sync: create dir, toml::to_string_pretty, write .tmp, sync_all, rename"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M6.2.3"
-        description: "Handle SaveTick in AppModel::update and show the \"Couldn't save settings\" toast once per distinct error"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M6.2.4"
-        description: "Unit-test atomic save (no .tmp left on success, content round-trips) and read-only refusal"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M6.3"
-    title: "Load-outcome surfaces"
+    started_at: null
+    completed_at: null
+  - id: M3.3.8
+    description: Implement AppModel::show_toast(&str) adding a 3 s adw::Toast
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M6.3.1"
-        description: "Show the Recovered adw::AlertDialog (backup name + parse error) on WindowShown, followed by the welcome"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M6.3.2"
-        description: "Reveal the permanent read-only adw::Banner for NewerSchema at init"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M6.3.3"
-        description: "Show the Repaired plural toast and log issue_text() details at warn"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M9.1"
-    title: "Matrix layout (pure)"
+    started_at: null
+    completed_at: null
+  - id: M3.3.9
+    description: 'Write main.rs: tracing-subscriber with ESTUARY_LOG filter, i18n::init(), desktop::app::build_application(), RelmApp::from_app(app).visible_on_activate(true).run::<AppModel>(AppInit)'
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M9.1.1"
-        description: "Define RowKey, ColKey, RowSpec, ColSpec, CellView, DenoiseView, MatrixLayout in state/matrix_layout.rs"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M9.1.2"
-        description: "Implement compute(): channel rows, sorted input rows, denoised row directly under its input, output then mic columns"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M9.1.3"
-        description: "Fill CellView from Setup + snapshot statuses (Pending when absent from snapshot) and implement shape_key()"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M9.1.4"
-        description: "Unit-test row order, denoised placement, offline inclusion and Pending status"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M9.2"
-    title: "`CellButton` widget"
+    started_at: null
+    completed_at: null
+- id: M3.4
+  title: Engine startup and event forwarding
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M3.4.1
+    description: In AppModel::init call ConfigStore::load(config::config_file()) and queue LoadOutcome notices in UiState.pending_notices
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M9.2.1"
-        description: "Create the CellButton glib subclass (pages/matrix/cell.rs, 72x44, focusable, CSS name cellbutton) with new(), set_view(), connect_edit()"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M9.2.2"
-        description: "Draw the visual states: absent, disabled (status ignored), enabled pill, pending, missing overlay, error overlay"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M9.2.3"
-        description: "Implement click-to-toggle with 4 px drag threshold and double-click reset to 0 dB"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M9.2.4"
-        description: "Implement vertical drag gain (0.25 dB/px, Shift 0.05) with 30 Hz throttle and commit on release"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M9.2.5"
-        description: "Implement scroll gain (±1 dB, Shift ±0.1) with commit 400 ms after the last scroll"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M9.2.6"
-        description: "Implement keyboard bindings (Space/Return, Up/Down, Page_Up/Down, Home, End, Delete) with debounced commit"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M9.2.7"
-        description: "Implement the context popover (toggle, set 0 dB, remove send, SpinButton exact entry) on secondary click/long press/Menu/Shift+F10"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M9.2.8"
-        description: "Set AccessibleRole::Slider with label \"{} to {}\", ValueMin/Max/Now and ValueText updated in set_view"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M9.3"
-    title: "Headers"
+    started_at: null
+    completed_at: null
+  - id: M3.4.2
+    description: In AppModel::init detect DesktopEnv, acquire the hold, call install_actions, install_close_handler, spawn_tray (→ TrayReady) and install_signal_handlers
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M9.3.1"
-        description: "Implement build_row_header (220x44: label, vertical PeakMeter, compact volume scale, menu button) and RowHeader::update"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M9.3.2"
-        description: "Implement row menus: channel Rename/Delete, input Noise suppression check + Forget device (offline only)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M9.3.3"
-        description: "Implement build_col_header (72x96: wrapped 2-line label with tooltip, horizontal meter, inverted vertical scale, menu) and ColHeader::update"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M9.3.4"
-        description: "Implement column menus: virtual mic Rename/Delete, output Forget device (offline only)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M9.3.5"
-        description: "Apply dim-label + \"Disconnected\" subtitle for offline headers and register header meters with MeterVisibility"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M9.3.6"
-        description: "Set AccessibleRole::RowHeader/ColumnHeader and labels on headers"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M9.4"
-    title: "`MatrixPage` grid"
+    started_at: null
+    completed_at: null
+  - id: M3.4.3
+    description: Start the engine with Engine::start(EngineConfig{..}); on Err keep engine None and route to the Fatal handling
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M9.4.1"
-        description: "Implement the MatrixPage component (MatrixMsg, MatrixOutput) and the 2x2 layout: corner with Add buttons, col_scroller, row_scroller, body_scroller"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M9.4.2"
-        description: "Share adjustments (col_scroller hadjustment, row_scroller vadjustment) with body_scroller for pinned headers"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M9.4.3"
-        description: "Implement full rebuild on shape_key change with focus restore by CellKey and meter re-registration"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M9.4.4"
-        description: "Implement in-place update (set_view / header update) when the shape is unchanged, respecting dragging cells"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M9.4.5"
-        description: "Add the empty-state adw::StatusPage \"Build your mix\" with Add channel / Add virtual mic buttons"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M9.4.6"
-        description: "Add a debug-level tracing counter for rebuilds (used by acceptance criteria)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M9.5"
-    title: "Keyboard navigation and accessibility"
+    started_at: null
+    completed_at: null
+  - id: M3.4.4
+    description: Implement the relm4::spawn_local event-forwarding loop with Fatal(EngineError::ThreadGone) on channel close
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M9.5.1"
-        description: "Implement roving focus in pages/matrix/keyboard.rs (one focusable cell, Tab enters/leaves the grid once)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M9.5.2"
-        description: "Implement arrow-key navigation with Control jumping to edges, focusing and scrolling the target cell into view"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M9.5.3"
-        description: "Set AccessibleRole::Grid on the body and restore the current position by key after rebuilds"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M9.5.4"
-        description: "Manually verify with Orca that a cell reads \"Music to Headphones, slider, −18 dB, on\""
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M9.6"
-    title: "Add/rename dialogs"
+    started_at: null
+    completed_at: null
+  - id: M3.4.5
+    description: Send the initial Command::SetSetup (empty Setup when the welcome is pending)
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M9.6.1"
-        description: "Implement dialogs/name.rs present(parent, kind, on_done) as adw::AlertDialog with adw::EntryRow"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M9.6.2"
-        description: "Enable the default response only for trimmed non-empty names ≤ 64 chars, activate on Return, prefill \"Channel N\"/\"Virtual mic N\""
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M9.6.3"
-        description: "Emit AddChannel/AddMic/RenameChannel/RenameMic edits from the dialog responses"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M9.7"
-    title: "Delete with F6"
+    started_at: null
+    completed_at: null
+  - id: M3.4.6
+    description: Spawn apply_autostart at startup when the welcome is not pending (result → AutostartApplied)
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M9.7.1"
-        description: "Implement the destructive delete confirmation adw::AlertDialog listing removed sends and the plural count of apps moving to default output"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M9.7.2"
-        description: "Emit Edit::DeleteChannel / Edit::DeleteMic on confirm"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M9.8"
-    title: "Offline devices"
+    started_at: null
+    completed_at: null
+  - id: M3.4.7
+    description: Implement the AppMsg::Engine dispatch table in AppModel::update (Connection, Snapshot, MeterAssignments, ExternalRetarget, SetupIssues, Restored, QuitCheck, TeardownComplete, Warning, Fatal)
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M9.8.1"
-        description: "Render offline rows/columns dimmed with missing overlays per CellStatus"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M9.8.2"
-        description: "Implement the Forget device confirmation dialog emitting Edit::ForgetDevice, unavailable while the device is present"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M9.9"
-    title: "Setup issues display"
+    started_at: null
+    completed_at: null
+  - id: M3.4.8
+    description: Implement AppModel::dispatch_edit (apply_edit → send commands, add toasts, schedule_save, push_setup_to_pages)
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M9.9.1"
-        description: "Route Event::SetupIssues to MatrixMsg::Issues and mark SetupIssue::CellFailed cells with the error overlay"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M9.9.2"
-        description: "Forward issues with cell() == None to AppModel toast handling (M11.5)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M10.1"
-    title: "Per-input toggle"
+    started_at: null
+    completed_at: null
+  - id: M3.4.9
+    description: Implement push_setup_to_pages sending Update{snapshot, setup} to AppsPage and MatrixPage
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M10.1.1"
-        description: "Wire the input row \"Noise suppression\" check item to Edit::SetDenoise"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.1.2"
-        description: "Show the toast hinting to route the noise-suppressed row on first enable"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.1.3"
-        description: "Render disabled denoisers' rows and cells as present-but-inactive from DenoiserState.active"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M10.2"
-    title: "Denoised row controls"
+    started_at: null
+    completed_at: null
+- id: M3.5
+  title: Connection status pages
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M3.5.1
+    description: Implement pages/status.rs status_page(state, fatal) -> adw::StatusPage for Connecting (gtk::Spinner), Unsupported, PermissionDenied and Fatal
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M10.2.1"
-        description: "Build the denoised row header (indented ↳ label) with enable gtk::Switch and Denoised meter target"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.2.2"
-        description: "Add the Voice gate gtk::Scale (0..0.95, marks Off/0.5, tooltip) sending SetVadGate commit=false during drag and commit=true on release"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.2.3"
-        description: "Show the xrun warning icon and error icon (NodeCreateFailed / DenoiseRateUnsupported) per the M11.5 warning mapping"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M11.1"
-    title: "Welcome dialog and preset"
+    started_at: null
+    completed_at: null
+  - id: M3.5.2
+    description: Write gettext-wrapped titles/descriptions for each UnsupportedReason variant with found versions
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M11.1.1"
-        description: "Implement dialogs/welcome.rs adw::Dialog (480 wide, no Escape, ✕ = Start empty) with Recommended and Start empty action rows"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.1.2"
-        description: "Present the welcome on WindowShown/first Connected while first_run_done is false"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.1.3"
-        description: "Implement state/preset.rs build_preset(snapshot, kind) per C10 with localized channel/mic names"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.1.4"
-        description: "Unit-test build_preset with and without default output/input"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.1.5"
-        description: "Handle WelcomeChosen: dispatch ApplyPreset, flush_sync, spawn deferred apply_autostart, select the Matrix or Apps page, toast when no output exists"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M11.2"
-    title: "Preferences dialog"
+    started_at: null
+    completed_at: null
+  - id: M3.5.3
+    description: Add the "Learn more" button opening the README URL with gtk::UriLauncher
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M11.2.1"
-        description: "Implement dialogs/preferences.rs adw::PreferencesDialog with the Background group"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.2.2"
-        description: "Add the close-action adw::ComboRow sending AppMsg::SetCloseAction → config.update_settings"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.2.3"
-        description: "Add the Start at login adw::SwitchRow sending AppMsg::SetStartAtLogin and showing the user's intent"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.2.4"
-        description: "Implement pure autostart_row(intent, last) -> AutostartRowSpec for every AutostartState plus Err"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.2.5"
-        description: "Unit-test autostart_row for all states and assert the setting is never rewritten"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.2.6"
-        description: "Store AutostartApplied results in UiState.autostart, update background, re-render the open dialog, toast on Err"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.2.7"
-        description: "Handle BackgroundStatusChanged by updating AppModel::background and re-rendering Preferences"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M11.3"
-    title: "Window close and background notice"
+    started_at: null
+    completed_at: null
+  - id: M3.5.4
+    description: Switch root_stack between status and main on ConnectionState changes; make main insensitive and show a header spinner while Reconnecting
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M11.3.1"
-        description: "Handle WindowCloseRequested via desktop::close::decide_close, ignoring it while notice_open"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.3.2"
-        description: "Implement show_background_notice() adw::AlertDialog shown while visible, emitting BackgroundNoticeDismissed"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.3.3"
-        description: "Handle BackgroundNoticeDismissed: update_settings(background_notice_shown = true) then hide_window"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.3.4"
-        description: "Implement show_background_denied_notice() emitting BackgroundDeniedNoticeDismissed and setting the session flag"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.3.5"
-        description: "Handle BackgroundDeniedNoticeDismissed by sending RequestQuit(QuitTrigger::CloseButton)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.3.6"
-        description: "Handle ShowWindow via desktop::window::show_window and process queued notices on WindowShown"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M11.4"
-    title: "Quit confirmation and teardown state (UI side)"
+    started_at: null
+    completed_at: null
+- id: M3.6
+  title: 'Apps page: read-only list'
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M3.6.1
+    description: Implement the AppsPage SimpleComponent (AppsMsg, AppsOutput) with ScrolledWindow → adw::Clamp(720) → "Playing now" boxed ListBox
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M11.4.1"
-        description: "Route RequestQuit, Quit, QuitConfirmed, QuitCancelled, QuitCheck and TeardownComplete into quit.handle and run effects via desktop::quit::execute"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.4.2"
-        description: "Implement show_quit_confirm(usages) adw::AlertDialog with UsageKind wording, emitting QuitConfirmed/QuitCancelled"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.4.3"
-        description: "Implement close_quit_confirm() force-closing quit_dialog without emitting a response (QuitEffect::DismissConfirm)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.4.4"
-        description: "Make root_stack insensitive and show a header spinner while QuitState is Checking or TearingDown"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M11.5"
-    title: "Toasts, banners and recovery surfaces"
+    started_at: null
+    completed_at: null
+  - id: M3.6.2
+    description: Implement the AppRow FactoryComponent (ParentWidget gtk::ListBox) as adw::ActionRow with icon fallback, title, subtitle with stream count
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M11.5.1"
-        description: "Implement pure banner_state(&UiState, read_only) -> Option<BannerSpec> with read-only priority over reconnect, plus unit tests"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.5.2"
-        description: "Add the 1 s reconnect poll revealing the Retry banner after 30 s"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.5.3"
-        description: "Implement RestartEngine: shutdown existing engine, Engine::start, re-forward events, resend SetSetup and SetMeterTargets"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.5.4"
-        description: "Implement pure issue_text(&SetupIssue) with gettext-wrapped text per variant, plus unit tests"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.5.5"
-        description: "Implement the SetupIssues toast with Details dialog, de-duplicated by key()"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.5.6"
-        description: "Implement the EngineWarning mapping: badges per WarnedNode (60 s clear) and de-duplicated toasts"
-        status: pending
-        started_at: ~
-        completed_at: ~
+    started_at: null
+    completed_at: null
+  - id: M3.6.3
+    description: 'Implement row reconciliation in AppsMsg::Update using rows.guard(): remove vanished keys, insert new rows at index, send AppRowMsg::Update to existing rows (no clear())'
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M3.6.4
+    description: Add the empty-state adw::StatusPage "Nothing is playing"
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M3.6.5
+    description: Add the "Outputs" group listing present hardware outputs with name, meter placeholder and volume
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M3.6.6
+    description: Set accessible labels on row meters, volume scales and dropdowns
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M4.1
+  title: Ballistics (pure)
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M4.1.1
+    description: Implement widgets/peak_meter/ballistics.rs constants (FLOOR_DB, RELEASE_DB_PER_S, HOLD_S, STALE_S, WARN_DB, CLIP_DB) and lin_to_db
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M4.1.2
+    description: Implement ballistics::step with instant attack, 20 dB/s release, 1.5 s hold
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M4.1.3
+    description: Implement ballistics::zone and ballistics::fraction (powf 1.5 curve)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M4.1.4
+    description: Unit-test step (attack, release, hold expiry, stale decay), zone thresholds and fraction bounds
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M4.2
+  title: '`PeakMeter` widget'
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M4.2.1
+    description: Create the PeakMeter glib subclass (imp.rs, NAME EstuaryPeakMeter, parent gtk::Widget) with the MeterState RefCell
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M4.2.2
+    description: Implement the public wrapper new(orientation), bind(bank, slots), unbind(), set_failed(bool) in widgets/peak_meter/mod.rs
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M4.2.3
+    description: 'Implement the tick callback: MeterBank::read per slot, max across slots, seq staleness, ballistics::step, queue_draw on > 0.1 dB change'
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M4.2.4
+    description: Install/remove the tick callback on bind/unbind and map/unmap
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M4.2.5
+    description: Implement snapshot() drawing L/R bars, zone-colored segments, 2 px hold tick and background
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M4.2.6
+    description: Implement measure() (min 6x48, natural 8x120) and the failed-state "—" label with "Level unavailable" tooltip
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M4.2.7
+    description: Set AccessibleRole::Meter without value updates and add the high-contrast outline
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M4.3
+  title: Meter binding
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M4.3.1
+    description: Store MeterAssignments in UiState.meter_slots and broadcast BindMeters(Arc<HashMap>) to AppsPage and MatrixPage
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M4.3.2
+    description: In each page keep HashMap<MeterTarget, PeakMeter> and bind/unbind meters on BindMeters (AppsPage forwards via rows.broadcast)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M4.3.3
+    description: Handle Warning(MeterFailed(target)) by calling set_failed(true) until the next assignment containing the target
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M4.4
+  title: Visibility tracking → `SetMeterTargets`
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M4.4.1
+    description: Implement MeterVisibility (register, clear_page, schedule_recompute with 100 ms debounce) in widgets/meter_visibility.rs
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M4.4.2
+    description: 'Implement the recompute: empty when the window is hidden, else mapped meters intersecting the scroller ordered top-to-bottom, left-to-right, deduped'
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M4.4.3
+    description: 'Connect triggers: scroller adjustments value-changed/changed, ViewStack visible-child, window visible/is-active, page rebuilds'
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M4.4.4
+    description: Send AppMsg::MeterTargets on change and forward Command::SetMeterTargets from AppModel::update
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M5.1
+  title: Volume math (pure)
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M5.1.1
+    description: Implement slider_to_linear / linear_to_slider (cubic) in state/volume.rs
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M5.1.2
+    description: Implement set_volume_level (balance-preserving) and volume_level
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M5.1.3
+    description: Implement clamp_db (NaN → 0, clamp -60..+6, round 0.1) and format_db (U+2212 minus, localized decimal separator)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M5.1.4
+    description: Unit-test round-trip within 1e-6, balance preservation, clamp_db limits and NaN
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M5.2
+  title: Edit model (pure core)
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M5.2.1
+    description: Define the Edit enum, EditOutcome and ToastSpec in state/edit.rs
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M5.2.2
+    description: Implement apply_edit for AssignApp, ExternalRetarget (no-op guard) and ForgetAppRule, adding known_devices for device targets
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M5.2.3
+    description: Implement apply_edit for AppVolume, DeviceVolume, ChannelVolume, MicVolume (fast-path commands, save only on commit)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M5.2.4
+    description: Implement apply_edit for AddChannel/RenameChannel/DeleteChannel with F6 rule rewrite and plural toast
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M5.2.5
+    description: Implement apply_edit for AddMic/RenameMic/DeleteMic with default names and trimming/length rules
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M5.2.6
+    description: Implement apply_edit for ToggleCell, SetCellGain (fast path vs commit) and RemoveCell
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M5.2.7
+    description: Implement apply_edit for ForgetDevice (only when offline; removes cells, denoisers, denoised cells; rewrites rules)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M5.2.8
+    description: Implement apply_edit for SetDenoise and SetVadGate (Command::SetVadGate during drag, SetSetup on commit)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M5.2.9
+    description: Implement apply_edit for ApplyPreset (setup replace + first_run_done)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M5.2.10
+    description: Unit-test every Edit variant including the F6 rewrite and the ExternalRetarget no-op
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M5.3
+  title: Output dropdown
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M5.3.1
+    description: Implement build_target_choices(snapshot, setup, group) -> Vec<TargetChoice> (Default, present channels, present outputs, unavailable current target)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M5.3.2
+    description: Build the gtk::DropDown with StringList and a SignalListItemFactory showing title + subtitle and dimmed "(disconnected)" entries
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M5.3.3
+    description: Guard programmatic set_selected with an updating flag so it never emits TargetSelected
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M5.3.4
+    description: Emit Edit::AssignApp on TargetSelected and disable the dropdown with tooltip when movable == false
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M5.4
+  title: App and device volume sliders
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M5.4.1
+    description: Add the 0..1 gtk::Scale with percent tooltip and mute toggle button to AppRow
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M5.4.2
+    description: Add a GestureDrag dragging flag so snapshots don't overwrite the knob during drag
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M5.4.3
+    description: Implement the 30 Hz throttle for VolumeChanged → Edit::AppVolume
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M5.4.4
+    description: Wire device rows in the Outputs group to Edit::DeviceVolume with the same throttle
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M5.5
+  title: External retarget
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M5.5.1
+    description: Route Event::ExternalRetarget to dispatch_edit(Edit::ExternalRetarget) without a toast
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M5.6
+  title: Remembered apps
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M5.6.1
+    description: Implement the RememberedRow FactoryComponent (pages/apps/remembered.rs) with display name, target label and trash button
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M5.6.2
+    description: Populate the "Remembered apps" group from app_rules not present in the snapshot and hide it when empty
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M5.6.3
+    description: Emit Edit::ForgetAppRule from the trash button with accessible label "Forget {}"
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M6.1
+  title: '`ConfigStore::load`'
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M6.1.1
+    description: Define ConfigStore, LoadOutcome, ConfigError and config_file() in config.rs with the engine setup re-exports
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M6.1.2
+    description: 'Implement load: NotFound → defaults/Fresh'
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M6.1.3
+    description: Implement newer-schema detection via toml::Value → lenient load + read_only + NewerSchema
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M6.1.4
+    description: 'Implement corrupt handling: rename to config.toml.broken-<timestamp> with collision suffix, return Recovered'
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M6.1.5
+    description: Implement repair through setup::sanitize returning Repaired without writing back
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M6.1.6
+    description: Implement file(), file_mut(), settings(), update_settings(), is_read_only(), welcome_pending(), attach()
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M6.1.7
+    description: 'Unit-test load in a tempfile dir: missing, valid, corrupt (backup name pattern), newer schema, repaired'
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M6.2
+  title: Save
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M6.2.1
+    description: Implement schedule_save with 500 ms glib::timeout_add_local_once emitting AppMsg::SaveTick (skip when read-only or unattached)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M6.2.2
+    description: 'Implement flush_sync: create dir, toml::to_string_pretty, write .tmp, sync_all, rename'
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M6.2.3
+    description: Handle SaveTick in AppModel::update and show the "Couldn't save settings" toast once per distinct error
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M6.2.4
+    description: Unit-test atomic save (no .tmp left on success, content round-trips) and read-only refusal
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M6.3
+  title: Load-outcome surfaces
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M6.3.1
+    description: Show the Recovered adw::AlertDialog (backup name + parse error) on WindowShown, followed by the welcome
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M6.3.2
+    description: Reveal the permanent read-only adw::Banner for NewerSchema at init
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M6.3.3
+    description: Show the Repaired plural toast and log issue_text() details at warn
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M9.1
+  title: Matrix layout (pure)
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M9.1.1
+    description: Define RowKey, ColKey, RowSpec, ColSpec, CellView, DenoiseView, MatrixLayout in state/matrix_layout.rs
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.1.2
+    description: 'Implement compute(): channel rows, sorted input rows, denoised row directly under its input, output then mic columns'
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.1.3
+    description: Fill CellView from Setup + snapshot statuses (Pending when absent from snapshot) and implement shape_key()
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.1.4
+    description: Unit-test row order, denoised placement, offline inclusion and Pending status
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M9.2
+  title: '`CellButton` widget'
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M9.2.1
+    description: Create the CellButton glib subclass (pages/matrix/cell.rs, 72x44, focusable, CSS name cellbutton) with new(), set_view(), connect_edit()
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.2.2
+    description: 'Draw the visual states: absent, disabled (status ignored), enabled pill, pending, missing overlay, error overlay'
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.2.3
+    description: Implement click-to-toggle with 4 px drag threshold and double-click reset to 0 dB
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.2.4
+    description: Implement vertical drag gain (0.25 dB/px, Shift 0.05) with 30 Hz throttle and commit on release
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.2.5
+    description: Implement scroll gain (±1 dB, Shift ±0.1) with commit 400 ms after the last scroll
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.2.6
+    description: Implement keyboard bindings (Space/Return, Up/Down, Page_Up/Down, Home, End, Delete) with debounced commit
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.2.7
+    description: Implement the context popover (toggle, set 0 dB, remove send, SpinButton exact entry) on secondary click/long press/Menu/Shift+F10
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.2.8
+    description: Set AccessibleRole::Slider with label "{} to {}", ValueMin/Max/Now and ValueText updated in set_view
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M9.3
+  title: Headers
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M9.3.1
+    description: 'Implement build_row_header (220x44: label, vertical PeakMeter, compact volume scale, menu button) and RowHeader::update'
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.3.2
+    description: 'Implement row menus: channel Rename/Delete, input Noise suppression check + Forget device (offline only)'
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.3.3
+    description: 'Implement build_col_header (72x96: wrapped 2-line label with tooltip, horizontal meter, inverted vertical scale, menu) and ColHeader::update'
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.3.4
+    description: 'Implement column menus: virtual mic Rename/Delete, output Forget device (offline only)'
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.3.5
+    description: Apply dim-label + "Disconnected" subtitle for offline headers and register header meters with MeterVisibility
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.3.6
+    description: Set AccessibleRole::RowHeader/ColumnHeader and labels on headers
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M9.4
+  title: '`MatrixPage` grid'
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M9.4.1
+    description: 'Implement the MatrixPage component (MatrixMsg, MatrixOutput) and the 2x2 layout: corner with Add buttons, col_scroller, row_scroller, body_scroller'
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.4.2
+    description: Share adjustments (col_scroller hadjustment, row_scroller vadjustment) with body_scroller for pinned headers
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.4.3
+    description: Implement full rebuild on shape_key change with focus restore by CellKey and meter re-registration
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.4.4
+    description: Implement in-place update (set_view / header update) when the shape is unchanged, respecting dragging cells
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.4.5
+    description: Add the empty-state adw::StatusPage "Build your mix" with Add channel / Add virtual mic buttons
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.4.6
+    description: Add a debug-level tracing counter for rebuilds (used by acceptance criteria)
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M9.5
+  title: Keyboard navigation and accessibility
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M9.5.1
+    description: Implement roving focus in pages/matrix/keyboard.rs (one focusable cell, Tab enters/leaves the grid once)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.5.2
+    description: Implement arrow-key navigation with Control jumping to edges, focusing and scrolling the target cell into view
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.5.3
+    description: Set AccessibleRole::Grid on the body and restore the current position by key after rebuilds
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.5.4
+    description: Manually verify with Orca that a cell reads "Music to Headphones, slider, −18 dB, on"
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M9.6
+  title: Add/rename dialogs
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M9.6.1
+    description: Implement dialogs/name.rs present(parent, kind, on_done) as adw::AlertDialog with adw::EntryRow
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.6.2
+    description: Enable the default response only for trimmed non-empty names ≤ 64 chars, activate on Return, prefill "Channel N"/"Virtual mic N"
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.6.3
+    description: Emit AddChannel/AddMic/RenameChannel/RenameMic edits from the dialog responses
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M9.7
+  title: Delete with F6
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M9.7.1
+    description: Implement the destructive delete confirmation adw::AlertDialog listing removed sends and the plural count of apps moving to default output
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.7.2
+    description: Emit Edit::DeleteChannel / Edit::DeleteMic on confirm
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M9.8
+  title: Offline devices
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M9.8.1
+    description: Render offline rows/columns dimmed with missing overlays per CellStatus
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.8.2
+    description: Implement the Forget device confirmation dialog emitting Edit::ForgetDevice, unavailable while the device is present
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M9.9
+  title: Setup issues display
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M9.9.1
+    description: Route Event::SetupIssues to MatrixMsg::Issues and mark SetupIssue::CellFailed cells with the error overlay
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.9.2
+    description: Forward issues with cell() == None to AppModel toast handling (M11.5)
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M10.1
+  title: Per-input toggle
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M10.1.1
+    description: Wire the input row "Noise suppression" check item to Edit::SetDenoise
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.1.2
+    description: Show the toast hinting to route the noise-suppressed row on first enable
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.1.3
+    description: Render disabled denoisers' rows and cells as present-but-inactive from DenoiserState.active
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M10.2
+  title: Denoised row controls
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M10.2.1
+    description: Build the denoised row header (indented ↳ label) with enable gtk::Switch and Denoised meter target
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.2.2
+    description: Add the Voice gate gtk::Scale (0..0.95, marks Off/0.5, tooltip) sending SetVadGate commit=false during drag and commit=true on release
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.2.3
+    description: Show the xrun warning icon and error icon (NodeCreateFailed / DenoiseRateUnsupported) per the M11.5 warning mapping
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M11.1
+  title: Welcome dialog and preset
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M11.1.1
+    description: Implement dialogs/welcome.rs adw::Dialog (480 wide, no Escape, ✕ = Start empty) with Recommended and Start empty action rows
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.1.2
+    description: Present the welcome on WindowShown/first Connected while first_run_done is false
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.1.3
+    description: Implement state/preset.rs build_preset(snapshot, kind) per C10 with localized channel/mic names
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.1.4
+    description: Unit-test build_preset with and without default output/input
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.1.5
+    description: 'Handle WelcomeChosen: dispatch ApplyPreset, flush_sync, spawn deferred apply_autostart, select the Matrix or Apps page, toast when no output exists'
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M11.2
+  title: Preferences dialog
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M11.2.1
+    description: Implement dialogs/preferences.rs adw::PreferencesDialog with the Background group
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.2.2
+    description: Add the close-action adw::ComboRow sending AppMsg::SetCloseAction → config.update_settings
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.2.3
+    description: Add the Start at login adw::SwitchRow sending AppMsg::SetStartAtLogin and showing the user's intent
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.2.4
+    description: Implement pure autostart_row(intent, last) -> AutostartRowSpec for every AutostartState plus Err
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.2.5
+    description: Unit-test autostart_row for all states and assert the setting is never rewritten
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.2.6
+    description: Store AutostartApplied results in UiState.autostart, update background, re-render the open dialog, toast on Err
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.2.7
+    description: Handle BackgroundStatusChanged by updating AppModel::background and re-rendering Preferences
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M11.3
+  title: Window close and background notice
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M11.3.1
+    description: Handle WindowCloseRequested via desktop::close::decide_close, ignoring it while notice_open
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.3.2
+    description: Implement show_background_notice() adw::AlertDialog shown while visible, emitting BackgroundNoticeDismissed
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.3.3
+    description: 'Handle BackgroundNoticeDismissed: update_settings(background_notice_shown = true) then hide_window'
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.3.4
+    description: Implement show_background_denied_notice() emitting BackgroundDeniedNoticeDismissed and setting the session flag
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.3.5
+    description: Handle BackgroundDeniedNoticeDismissed by sending RequestQuit(QuitTrigger::CloseButton)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.3.6
+    description: Handle ShowWindow via desktop::window::show_window and process queued notices on WindowShown
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M11.4
+  title: Quit confirmation and teardown state (UI side)
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M11.4.1
+    description: Route RequestQuit, Quit, QuitConfirmed, QuitCancelled, QuitCheck and TeardownComplete into quit.handle and run effects via desktop::quit::execute
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.4.2
+    description: Implement show_quit_confirm(usages) adw::AlertDialog with UsageKind wording, emitting QuitConfirmed/QuitCancelled
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.4.3
+    description: Implement close_quit_confirm() force-closing quit_dialog without emitting a response (QuitEffect::DismissConfirm)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.4.4
+    description: Make root_stack insensitive and show a header spinner while QuitState is Checking or TearingDown
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M11.5
+  title: Toasts, banners and recovery surfaces
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M11.5.1
+    description: Implement pure banner_state(&UiState, read_only) -> Option<BannerSpec> with read-only priority over reconnect, plus unit tests
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.5.2
+    description: Add the 1 s reconnect poll revealing the Retry banner after 30 s
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.5.3
+    description: 'Implement RestartEngine: shutdown existing engine, Engine::start, re-forward events, resend SetSetup and SetMeterTargets'
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.5.4
+    description: Implement pure issue_text(&SetupIssue) with gettext-wrapped text per variant, plus unit tests
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.5.5
+    description: Implement the SetupIssues toast with Details dialog, de-duplicated by key()
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.5.6
+    description: 'Implement the EngineWarning mapping: badges per WarnedNode (60 s clear) and de-duplicated toasts'
+    status: pending
+    started_at: null
+    completed_at: null

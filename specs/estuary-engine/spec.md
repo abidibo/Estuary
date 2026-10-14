@@ -241,6 +241,19 @@ pub(crate) struct Effects {
 
 ### M2: Engine core (read-only)
 
+**Implementation notes (M2 as built, 2026-10-14).** These deviate from or refine the text above. Where they conflict, the notes are authoritative.
+
+- **Timers.** pipewire-rs `TimerSource<'l>` borrows the loop, so it can't be stored in the shell's `Rc` state next to the loop it borrows. Timers are instead kept by a small `estuary-timers` thread (`pw/timers.rs`) that posts `Control::Timer(kind)` into the loop through the pipewire channel. It's one-shot and armed per kind, with no periodic wakeups. Effects carry `timers` (arm) and `cancel_timers`.
+- **Deferred drops.** A connection retired inside a callback (`Disconnected` arrives in the core `error` callback) is moved to a graveyard and dropped on the next `Control::DropGraveyard`, so a listener never drops itself while running.
+- **Module layout.** `pw/connection.rs`, `pw/registry.rs` and `pw/metadata.rs` are merged into `pw/mod.rs` (`Shell`) for M2. They split out when M5/M8 add metadata writes and object creation.
+- **`Engine::send` liveness.** A pipewire channel keeps accepting messages after its receiver is gone, so `send` checks `JoinHandle::is_finished()` and returns `ThreadGone` (C3).
+- **`GraphChange` refinements:** `NodeVolume { id, channels: Option<Vec<f32>>, muted: Option<bool> }` (a partial Props update; missing fields keep the previous value) and `DefaultMetaCleared { subject: Option<u32> }` (a key-less metadata update; `None` clears everything).
+- **`ConnState`:** `Syncing` has no attempt counter; `Checking` became `Probing` (capability checks are synchronous, so the state only spans the write probe). There is no `TornDown` state yet, since `Teardown` replies immediately while nothing is owned (M8 adds it).
+- **`Restored`** is emitted together with `Connected` after a reconnect, because nothing is owned before M8. The "no pending creations or 5 s" rule applies from M8.
+- **Snapshot `current_target`** resolves the stream's `target.object` metadata (serial or `node.name`). No explicit target means `Default`. M5.6 adds link-based resolution.
+- **Read-only commands:** `SetSetup` is stored and reflected in snapshots (channels, mics and cells are reported with `present=false` / `Pending`). Fast-path commands are ignored with a debug log until M5/M8. `PrepareQuit` → `QuitCheck([])`, `Teardown` → `TeardownComplete`.
+- **Tests:** `testing/` is `#[cfg(test)]` for now (the `test-util` export moves to M3). `FakeGraph` has preset constructors (`standard`, `without_wireplumber`) plus `device`/`app_playing` builders. `FakeShell` moves to M8.13.
+
 #### M2.1 Live experiment: registry props, own-client identification, WirePlumber version (UNVERIFIED-5)
 
 **Why.** Three design inputs must be confirmed before writing the shell.

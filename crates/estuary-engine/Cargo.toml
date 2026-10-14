@@ -25,3 +25,7 @@ live-pw = ["estuary-dsp/live-pw"]
 
 [lints]
 workspace = true
+
+[[example]]
+name = "registry_dump"
+required-features = ["live-pw"]
