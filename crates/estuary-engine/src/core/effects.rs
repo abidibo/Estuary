@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use crate::Event;
 use crate::meter::MeterSlotId;
+use crate::model::Volume;
 
 /// Objects the engine owns or tracks by proxy. Grows with the reconciler (M8).
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -32,6 +33,16 @@ pub(crate) enum PwOp {
     DestroyMeter {
         slot: MeterSlotId,
     },
+    SetNodeVolume {
+        node_id: u32,
+        volume: Volume,
+    },
+    SetRouteVolume {
+        card_id: u32,
+        route_index: i32,
+        route_device: i32,
+        volume: Volume,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -45,6 +56,8 @@ pub(crate) enum TimerKind {
     Reconnect,
     SnapshotFlush,
     WpWait,
+    /// C7: a new stream settles 500 ms after appearing if no link settled it earlier.
+    StreamSettle(u32),
 }
 
 #[derive(Debug, Default)]

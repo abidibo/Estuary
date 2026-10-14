@@ -675,6 +675,15 @@ Allocation walks `targets` in order and assigns slots until all 64 are taken. Le
 
 ### M5 (engine side): Per-app routing and rules
 
+**Implementation notes (M5 as built, 2026-10-14).**
+
+- **Device volume (M5.1 outcome B).** The shell binds every `Audio/Device` card and subscribes to its `Route` params. The mirror keeps `routes[card][route.device] = route.index`, and `GraphMirror::route_of(node)` picks the route from the node's `device.id` and `card.profile.device`. `SetDeviceVolume` becomes `PwOp::SetRouteVolume` (`Device::set_param(Route, {index, device, props, save: true})`), falling back to node `Props` for card-less nodes.
+- **`core/routing.rs`** follows M5.3–M5.6. `StreamTrack.awaiting_ack` identifies our own echo. An external move sets `external_pending`, which blocks re-applying the old rule until the next `SetSetup` (no ping-pong). Evaluation runs on new or settled streams, on every topology change (so a returning device re-applies rules, F10), on `SetSetup` and on `Ready`. The settle timer is `TimerKind::StreamSettle(id)`, 500 ms.
+- **`current_target`** moved from `snapshot.rs` into `routing.rs` (metadata first, then links; the default sink and unlinked streams count as `Default`).
+- **Volume write failures.** Node proxy errors become `GraphChange::VolumeWriteFailed { node_id }` and then `Warning(VolumeWriteFailed{Device})` for devices. Route write errors are only logged.
+- **Live test `routes_test_app`** uses two temporary null sinks and a silent stream. The rule moved the stream in **10 ms**. A `pw-metadata` move from outside produced `ExternalRetarget` and was not undone.
+- The UI was verified by the user: routing, app and device volume, mute, and a remembered rule applied on reopen.
+
 #### M5.1 Live experiment: device volume path (UNVERIFIED-2)
 
 ```sh

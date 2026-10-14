@@ -456,6 +456,15 @@ impl MeterVisibility {
 
 ### M5: Per-app routing UI
 
+**Implementation notes (M5 as built, 2026-10-14).**
+
+- **Rules live in memory** (`AppModel.config: ConfigFile`) until M6 persists them; `EditOutcome.save` is computed but not acted on yet. The engine gets `SetSetup(config.setup)` at every (re)start.
+- **`Edit`** contains the M5 variants only (`AssignApp`, `ExternalRetarget`, `ForgetAppRule`, `AppVolume`, `DeviceVolume`). Matrix, noise-suppression and preset variants are added with M9–M11 (tasks moved there). `EditOutcome` has no toasts yet.
+- **`VolumeControl`** (`pages/apps/controls.rs`) is shared by app and output rows: a 0–100 % cubic slider plus a mute toggle. A guard stops programmatic updates echoing as edits, edits are throttled to 30 Hz, and snapshots don't move the knob for 600 ms after a user change (instead of a drag gesture).
+- **Output dropdown** is a `gtk::DropDown` over a `StringList` with plain labels: "Default output (…)", "Channel: …", devices, and "… (disconnected)" for unavailable current or rule targets. Selection updates are guarded.
+- **Remembered Apps** group implemented per M5.6.
+- Verified live by the user with a temporary silent output: routing switches instantly, app and device volume and mute work, and a remembered rule re-applies when the app restarts.
+
 #### M5.1 Volume math (pure)
 
 `state/volume.rs`:

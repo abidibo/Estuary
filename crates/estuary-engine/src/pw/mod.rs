@@ -17,6 +17,7 @@ use std::sync::Arc;
 use pipewire::client::{Client, ClientChangeMask, ClientListener};
 use pipewire::context::ContextRc;
 use pipewire::core::{CoreRc, PW_ID_CORE};
+use pipewire::device::{Device, DeviceListener};
 use pipewire::main_loop::MainLoopRc;
 use pipewire::metadata::{Metadata, MetadataListener};
 use pipewire::node::{Node, NodeChangeMask, NodeListener};
@@ -24,6 +25,7 @@ use pipewire::properties::properties;
 use pipewire::proxy::ProxyT;
 use pipewire::registry::{GlobalObject, RegistryRc};
 use pipewire::spa::param::ParamType;
+use pipewire::spa::pod::Pod;
 use pipewire::spa::utils::dict::DictRef;
 use pipewire::types::ObjectType;
 
@@ -53,6 +55,10 @@ enum Input {
 struct Conn {
     meters: HashMap<u16, MeterStream>,
     nodes: HashMap<u32, (Node, NodeListener)>,
+    /// Bound `Audio/Device` cards, for route volume writes (M5.1).
+    devices: HashMap<u32, (Device, DeviceListener)>,
+    /// Node proxy id → node global id, to attribute proxy errors (failed volume writes).
+    node_proxies: HashMap<u32, u32>,
     clients: HashMap<u32, (Client, ClientListener)>,
     default_meta: Option<DefaultMeta>,
     ports: HashSet<u32>,
@@ -267,6 +273,25 @@ impl Shell {
                     }
                 }
             }
+            PwOp::SetNodeVolume { node_id, volume } => {
+                let bytes = params::props_volume_pod(&volume);
+                match (conn.nodes.get(&node_id), Pod::from_bytes(&bytes)) {
+                    (Some((node, _)), Some(pod)) => node.set_param(ParamType::Props, 0, pod),
+                    _ => tracing::debug!(node_id, "volume write for an unbound node dropped"),
+                }
+            }
+            PwOp::SetRouteVolume {
+                card_id,
+                route_index,
+                route_device,
+                volume,
+            } => {
+                let bytes = params::route_volume_pod(route_index, route_device, &volume);
+                match (conn.devices.get(&card_id), Pod::from_bytes(&bytes)) {
+                    (Some((device, _)), Some(pod)) => device.set_param(ParamType::Route, 0, pod),
+                    _ => tracing::debug!(card_id, "route volume write for an unbound card dropped"),
+                }
+            }
             PwOp::DestroyMeter { slot } => {
                 if let Some(meter) = conn.meters.remove(&slot.0) {
                     st.meter_graveyard.push(meter);
@@ -351,6 +376,8 @@ impl Shell {
         self.0.state.borrow_mut().conn = Some(Conn {
             meters: HashMap::new(),
             nodes: HashMap::new(),
+            devices: HashMap::new(),
+            node_proxies: HashMap::new(),
             clients: HashMap::new(),
             default_meta: None,
             ports: HashSet::new(),
@@ -368,6 +395,18 @@ impl Shell {
         if id == PW_ID_CORE && res == -EPIPE {
             tracing::warn!(%message, "connection to PipeWire lost");
             self.push(Input::Graph(GraphChange::Disconnected));
+            return;
+        }
+        let failed_node = self
+            .0
+            .state
+            .borrow()
+            .conn
+            .as_ref()
+            .and_then(|c| c.node_proxies.get(&id).copied());
+        if let Some(node_id) = failed_node {
+            tracing::warn!(node_id, res, %message, "node request failed");
+            self.push(Input::Graph(GraphChange::VolumeWriteFailed { node_id }));
             return;
         }
         let is_meta = self
@@ -405,6 +444,7 @@ impl Shell {
                         Ok(node) => {
                             let listener = self.node_listener(&node, g.id);
                             node.subscribe_params(&[ParamType::Props]);
+                            conn.node_proxies.insert(node.upcast_ref().id(), g.id);
                             conn.nodes.insert(g.id, (node, listener));
                         }
                         Err(e) => tracing::warn!(id = g.id, "cannot bind node: {e}"),
@@ -420,6 +460,18 @@ impl Shell {
                     if let Some(link) = link_entry(g.id, &props) {
                         conn.links.insert(g.id);
                         changes.push(GraphChange::LinkAdded(link));
+                    }
+                }
+                ObjectType::Device
+                    if props.get("media.class").map(String::as_str) == Some("Audio/Device") =>
+                {
+                    match conn.registry.bind::<Device, _>(g) {
+                        Ok(device) => {
+                            let listener = self.device_listener(&device, g.id);
+                            device.subscribe_params(&[ParamType::Route]);
+                            conn.devices.insert(g.id, (device, listener));
+                        }
+                        Err(e) => tracing::warn!(id = g.id, "cannot bind device: {e}"),
                     }
                 }
                 ObjectType::Client => match conn.registry.bind::<Client, _>(g) {
@@ -461,7 +513,10 @@ impl Shell {
             let mut st = self.0.state.borrow_mut();
             let Some(conn) = st.conn.as_mut() else { return };
             if conn.nodes.remove(&id).is_some() {
+                conn.node_proxies.retain(|_, node| *node != id);
                 Some(GraphChange::NodeRemoved(id))
+            } else if conn.devices.remove(&id).is_some() {
+                Some(GraphChange::DeviceRemoved(id))
             } else if conn.ports.remove(&id) {
                 Some(GraphChange::PortRemoved(id))
             } else if conn.links.remove(&id) {
@@ -518,6 +573,28 @@ impl Shell {
                         id,
                         channels: v.channels,
                         muted: v.muted,
+                    }));
+                });
+            })
+            .register()
+    }
+
+    fn device_listener(&self, device: &Device, id: u32) -> DeviceListener {
+        let weak = Rc::downgrade(&self.0);
+        device
+            .add_listener_local()
+            .param(move |_seq, param_type, _index, _next, pod| {
+                if param_type != ParamType::Route {
+                    return;
+                }
+                let Some((index, dev)) = pod.and_then(|p| params::parse_route(p.as_bytes())) else {
+                    return;
+                };
+                Self::callback(&weak, |s| {
+                    s.push(Input::Graph(GraphChange::DeviceRoute {
+                        device_id: id,
+                        index,
+                        device: dev,
                     }));
                 });
             })

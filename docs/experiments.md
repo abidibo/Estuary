@@ -34,3 +34,9 @@ Method: `pw-record --target <default sink>` with `stream.capture.sink=true strea
 - **B:** **no** indicator.
 
 → GNOME Shell keys the indicator on the application id, not on `stream.monitor`. **C5 is kept as written:** meter streams set `application.id=org.PulseAudio.pavucontrol`, like pavucontrol and pwvucontrol. This is legitimate because these streams receive only peak values (`resample.peaks`), never audio content. The hardware-input variant wasn't repeated, since the indicator decision is per application id regardless of target.
+
+## M5.1 (UNVERIFIED-2: device volume path), 2026-10-14
+
+`pw-cli set-param <sink> Props '{ channelVolumes: [0.125, 0.125] }'` on the built-in ALSA sink changed only the node's own Props. `wpctl get-volume` still reported 0.73, and the device's `Route` (`analog-output-speaker`) kept `channelVolumes [0.3868, 0.3868]`. Restored afterwards with `wpctl set-volume <sink> 0.73`.
+
+→ **Outcome B.** Device volume is written through the card's `Route` param: `Device::set_param(Route, Object{ObjectParamRoute: index, device, props: {channelVolumes, mute}, save: true})`. The node props `device.id` (the card) and `card.profile.device` (matches the route's `device` field) select the route. The route `index` comes from the card's enumerated `Route` params. Nodes without `device.id` (virtual sinks, Estuary channels) keep using node `Props`. Same mechanism for inputs (the mic route showed the same layout).

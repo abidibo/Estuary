@@ -11,7 +11,7 @@ use std::time::Duration;
 use adw::prelude::*;
 use estuary_engine::{
     Command, ConnectionState, Engine, EngineConfig, EngineError, EngineWarning, Event,
-    GraphSnapshot, MeterTarget,
+    GraphSnapshot, MeterTarget, setup::ConfigFile,
 };
 use relm4::{
     Component, ComponentController, ComponentParts, ComponentSender, Controller, adw, gtk,
@@ -19,9 +19,10 @@ use relm4::{
 
 use crate::config_build::APP_ID;
 use crate::i18n::i18n;
-use crate::pages::apps::{AppsMsg, AppsPage};
+use crate::pages::apps::{AppsMsg, AppsOutput, AppsPage};
 use crate::pages::matrix::MatrixPage;
 use crate::pages::status::{RootView, root_view, status_page};
+use crate::state::edit::{Edit, apply_edit};
 use crate::widgets::meter_hub::MeterHub;
 
 /// Debounce for recomputing which meters are visible (UI M4.4).
@@ -31,6 +32,8 @@ const REPOSITORY: &str = "https://github.com/abidibo/estuary";
 
 pub struct AppModel {
     engine: Option<Engine>,
+    /// Desired state (C6). In memory until M6 loads and saves it.
+    config: ConfigFile,
     connection: Option<ConnectionState>,
     fatal: Option<EngineError>,
     /// Status page needs rebuilding (connection or fatal state changed).
@@ -72,6 +75,8 @@ pub enum AppMsg {
     /// Something affecting meter visibility changed (scroll, page, window, rows).
     ScheduleMeters,
     RecomputeMeters,
+    /// A user action from a page (UI M5.2).
+    Edit(Edit),
 }
 
 impl Component for AppModel {
@@ -97,7 +102,12 @@ impl Component for AppModel {
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
         let meters = MeterHub::default();
-        let apps_page = AppsPage::builder().launch(meters.clone()).detach();
+        let apps_page = AppsPage::builder().launch(meters.clone()).forward(
+            sender.input_sender(),
+            |o| match o {
+                AppsOutput::Edit(e) => AppMsg::Edit(e),
+            },
+        );
         let matrix_page = MatrixPage::builder().launch(()).detach();
 
         // Pages
@@ -168,6 +178,7 @@ impl Component for AppModel {
 
         let mut model = AppModel {
             engine: None,
+            config: ConfigFile::default(),
             connection: None,
             fatal: None,
             status_dirty: Cell::new(true),
@@ -215,6 +226,7 @@ impl Component for AppModel {
             }
             AppMsg::ShowAbout => show_about(root),
             AppMsg::ScheduleMeters => self.schedule_meters(&sender),
+            AppMsg::Edit(edit) => self.dispatch_edit(edit),
             AppMsg::RecomputeMeters => {
                 self.meter_recompute_pending = false;
                 self.recompute_meters(root);
@@ -248,6 +260,27 @@ impl AppModel {
         let toast = adw::Toast::new(text);
         toast.set_timeout(3);
         self.toasts.add_toast(toast);
+    }
+
+    /// The only mutation path for the desired state (UI M3.4/M5.2).
+    fn dispatch_edit(&mut self, edit: Edit) {
+        let out = apply_edit(&mut self.config, &self.snapshot, edit);
+        for cmd in out.commands {
+            if let Some(e) = &self.engine {
+                let _ = e.send(cmd);
+            }
+        }
+        // out.save: persisted from M6 (ConfigStore).
+        if out.structure_changed {
+            self.push_to_pages();
+        }
+    }
+
+    fn push_to_pages(&self) {
+        self.apps_page.emit(AppsMsg::Update {
+            snapshot: self.snapshot.clone(),
+            setup: Arc::new(self.config.setup.clone()),
+        });
     }
 
     fn schedule_meters(&mut self, sender: &ComponentSender<Self>) {
@@ -287,6 +320,8 @@ impl AppModel {
             Ok((engine, rx)) => {
                 self.meters.set_bank(engine.meters());
                 self.meter_targets_sent = None;
+                // C10 step 3: the engine applies the desired state as soon as it is connected.
+                let _ = engine.send(Command::SetSetup(self.config.setup.clone()));
                 self.engine = Some(engine);
                 // C2: forward engine events into the component. A closed channel without a
                 // Fatal event still means the engine is gone (UI-4).
@@ -317,7 +352,10 @@ impl AppModel {
             }
             Event::Snapshot(snap) => {
                 self.snapshot = snap;
-                self.apps_page.emit(AppsMsg::Update(self.snapshot.clone()));
+                self.push_to_pages();
+            }
+            Event::ExternalRetarget { app, target } => {
+                self.dispatch_edit(Edit::ExternalRetarget { app, target });
             }
             Event::Restored => self.show_toast(&i18n("Audio system restarted, setup restored")),
             Event::MeterAssignments(a) => self.meters.set_assignments(a),
@@ -331,7 +369,7 @@ impl AppModel {
                 }
                 self.engine = None;
             }
-            // Routed to their features in later milestones (rules M5, quit M11).
+            // Routed to their features in later milestones (setup issues M9, quit M11).
             other => tracing::debug!(?other, "engine event not handled yet"),
         }
     }

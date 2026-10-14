@@ -6,7 +6,7 @@ use crate::appkey;
 use crate::graph::{GraphMirror, NodeEntry, NodeKind, OwnedRole, parse_u32};
 use crate::model::{
     AppGroup, AppKey, CellState, CellStatus, ChannelState, DenoiserState, DeviceInfo, DeviceKey,
-    GraphSnapshot, RouteTarget, StreamInfo, VirtualMicState, Volume,
+    GraphSnapshot, StreamInfo, VirtualMicState, Volume,
 };
 use crate::setup::{DeviceKind, Setup};
 
@@ -157,7 +157,7 @@ fn apps(m: &GraphMirror) -> Vec<AppGroup> {
                         media_name: s.props.get("media.name").cloned(),
                     })
                     .collect(),
-                current_target: current_target(m, first.id),
+                current_target: super::routing::current_target(m, first.id),
                 movable: !streams
                     .iter()
                     .any(|s| s.props.get("node.dont-move").map(String::as_str) == Some("true")),
@@ -167,36 +167,6 @@ fn apps(m: &GraphMirror) -> Vec<AppGroup> {
         .collect();
     apps.sort_by_key(|a| a.display_name.to_lowercase());
     apps
-}
-
-/// The stream's explicit target from the `default` metadata (`target.object`: numeric = serial,
-/// otherwise `node.name`). No explicit target means the stream follows the default device.
-/// (Refined with link-based resolution in M5.6.)
-fn current_target(m: &GraphMirror, stream_id: u32) -> RouteTarget {
-    let Some(entry) = m.default_meta.get(&(stream_id, "target.object".to_owned())) else {
-        return RouteTarget::Default;
-    };
-    let target = match entry.value.parse::<u64>() {
-        Ok(serial) => m.nodes.values().find(|n| n.serial == serial),
-        Err(_) => m
-            .nodes
-            .values()
-            .find(|n| n.props.get("node.name").map(String::as_str) == Some(entry.value.as_str())),
-    };
-    match target {
-        Some(n) => match &n.kind {
-            NodeKind::Owned(OwnedRole::Channel(id)) => RouteTarget::Channel { id: *id },
-            NodeKind::Output => {
-                n.props
-                    .get("node.name")
-                    .map_or(RouteTarget::Default, |k| RouteTarget::Device {
-                        key: DeviceKey(k.clone()),
-                    })
-            }
-            _ => RouteTarget::Default,
-        },
-        None => RouteTarget::Default,
-    }
 }
 
 fn owned_node(m: &GraphMirror, pred: impl Fn(&OwnedRole) -> bool) -> Option<&NodeEntry> {

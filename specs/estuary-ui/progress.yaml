@@ -288,190 +288,150 @@ steps:
     completed_at: '2026-10-14T17:01:03+02:00'
 - id: M5.1
   title: Volume math (pure)
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:18:17+02:00'
+  completed_at: '2026-10-14T17:18:17+02:00'
   tasks:
   - id: M5.1.1
     description: Implement slider_to_linear / linear_to_slider (cubic) in state/volume.rs
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.1.2
     description: Implement set_volume_level (balance-preserving) and volume_level
-    status: pending
-    started_at: null
-    completed_at: null
-  - id: M5.1.3
-    description: Implement clamp_db (NaN → 0, clamp -60..+6, round 0.1) and format_db (U+2212 minus, localized decimal separator)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.1.4
-    description: Unit-test round-trip within 1e-6, balance preservation, clamp_db limits and NaN
-    status: pending
-    started_at: null
-    completed_at: null
+    description: Unit-test cubic round-trip within 1e-6 and balance preservation (dB helpers tested with M9)
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
 - id: M5.2
   title: Edit model (pure core)
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:18:17+02:00'
+  completed_at: '2026-10-14T17:18:17+02:00'
   tasks:
   - id: M5.2.1
-    description: Define the Edit enum, EditOutcome and ToastSpec in state/edit.rs
-    status: pending
-    started_at: null
-    completed_at: null
+    description: 'Define the Edit enum (M5 variants: AssignApp, ExternalRetarget, ForgetAppRule, AppVolume, DeviceVolume) and EditOutcome; later variants and toasts join with their milestones'
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.2.2
     description: Implement apply_edit for AssignApp, ExternalRetarget (no-op guard) and ForgetAppRule, adding known_devices for device targets
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.2.3
-    description: Implement apply_edit for AppVolume, DeviceVolume, ChannelVolume, MicVolume (fast-path commands, save only on commit)
-    status: pending
-    started_at: null
-    completed_at: null
-  - id: M5.2.4
-    description: Implement apply_edit for AddChannel/RenameChannel/DeleteChannel with F6 rule rewrite and plural toast
-    status: pending
-    started_at: null
-    completed_at: null
-  - id: M5.2.5
-    description: Implement apply_edit for AddMic/RenameMic/DeleteMic with default names and trimming/length rules
-    status: pending
-    started_at: null
-    completed_at: null
-  - id: M5.2.6
-    description: Implement apply_edit for ToggleCell, SetCellGain (fast path vs commit) and RemoveCell
-    status: pending
-    started_at: null
-    completed_at: null
-  - id: M5.2.7
-    description: Implement apply_edit for ForgetDevice (only when offline; removes cells, denoisers, denoised cells; rewrites rules)
-    status: pending
-    started_at: null
-    completed_at: null
-  - id: M5.2.8
-    description: Implement apply_edit for SetDenoise and SetVadGate (Command::SetVadGate during drag, SetSetup on commit)
-    status: pending
-    started_at: null
-    completed_at: null
-  - id: M5.2.9
-    description: Implement apply_edit for ApplyPreset (setup replace + first_run_done)
-    status: pending
-    started_at: null
-    completed_at: null
+    description: Implement apply_edit for AppVolume and DeviceVolume (fast-path commands, never saved)
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.2.10
-    description: Unit-test every Edit variant including the F6 rewrite and the ExternalRetarget no-op
-    status: pending
-    started_at: null
-    completed_at: null
-  - id: M5.2.11
-    description: Export estuary-engine test fixtures behind feature `test-util` (cfg(any(test, feature = "test-util"))) when UI tests first need them (moved from engine M2.10.3) (moved from M3.1.4)
-    status: pending
-    started_at: null
-    completed_at: null
+    description: Unit-test the M5 Edit variants including the ExternalRetarget no-op and known_devices bookkeeping
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.2.12
     description: Implement AppModel::dispatch_edit (apply_edit → send commands, add toasts, schedule_save, push_setup_to_pages) (moved from M3.4.8)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.2.13
     description: Implement push_setup_to_pages sending Update{snapshot, setup} to AppsPage and MatrixPage (moved from M3.4.9)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
 - id: M5.3
   title: Output dropdown
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:18:17+02:00'
+  completed_at: '2026-10-14T17:18:17+02:00'
   tasks:
   - id: M5.3.1
     description: Implement build_target_choices(snapshot, setup, group) -> Vec<TargetChoice> (Default, present channels, present outputs, unavailable current target)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.3.2
-    description: Build the gtk::DropDown with StringList and a SignalListItemFactory showing title + subtitle and dimmed "(disconnected)" entries
-    status: pending
-    started_at: null
-    completed_at: null
+    description: 'gtk::DropDown over a StringList; unavailable targets labelled ''(disconnected)'', channels prefixed ''Channel: '''
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.3.3
     description: Guard programmatic set_selected with an updating flag so it never emits TargetSelected
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.3.4
     description: Emit Edit::AssignApp on TargetSelected and disable the dropdown with tooltip when movable == false
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
 - id: M5.4
   title: App and device volume sliders
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:18:17+02:00'
+  completed_at: '2026-10-14T17:18:17+02:00'
   tasks:
   - id: M5.4.1
     description: Add the 0..1 gtk::Scale with percent tooltip and mute toggle button to AppRow
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.4.2
-    description: Add a GestureDrag dragging flag so snapshots don't overwrite the knob during drag
-    status: pending
-    started_at: null
-    completed_at: null
+    description: Snapshots don't move the knob for 600 ms after a user change (instead of a GestureDrag flag)
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.4.3
     description: Implement the 30 Hz throttle for VolumeChanged → Edit::AppVolume
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.4.4
     description: Wire device rows in the Outputs group to Edit::DeviceVolume with the same throttle
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.4.5
     description: Set accessible labels on row meters, volume scales and dropdowns (moved from M3.6.6)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
 - id: M5.5
   title: External retarget
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:18:17+02:00'
+  completed_at: '2026-10-14T17:18:17+02:00'
   tasks:
   - id: M5.5.1
     description: Route Event::ExternalRetarget to dispatch_edit(Edit::ExternalRetarget) without a toast
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
 - id: M5.6
   title: Remembered apps
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:18:17+02:00'
+  completed_at: '2026-10-14T17:18:17+02:00'
   tasks:
   - id: M5.6.1
     description: Implement the RememberedRow FactoryComponent (pages/apps/remembered.rs) with display name, target label and trash button
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.6.2
     description: Populate the "Remembered apps" group from app_rules not present in the snapshot and hide it when empty
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.6.3
     description: Emit Edit::ForgetAppRule from the trash button with accessible label "Forget {}"
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
 - id: M6.1
   title: '`ConfigStore::load`'
   status: pending
@@ -596,6 +556,12 @@ steps:
     status: pending
     started_at: null
     completed_at: null
+  - id: M9.1.5
+    description: Export estuary-engine test fixtures behind feature `test-util` (cfg(any(test, feature = "test-util"))) when UI tests first need them (moved from engine M2.10.3) (moved from M3.1.4) (moved
+      from M5.2.11)
+    status: pending
+    started_at: null
+    completed_at: null
 - id: M9.2
   title: '`CellButton` widget'
   status: pending
@@ -642,6 +608,11 @@ steps:
     status: pending
     started_at: null
     completed_at: null
+  - id: M9.2.9
+    description: Implement clamp_db (NaN → 0, clamp -60..+6, round 0.1) and format_db (U+2212 minus, localized decimal separator) (moved from M5.1.3)
+    status: pending
+    started_at: null
+    completed_at: null
 - id: M9.3
   title: Headers
   status: pending
@@ -678,6 +649,11 @@ steps:
     status: pending
     started_at: null
     completed_at: null
+  - id: M9.3.7
+    description: apply_edit for ChannelVolume and MicVolume (fast path while dragging, save on commit) (moved from M5.2.3)
+    status: pending
+    started_at: null
+    completed_at: null
 - id: M9.4
   title: '`MatrixPage` grid'
   status: pending
@@ -711,6 +687,11 @@ steps:
     completed_at: null
   - id: M9.4.6
     description: Add a debug-level tracing counter for rebuilds (used by acceptance criteria)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.4.7
+    description: Implement apply_edit for ToggleCell, SetCellGain (fast path vs commit) and RemoveCell (moved from M5.2.6)
     status: pending
     started_at: null
     completed_at: null
@@ -761,6 +742,16 @@ steps:
     status: pending
     started_at: null
     completed_at: null
+  - id: M9.6.4
+    description: apply_edit for AddChannel/RenameChannel/DeleteChannel with F6 rule rewrite and plural toast (moved from M5.2.4)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.6.5
+    description: Implement apply_edit for AddMic/RenameMic/DeleteMic with default names and trimming/length rules (moved from M5.2.5)
+    status: pending
+    started_at: null
+    completed_at: null
 - id: M9.7
   title: Delete with F6
   status: pending
@@ -790,6 +781,11 @@ steps:
     completed_at: null
   - id: M9.8.2
     description: Implement the Forget device confirmation dialog emitting Edit::ForgetDevice, unavailable while the device is present
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M9.8.3
+    description: Implement apply_edit for ForgetDevice (only when offline; removes cells, denoisers, denoised cells; rewrites rules) (moved from M5.2.7)
     status: pending
     started_at: null
     completed_at: null
@@ -827,6 +823,11 @@ steps:
     completed_at: null
   - id: M10.1.3
     description: Render disabled denoisers' rows and cells as present-but-inactive from DenoiserState.active
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.1.4
+    description: Implement apply_edit for SetDenoise and SetVadGate (Command::SetVadGate during drag, SetSetup on commit) (moved from M5.2.8)
     status: pending
     started_at: null
     completed_at: null
@@ -879,6 +880,11 @@ steps:
     completed_at: null
   - id: M11.1.5
     description: 'Handle WelcomeChosen: dispatch ApplyPreset, flush_sync, spawn deferred apply_autostart, select the Matrix or Apps page, toast when no output exists'
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.1.6
+    description: Implement apply_edit for ApplyPreset (setup replace + first_run_done) (moved from M5.2.9)
     status: pending
     started_at: null
     completed_at: null

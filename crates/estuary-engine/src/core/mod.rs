@@ -4,6 +4,7 @@
 pub(crate) mod conn;
 pub(crate) mod effects;
 pub(crate) mod meters;
+pub(crate) mod routing;
 pub(crate) mod snapshot;
 
 use std::sync::Arc;
@@ -12,15 +13,18 @@ use std::time::{Duration, Instant};
 use conn::{CapabilityResult, ConnState, evaluate_capabilities};
 use effects::{Effects, OwnedKey, PwOp, SyncPurpose, TimerKind};
 use meters::MeterPlan;
+use routing::{RoutingOutput, RoutingState, TARGET_KEY};
 
-use crate::error::EngineWarning;
 use crate::error::{Backoff, UnsupportedReason};
+use crate::error::{EngineWarning, WarnedNode};
 use crate::graph::{GraphChange, GraphMirror};
 use crate::setup::Setup;
 use crate::{Command, ConnectionState, Event};
 
 const SNAPSHOT_COALESCE: Duration = Duration::from_millis(50);
 const WP_WAIT: Duration = Duration::from_secs(5);
+/// C7: a stream counts as settled at most this long after appearing.
+const STREAM_SETTLE: Duration = Duration::from_millis(500);
 
 #[derive(Debug)]
 pub(crate) struct EngineCore {
@@ -30,6 +34,7 @@ pub(crate) struct EngineCore {
     mirror: GraphMirror,
     setup: Option<Setup>,
     meters: MeterPlan,
+    routing: RoutingState,
     had_ready_before: bool,
     /// Sync requests in flight: purpose → sequence number returned by `core.sync()`.
     pending_syncs: Vec<(SyncPurpose, i32)>,
@@ -47,6 +52,7 @@ impl EngineCore {
             mirror: GraphMirror::default(),
             setup: None,
             meters: MeterPlan::new(),
+            routing: RoutingState::default(),
             had_ready_before: false,
             pending_syncs: Vec::new(),
             probe_failed: false,
@@ -140,6 +146,22 @@ impl EngineCore {
                 }
                 return fx;
             }
+            GraphChange::VolumeWriteFailed { node_id } => {
+                if let Some(n) = self.mirror.nodes.get(node_id) {
+                    tracing::warn!(node = node_id, "volume write failed");
+                    if matches!(
+                        n.kind,
+                        crate::graph::NodeKind::Output | crate::graph::NodeKind::Input
+                    ) && let Some(key) = n.props.get("node.name")
+                    {
+                        fx.events
+                            .push(Event::Warning(EngineWarning::VolumeWriteFailed {
+                                node: WarnedNode::Device(crate::model::DeviceKey(key.clone())),
+                            }));
+                    }
+                }
+                return fx;
+            }
             GraphChange::MeterStreamFailed { slot, message } => {
                 tracing::warn!(slot = slot.0, %message, "meter stream failed");
                 if let Some(target) = self.meters.on_failed(*slot) {
@@ -166,6 +188,27 @@ impl EngineCore {
         }
         if impact.topology {
             fx.merge(self.reconcile_meters());
+            if self.state == ConnState::Ready {
+                let setup = self.setup.as_ref();
+                let mut out = self.routing.sync(&self.mirror, setup);
+                out.merge_from(self.routing.on_links(&self.mirror, setup));
+                out.merge_from(self.routing.evaluate_all(&self.mirror, setup));
+                fx.merge(routing_effects(out));
+            }
+        }
+        if let GraphChange::DefaultMetaProperty {
+            subject,
+            key,
+            value,
+            ..
+        } = change
+            && key == TARGET_KEY
+            && self.state == ConnState::Ready
+        {
+            let out = self
+                .routing
+                .on_metadata(*subject, value.as_deref(), &self.mirror);
+            fx.merge(routing_effects(out));
         }
         fx
     }
@@ -174,9 +217,62 @@ impl EngineCore {
         let mut fx = Effects::default();
         match cmd {
             Command::SetSetup(setup) => {
-                // Read-only at M2: the setup is stored and reflected in snapshots; nothing is built.
+                // Channels, mics and cells are built from M8; app rules apply now (M5).
                 self.setup = Some(setup);
                 fx.merge(self.mark_dirty());
+                self.routing.on_setup();
+                if self.state == ConnState::Ready {
+                    let out = self.routing.evaluate_all(&self.mirror, self.setup.as_ref());
+                    fx.merge(routing_effects(out));
+                }
+            }
+            Command::SetAppVolume { app, volume } => {
+                for n in self.mirror.nodes.values().filter(|n| {
+                    n.kind == crate::graph::NodeKind::AppPlayback
+                        && crate::appkey::derive(&n.props) == app
+                }) {
+                    let channels = n.volume.as_ref().map_or(2, |v| v.channels.len());
+                    let v = if volume.channels.len() == channels {
+                        volume.clone()
+                    } else {
+                        crate::model::Volume {
+                            channels: vec![volume.average(); channels.max(1)],
+                            muted: volume.muted,
+                        }
+                    };
+                    fx.ops.push(PwOp::SetNodeVolume {
+                        node_id: n.id,
+                        volume: v,
+                    });
+                }
+            }
+            Command::SetDeviceVolume { key, volume } => {
+                let node = self.mirror.nodes.values().find(|n| {
+                    matches!(
+                        n.kind,
+                        crate::graph::NodeKind::Output | crate::graph::NodeKind::Input
+                    ) && n.props.get("node.name") == Some(&key.0)
+                });
+                match node {
+                    // M5.1 outcome B: hardware volume lives on the card's route.
+                    Some(n) => match self.mirror.route_of(n) {
+                        Some((card_id, route_index, route_device)) => {
+                            fx.ops.push(PwOp::SetRouteVolume {
+                                card_id,
+                                route_index,
+                                route_device,
+                                volume,
+                            });
+                        }
+                        None => fx.ops.push(PwOp::SetNodeVolume {
+                            node_id: n.id,
+                            volume,
+                        }),
+                    },
+                    None => {
+                        tracing::debug!(key = %key.0, "volume for a device that is not present");
+                    }
+                }
             }
             Command::SetMeterTargets(targets) => {
                 self.meters.set_targets(targets);
@@ -212,6 +308,12 @@ impl EngineCore {
             TimerKind::WpWait => {
                 if self.state == ConnState::WaitingForWp {
                     fx.merge(self.enter_unsupported(UnsupportedReason::NoWirePlumber));
+                }
+            }
+            TimerKind::StreamSettle(id) => {
+                if self.state == ConnState::Ready {
+                    let out = self.routing.settle(id, &self.mirror, self.setup.as_ref());
+                    fx.merge(routing_effects(out));
                 }
             }
         }
@@ -311,6 +413,10 @@ impl EngineCore {
         }
         self.had_ready_before = true;
         fx.merge(self.reconcile_meters());
+        let setup = self.setup.as_ref();
+        let mut out = self.routing.sync(&self.mirror, setup);
+        out.merge_from(self.routing.evaluate_all(&self.mirror, setup));
+        fx.merge(routing_effects(out));
         fx
     }
 
@@ -339,6 +445,7 @@ impl EngineCore {
         }
         self.mirror.clear();
         self.meters.reset();
+        self.routing.reset();
         self.pending_syncs.clear();
         self.snapshot_dirty = false;
         let since = Instant::now();
@@ -374,6 +481,24 @@ impl EngineCore {
             self.setup.as_ref(),
         )))
     }
+}
+
+fn routing_effects(out: RoutingOutput) -> Effects {
+    let mut fx = Effects {
+        ops: out.ops,
+        ..Default::default()
+    };
+    fx.events.extend(
+        out.external
+            .into_iter()
+            .map(|(app, target)| Event::ExternalRetarget { app, target }),
+    );
+    fx.timers.extend(
+        out.settle_timers
+            .into_iter()
+            .map(|id| (TimerKind::StreamSettle(id), STREAM_SETTLE)),
+    );
+    fx
 }
 
 #[cfg(test)]

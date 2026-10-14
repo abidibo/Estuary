@@ -303,3 +303,192 @@ fn meter_moves() {
     destroy_node_named(SINK);
     result.unwrap();
 }
+
+fn create_null_sink(name: &str) {
+    destroy_node_named(name);
+    let ok = std::process::Command::new("pw-cli")
+        .args([
+            "create-node",
+            "adapter",
+            &format!(
+                "{{ factory.name=support.null-audio-sink node.name={name} media.class=Audio/Sink \
+                 audio.position=[FL FR] object.linger=true }}"
+            ),
+        ])
+        .status()
+        .expect("pw-cli")
+        .success();
+    assert!(ok, "create {name}");
+}
+
+/// The node an app stream is linked to, by `pw-link -l` output ("<node>:<port>").
+fn linked_sink_of(stream_node_name: &str) -> Option<String> {
+    let out = std::process::Command::new("pw-link")
+        .arg("-l")
+        .output()
+        .ok()?;
+    let text = String::from_utf8_lossy(&out.stdout);
+    let mut lines = text.lines();
+    while let Some(line) = lines.next() {
+        if line.starts_with(&format!("{stream_node_name}:output_")) {
+            let next = lines.next()?;
+            let target = next.trim().strip_prefix("|->")?.trim();
+            return target.split(':').next().map(str::to_owned);
+        }
+    }
+    None
+}
+
+fn node_serial(name: &str) -> Option<String> {
+    let out = std::process::Command::new("pw-cli")
+        .args(["ls", "Node"])
+        .output()
+        .ok()?;
+    let mut serial = None;
+    for line in String::from_utf8_lossy(&out.stdout).lines() {
+        let t = line.trim();
+        if t.starts_with("id ") {
+            serial = None;
+        } else if let Some(v) = t.strip_prefix("object.serial = ") {
+            serial = Some(v.trim_matches('"').to_owned());
+        } else if t == format!("node.name = \"{name}\"") {
+            return serial;
+        }
+    }
+    None
+}
+
+fn node_id(name: &str) -> Option<String> {
+    let out = std::process::Command::new("pw-cli")
+        .args(["ls", "Node"])
+        .output()
+        .ok()?;
+    let mut id = None;
+    for line in String::from_utf8_lossy(&out.stdout).lines() {
+        if let Some(rest) = line.trim_start().strip_prefix("id ") {
+            id = rest.split(',').next().map(str::to_owned);
+        } else if line.contains(&format!("node.name = \"{name}\"")) {
+            return id;
+        }
+    }
+    None
+}
+
+/// M5.8 `routes_test_app`: a rule moves a stream; a move made elsewhere is reported, not undone.
+#[test]
+#[ignore = "live-pw: needs a running PipeWire + WirePlumber session"]
+fn routes_test_app() {
+    use estuary_engine::{AppKey, Command, DeviceKey, RouteTarget, Setup, setup::AppRule};
+    const A: &str = "estuary-test-sink-a";
+    const B: &str = "estuary-test-sink-b";
+    const APP: &str = "Estuary Route Test";
+    const STREAM: &str = "estuary-route-test-stream";
+    init_logs();
+    create_null_sink(A);
+    create_null_sink(B);
+    let path = std::env::temp_dir().join("estuary-route-test.raw");
+    std::fs::write(&path, vec![0u8; 48_000 * 4 * 15]).unwrap(); // 15 s of silence
+    let mut player = std::process::Command::new("pw-cat")
+        .args([
+            "--playback",
+            "--raw",
+            "--format",
+            "s16",
+            "--rate",
+            "48000",
+            "--channels",
+            "2",
+        ])
+        .args(["--target", A])
+        .args([
+            "-P",
+            &format!("{{ application.name = \"{APP}\" node.name = \"{STREAM}\" }}"),
+        ])
+        .arg(&path)
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .expect("pw-cat");
+
+    let result = (|| -> Result<(), String> {
+        let wait_link = |want: &str, within: Duration| {
+            let deadline = Instant::now() + within;
+            while Instant::now() < deadline {
+                if linked_sink_of(STREAM).as_deref() == Some(want) {
+                    return true;
+                }
+                std::thread::sleep(Duration::from_millis(20));
+            }
+            false
+        };
+        if !wait_link(A, Duration::from_secs(2)) {
+            return Err(format!("stream did not start on {A}"));
+        }
+
+        let (engine, rx) = Engine::start(EngineConfig::default()).map_err(|e| e.to_string())?;
+        recv_until(&rx, Duration::from_secs(3), |ev| {
+            matches!(ev, Event::Connection(ConnectionState::Connected { .. })).then_some(())
+        })
+        .ok_or("not connected")?;
+        let app = AppKey(format!("name:{APP}"));
+        let rule = |target| Setup {
+            app_rules: vec![AppRule {
+                app: app.clone(),
+                target,
+                display_name: APP.into(),
+            }],
+            ..Default::default()
+        };
+        let t0 = Instant::now();
+        engine
+            .send(Command::SetSetup(rule(RouteTarget::Device {
+                key: DeviceKey(B.into()),
+            })))
+            .map_err(|e| e.to_string())?;
+        if !wait_link(B, Duration::from_secs(2)) {
+            return Err(format!("rule did not move the stream to {B}"));
+        }
+        eprintln!("moved by rule in {:?}", t0.elapsed());
+
+        // Move it back from outside, like GNOME Settings or pavucontrol would.
+        let id = node_id(STREAM).ok_or("stream id")?;
+        let serial_a = node_serial(A).ok_or("serial A")?;
+        let ok = std::process::Command::new("pw-metadata")
+            .args([&id, "target.object", &serial_a, "Spa:Id"])
+            .stdout(std::process::Stdio::null())
+            .status()
+            .map_err(|e| e.to_string())?
+            .success();
+        if !ok {
+            return Err("pw-metadata failed".into());
+        }
+        let ext = recv_until(&rx, Duration::from_secs(2), |ev| match ev {
+            Event::ExternalRetarget { app: a, target } if *a == app => Some(target.clone()),
+            _ => None,
+        })
+        .ok_or("no ExternalRetarget")?;
+        if ext
+            != (RouteTarget::Device {
+                key: DeviceKey(A.into()),
+            })
+        {
+            return Err(format!("unexpected external target {ext:?}"));
+        }
+        // Not undone: it stays on A.
+        std::thread::sleep(Duration::from_millis(500));
+        if linked_sink_of(STREAM).as_deref() != Some(A) {
+            return Err("the engine fought the external move".into());
+        }
+        engine
+            .shutdown(Duration::from_secs(1))
+            .map_err(|e| e.to_string())?;
+        Ok(())
+    })();
+
+    let _ = player.kill();
+    let _ = player.wait();
+    let _ = std::fs::remove_file(&path);
+    destroy_node_named(A);
+    destroy_node_named(B);
+    result.unwrap();
+}

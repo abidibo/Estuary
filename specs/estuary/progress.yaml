@@ -91,30 +91,30 @@ steps:
     completed_at: '2026-10-14T17:01:03+02:00'
 - id: 5
   title: M5 Per-app routing + rules
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:18:17+02:00'
+  completed_at: '2026-10-14T17:18:17+02:00'
   tasks:
   - id: '5.1'
     description: Complete estuary-engine steps M5.1-M5.8
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: '5.2'
     description: Complete estuary-ui steps M5.1-M5.6
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: '5.3'
     description: Record UNVERIFIED-2 outcome (device volume via Props vs Route, outputs and inputs) and amend master if needed
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: '5.4'
     description: 'Exit check: assigning an app to an output moves it within 200 ms without restart; app restart lands on the rule target; a move from GNOME Settings updates the rule and is not reverted'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
 - id: 6
   title: M6 Config persistence
   status: pending

@@ -472,187 +472,187 @@ steps:
     completed_at: '2026-10-14T17:01:03+02:00'
 - id: M5.1
   title: 'Live experiment: device volume path (UNVERIFIED-2)'
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:18:17+02:00'
+  completed_at: '2026-10-14T17:18:17+02:00'
   tasks:
   - id: M5.1.1
     description: 'Live experiment: wpctl set-volume on default sink, inspect node Props and device Route params via pw-dump'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.1.2
     description: 'Live experiment: pw-cli set-param Props channelVolumes on the sink node and check whether Route/hardware volume follows (UNVERIFIED-2)'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.1.3
     description: Record outcome A/B in docs/experiments.md and amend C3/C5 documentation in the master
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
 - id: M5.2
   title: AppKey derivation (per C7)
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:18:17+02:00'
+  completed_at: '2026-10-14T17:18:17+02:00'
   tasks:
   - id: M5.2.1
     description: Implement derive_app_key with GENERIC_BINARIES and python3.N regex in src/appkey.rs
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.2.2
     description: Implement display_name and is_excluded per C7
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.2.3
     description: 'Unit test table: firefox, spotify flatpak, python Lutris, pw-play node-only'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
 - id: M5.3
   title: Default-metadata proxy and write tracking
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:18:17+02:00'
+  completed_at: '2026-10-14T17:18:17+02:00'
   tasks:
   - id: M5.3.1
     description: Implement default-metadata binding and property listener in src/pw/metadata.rs → DefaultMetaProperty
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.3.2
     description: Implement PwOp::MetaWrite execution via Metadata::set_property
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.3.3
     description: Implement RoutingState/StreamTrack with written map and awaiting_ack in src/core/routing.rs
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.3.4
     description: Implement retarget write helper (Spa:Id serial / delete for Default)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
 - id: M5.4
   title: Rule application
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:18:17+02:00'
+  completed_at: '2026-10-14T17:18:17+02:00'
   tasks:
   - id: M5.4.1
     description: Track new AppPlayback streams and arm StreamSettle(500 ms); settle on first output link
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.4.2
     description: 'Implement evaluate(stream): dont-move skip, rule lookup, target serial resolution, write if different'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.4.3
     description: Re-evaluate on rule changes in SetSetup, on target node appearance, and after reconnect
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
 - id: M5.5
   title: External-change detection
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:18:17+02:00'
+  completed_at: '2026-10-14T17:18:17+02:00'
   tasks:
   - id: M5.5.1
     description: Implement metadata-based external detection with ack matching and pre-settle grace window
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.5.2
     description: Map external values (serial / node.name / deleted) to RouteTarget and emit ExternalRetarget; suppress re-application until next SetSetup
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.5.3
     description: Implement narrowed link-based external detection (rule != Default, not default sink)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
 - id: M5.6
   title: Current-target resolution
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:18:17+02:00'
+  completed_at: '2026-10-14T17:18:17+02:00'
   tasks:
   - id: M5.6.1
     description: Implement current_target(mirror, stream_id) (metadata first, then links, then Default)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.6.2
     description: Populate AppGroup.current_target, movable and volume in build_snapshot
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
 - id: M5.7
   title: Volume fast paths and Props pods
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:18:17+02:00'
+  completed_at: '2026-10-14T17:18:17+02:00'
   tasks:
   - id: M5.7.1
     description: Implement props_volume_pod in src/pw/params.rs
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.7.2
     description: Implement route_volume_pod and Device Route write path (only if M5.1 outcome B)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.7.3
     description: Implement SetAppVolume fast path (per-stream SetNodeVolume, channel-count adaptation)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.7.4
     description: Implement SetDeviceVolume fast path per M5.1 outcome; VolumeWriteFailed{Device} on ProxyError
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
 - id: M5.8
   title: Tests
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:18:17+02:00'
+  completed_at: '2026-10-14T17:18:17+02:00'
   tasks:
   - id: M5.8.1
     description: 'Unit test: new stream with rule to present channel → exactly one MetaWrite after settle'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.8.2
     description: 'Unit test: target absent → no write; target appears → write'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.8.3
     description: 'Unit test: external write after settle → ExternalRetarget and no counter-write; updated SetSetup → no write'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.8.4
     description: 'Unit test: pre-settle write ignored; dont-move never written; rule → Default deletes key; default-sink change with Default rule → no event'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
   - id: M5.8.5
     description: Live test routes_test_app with pw-play application.name=estuary-test
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:18:17+02:00'
+    completed_at: '2026-10-14T17:18:17+02:00'
 - id: M6.1
   title: Serde types (per C6)
   status: pending

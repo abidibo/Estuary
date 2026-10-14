@@ -24,6 +24,8 @@ pub(crate) struct GraphMirror {
     pub metadata_names: BTreeSet<String>,
     pub own_client_id: Option<u32>,
     pub core: Option<CoreInfo>,
+    /// Active routes per card (`Audio/Device` id): `route.device` → `route.index` (M5.1).
+    pub routes: BTreeMap<u32, BTreeMap<i32, i32>>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -145,6 +147,15 @@ pub(crate) enum GraphChange {
     MeterStreamFailed {
         slot: MeterSlotId,
         message: String,
+    },
+    DeviceRoute {
+        device_id: u32,
+        index: i32,
+        device: i32,
+    },
+    DeviceRemoved(u32),
+    VolumeWriteFailed {
+        node_id: u32,
     },
     SyncDone {
         seq: i32,
@@ -363,7 +374,23 @@ impl GraphMirror {
                     ..Default::default()
                 }
             }
+            GraphChange::DeviceRoute {
+                device_id,
+                index,
+                device,
+            } => {
+                self.routes
+                    .entry(*device_id)
+                    .or_default()
+                    .insert(*device, *index);
+                ChangeImpact::default()
+            }
+            GraphChange::DeviceRemoved(id) => {
+                self.routes.remove(id);
+                ChangeImpact::default()
+            }
             GraphChange::ProxyError { .. }
+            | GraphChange::VolumeWriteFailed { .. }
             | GraphChange::MeterStreamFailed { .. }
             | GraphChange::SyncDone { .. } => ChangeImpact::default(),
             GraphChange::Disconnected => {
@@ -378,6 +405,14 @@ impl GraphMirror {
         for n in self.nodes.values_mut() {
             n.kind = classify(&n.props, n.client_id, own, own_instance);
         }
+    }
+
+    /// The card route feeding a device node: `(card id, route index, route device)`.
+    pub fn route_of(&self, node: &NodeEntry) -> Option<(u32, i32, i32)> {
+        let card = parse_u32(node.props.get("device.id"))?;
+        let device: i32 = node.props.get("card.profile.device")?.parse().ok()?;
+        let index = *self.routes.get(&card)?.get(&device)?;
+        Some((card, index, device))
     }
 
     pub fn wireplumber_client(&self) -> Option<&ClientEntry> {

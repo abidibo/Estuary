@@ -142,21 +142,38 @@ impl FakeGraph {
     }
 
     /// An app playback stream linked (by WirePlumber) to the device `to`.
-    pub fn app_playing(mut self, binary: &str, name: &str, to: &str) -> Self {
+    pub fn app_playing(self, binary: &str, name: &str, to: &str) -> Self {
+        self.app(binary, name, Some(to), &[])
+    }
+
+    /// A playback stream not linked yet (not settled, per C7).
+    pub fn app_unlinked(self, binary: &str, name: &str) -> Self {
+        self.app(binary, name, None, &[])
+    }
+
+    /// A stream that refuses to be moved (`node.dont-move=true`).
+    pub fn app_dont_move(self, binary: &str, name: &str, to: &str) -> Self {
+        self.app(binary, name, Some(to), &[("node.dont-move", "true")])
+    }
+
+    fn app(mut self, binary: &str, name: &str, to: Option<&str>, extra: &[(&str, &str)]) -> Self {
         let id = self.id();
-        let p = props(&[
+        let serial = (u64::from(id) + 1000).to_string();
+        let mut pairs = vec![
             ("media.class", "Stream/Output/Audio"),
             ("application.process.binary", binary),
             ("application.name", name),
             ("node.name", name),
-            ("object.serial", &(u64::from(id) + 1000).to_string()),
-        ]);
+            ("object.serial", serial.as_str()),
+        ];
+        pairs.extend_from_slice(extra);
+        let p = props(&pairs);
         self.changes.push(GraphChange::NodeAdded {
             id,
             global_props: p.clone(),
         });
         self.changes.push(GraphChange::NodeInfo { id, props: p });
-        let target = self.node_id_of(to);
+        let target = to.and_then(|t| self.node_id_of(t));
         for ch in ["FL", "FR"] {
             let pid = self.id();
             self.changes.push(GraphChange::PortAdded(PortEntry {
