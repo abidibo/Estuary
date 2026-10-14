@@ -1,63 +1,27 @@
 #![forbid(unsafe_code)]
+#![cfg_attr(test, allow(clippy::unwrap_used))]
 
+mod app;
 mod config_build;
+mod i18n;
+mod pages;
+mod state;
 
 use adw::prelude::*;
-use config_build::{APP_ID, GETTEXT_PACKAGE, LOCALEDIR};
-use gettextrs::{bind_textdomain_codeset, bindtextdomain, textdomain};
-use relm4::{ComponentParts, ComponentSender, RelmApp, SimpleComponent, adw, gtk};
-
-struct AppModel;
-
-#[relm4::component]
-impl SimpleComponent for AppModel {
-    type Init = ();
-    type Input = ();
-    type Output = ();
-
-    view! {
-        adw::ApplicationWindow {
-            set_title: Some("Estuary"),
-            set_default_size: (960, 640),
-            #[wrap(Some)]
-            set_content = &adw::ToolbarView {
-                add_top_bar = &adw::HeaderBar {},
-                #[wrap(Some)]
-                set_content = &adw::StatusPage {
-                    set_icon_name: Some(APP_ID),
-                    set_title: "Estuary",
-                },
-            },
-        }
-    }
-
-    fn init(_: (), root: Self::Root, _sender: ComponentSender<Self>) -> ComponentParts<Self> {
-        let model = AppModel;
-        let widgets = view_output!();
-        ComponentParts { model, widgets }
-    }
-}
-
-fn init_i18n() {
-    // No explicit setlocale: it is `unsafe` in gettext-rs 0.8 (not thread-safe) and this crate
-    // forbids unsafe code. GTK's own initialization calls setlocale(LC_ALL, "") before any UI
-    // string is translated, which is all gettext needs.
-    // Failures are non-fatal: the UI falls back to English source strings.
-    let _ = bindtextdomain(GETTEXT_PACKAGE, LOCALEDIR);
-    let _ = bind_textdomain_codeset(GETTEXT_PACKAGE, "UTF-8");
-    let _ = textdomain(GETTEXT_PACKAGE);
-}
+use config_build::APP_ID;
+use relm4::{RelmApp, adw, gtk};
 
 fn init_tracing() {
     // C14: ESTUARY_LOG, EnvFilter syntax, default "warn,estuary=info".
-    let filter = tracing_subscriber::EnvFilter::try_from_env("ESTUARY_LOG")
-        .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("warn,estuary=info"));
+    let filter = tracing_subscriber::EnvFilter::try_from_env("ESTUARY_LOG").unwrap_or_else(|_| {
+        tracing_subscriber::EnvFilter::new("warn,estuary=info,estuary_engine=info")
+    });
     tracing_subscriber::fmt().with_env_filter(filter).init();
 }
 
 fn main() {
     init_tracing();
-    init_i18n();
+    i18n::init();
     let app = adw::Application::builder().application_id(APP_ID).build();
 
     // Single instance. relm4 0.11's `RelmApp::run` ends with a blocking
@@ -74,7 +38,7 @@ fn main() {
         return;
     }
 
-    RelmApp::from_app(app).run::<AppModel>(());
+    RelmApp::from_app(app).run::<app::AppModel>(());
 }
 
 /// True if another process already owns our application ID on the session bus.

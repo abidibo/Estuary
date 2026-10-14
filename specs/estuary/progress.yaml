@@ -49,20 +49,20 @@ steps:
     completed_at: '2026-10-14T15:07:21+02:00'
 - id: 3
   title: M3 UI shell + live Apps list
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T16:38:32+02:00'
+  completed_at: '2026-10-14T16:38:32+02:00'
   tasks:
   - id: '3.1'
     description: Complete estuary-ui steps M3.1-M3.6 (specs/estuary-ui/progress.yaml)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T16:38:32+02:00'
+    completed_at: '2026-10-14T16:38:32+02:00'
   - id: '3.2'
     description: 'Exit check: starting/stopping `pw-play` test streams adds/removes rows in the Apps page live; stopping PipeWire shows the ''Waiting for PipeWire'' status page'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T16:38:32+02:00'
+    completed_at: '2026-10-14T16:38:32+02:00'
 - id: 4
   title: M4 Level meters
   status: pending

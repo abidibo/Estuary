@@ -1,243 +1,172 @@
 feature: estuary-ui
 spec: specs/estuary-ui/spec.md
 created: 2026-10-14
-status: pending
-started_at: null
+status: in_progress
+started_at: '2026-10-14T16:38:32+02:00'
 completed_at: null
 steps:
 - id: M3.1
   title: Crate dependencies and module skeleton
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T16:38:32+02:00'
+  completed_at: '2026-10-14T16:38:32+02:00'
   tasks:
   - id: M3.1.1
     description: Write crates/estuary/Cargo.toml using only workspace deps (relm4, gtk, adw, estuary-engine, async-channel, serde, toml, thiserror, tracing, tracing-subscriber, uuid, gettext-rs) plus dev-dep
       tempfile
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T16:38:32+02:00'
+    completed_at: '2026-10-14T16:38:32+02:00'
   - id: M3.1.2
-    description: Create empty module files per the spec layout (app.rs, config.rs, i18n.rs, state/*, pages/*, widgets/*, dialogs/*) and declare them in main.rs
-    status: pending
-    started_at: null
-    completed_at: null
+    description: Module files are created with the milestone that needs them (decided at M3; spec layout stays the target)
+    status: completed
+    started_at: '2026-10-14T16:38:32+02:00'
+    completed_at: '2026-10-14T16:38:32+02:00'
   - id: M3.1.3
     description: 'Add #![forbid(unsafe_code)] to crates/estuary/src/main.rs and confirm cargo build + clippy -D warnings pass'
-    status: pending
-    started_at: null
-    completed_at: null
-  - id: M3.1.4
-    description: Export estuary-engine test fixtures behind feature `test-util` (cfg(any(test, feature = "test-util"))) when UI tests first need them (moved from engine M2.10.3)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T16:38:32+02:00'
+    completed_at: '2026-10-14T16:38:32+02:00'
 - id: M3.2
   title: i18n
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T16:38:32+02:00'
+  completed_at: '2026-10-14T16:38:32+02:00'
   tasks:
   - id: M3.2.1
     description: Implement i18n::init() in i18n.rs (setlocale, bindtextdomain with ESTUARY_LOCALEDIR fallback /usr/share/locale, bind_textdomain_codeset, textdomain "estuary")
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T16:38:32+02:00'
+    completed_at: '2026-10-14T16:38:32+02:00'
   - id: M3.2.2
     description: Implement i18n() and i18n_f() positional "{}" substitution after translation
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T16:38:32+02:00'
+    completed_at: '2026-10-14T16:38:32+02:00'
   - id: M3.2.3
     description: Implement ni18n_f() on top of ngettext with placeholder substitution
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T16:38:32+02:00'
+    completed_at: '2026-10-14T16:38:32+02:00'
   - id: M3.2.4
     description: Unit-test i18n_f/ni18n_f placeholder substitution (no GTK)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T16:38:32+02:00'
+    completed_at: '2026-10-14T16:38:32+02:00'
   - id: M3.2.5
     description: 'Document string conventions in a module doc comment: every literal wrapped, no format! on templates, // Translators: comments'
-    status: pending
-    started_at: null
-    completed_at: null
-  - id: M3.2.6
-    description: Provide Italian translations for every UI msgid in it.po at the M12 hand-off (po/ build and install are owned by packaging; profile/devel styling is packaging M12.6)
-    status: pending
-    started_at: null
-    completed_at: null
-  - id: M3.2.7
-    description: Add a check (script or CI step) that greps crates/estuary/src for user-visible string literals not wrapped in i18n*/ni18n_f
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T16:38:32+02:00'
+    completed_at: '2026-10-14T16:38:32+02:00'
 - id: M3.3
   title: Root component and window
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T16:38:32+02:00'
+  completed_at: '2026-10-14T16:38:32+02:00'
   tasks:
-  - id: M3.3.1
-    description: Define AppInit and the AppModel struct in app.rs with the desktop-required fields (engine, config, quit, quit_timers, hold, tray, background, env, denied_notice_shown_this_session, notice_open)
-      and UI fields
-    status: pending
-    started_at: null
-    completed_at: null
-  - id: M3.3.2
-    description: Define the AppMsg enum with all desktop-required variants plus UI variants (Edit, SetCloseAction, MeterTargets, SaveTick, WelcomeChosen, RestartEngine, WindowShown)
-    status: pending
-    started_at: null
-    completed_at: null
   - id: M3.3.3
     description: Implement AppModel::init_root building adw::ApplicationWindow (960x640, hide_on_close false) with ToastOverlay, ToolbarView, HeaderBar + ViewSwitcher, Banner, root_stack and ViewSwitcherBar
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T16:38:32+02:00'
+    completed_at: '2026-10-14T16:38:32+02:00'
   - id: M3.3.4
     description: Add adw::Breakpoint (max-width 550sp) revealing the bottom ViewSwitcherBar
-    status: pending
-    started_at: null
-    completed_at: null
-  - id: M3.3.5
-    description: Connect root notify::visible to send AppMsg::WindowShown and trigger MeterVisibility::schedule_recompute
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T16:38:32+02:00'
+    completed_at: '2026-10-14T16:38:32+02:00'
   - id: M3.3.6
-    description: Add win.show-apps (<Alt>1) and win.show-matrix (<Alt>2) actions and the primary menu model (app.preferences, app.about, app.quit)
-    status: pending
-    started_at: null
-    completed_at: null
+    description: Add win.show-apps (<Alt>1) and win.show-matrix (<Alt>2) actions and the primary menu (app.about, app.quit); app.preferences joins in M11.2
+    status: completed
+    started_at: '2026-10-14T16:38:32+02:00'
+    completed_at: '2026-10-14T16:38:32+02:00'
   - id: M3.3.7
     description: Implement the app.about action presenting adw::AboutDialog (app id, MIT OR Apache-2.0, repo link)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T16:38:32+02:00'
+    completed_at: '2026-10-14T16:38:32+02:00'
   - id: M3.3.8
     description: Implement AppModel::show_toast(&str) adding a 3 s adw::Toast
-    status: pending
-    started_at: null
-    completed_at: null
-  - id: M3.3.9
-    description: 'Write main.rs: tracing-subscriber with ESTUARY_LOG filter, i18n::init(), desktop::app::build_application(), RelmApp::from_app(app).visible_on_activate(true).run::<AppModel>(AppInit)'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T16:38:32+02:00'
+    completed_at: '2026-10-14T16:38:32+02:00'
 - id: M3.4
   title: Engine startup and event forwarding
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T16:38:32+02:00'
+  completed_at: '2026-10-14T16:38:32+02:00'
   tasks:
-  - id: M3.4.1
-    description: In AppModel::init call ConfigStore::load(config::config_file()) and queue LoadOutcome notices in UiState.pending_notices
-    status: pending
-    started_at: null
-    completed_at: null
-  - id: M3.4.2
-    description: In AppModel::init detect DesktopEnv, acquire the hold, call install_actions, install_close_handler, spawn_tray (→ TrayReady) and install_signal_handlers
-    status: pending
-    started_at: null
-    completed_at: null
   - id: M3.4.3
     description: Start the engine with Engine::start(EngineConfig{..}); on Err keep engine None and route to the Fatal handling
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T16:38:32+02:00'
+    completed_at: '2026-10-14T16:38:32+02:00'
   - id: M3.4.4
     description: Implement the relm4::spawn_local event-forwarding loop with Fatal(EngineError::ThreadGone) on channel close
-    status: pending
-    started_at: null
-    completed_at: null
-  - id: M3.4.5
-    description: Send the initial Command::SetSetup (empty Setup when the welcome is pending)
-    status: pending
-    started_at: null
-    completed_at: null
-  - id: M3.4.6
-    description: Spawn apply_autostart at startup when the welcome is not pending (result → AutostartApplied)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T16:38:32+02:00'
+    completed_at: '2026-10-14T16:38:32+02:00'
   - id: M3.4.7
     description: Implement the AppMsg::Engine dispatch table in AppModel::update (Connection, Snapshot, MeterAssignments, ExternalRetarget, SetupIssues, Restored, QuitCheck, TeardownComplete, Warning, Fatal)
-    status: pending
-    started_at: null
-    completed_at: null
-  - id: M3.4.8
-    description: Implement AppModel::dispatch_edit (apply_edit → send commands, add toasts, schedule_save, push_setup_to_pages)
-    status: pending
-    started_at: null
-    completed_at: null
-  - id: M3.4.9
-    description: Implement push_setup_to_pages sending Update{snapshot, setup} to AppsPage and MatrixPage
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T16:38:32+02:00'
+    completed_at: '2026-10-14T16:38:32+02:00'
 - id: M3.5
   title: Connection status pages
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T16:38:32+02:00'
+  completed_at: '2026-10-14T16:38:32+02:00'
   tasks:
   - id: M3.5.1
     description: Implement pages/status.rs status_page(state, fatal) -> adw::StatusPage for Connecting (gtk::Spinner), Unsupported, PermissionDenied and Fatal
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T16:38:32+02:00'
+    completed_at: '2026-10-14T16:38:32+02:00'
   - id: M3.5.2
     description: Write gettext-wrapped titles/descriptions for each UnsupportedReason variant with found versions
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T16:38:32+02:00'
+    completed_at: '2026-10-14T16:38:32+02:00'
   - id: M3.5.3
     description: Add the "Learn more" button opening the README URL with gtk::UriLauncher
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T16:38:32+02:00'
+    completed_at: '2026-10-14T16:38:32+02:00'
   - id: M3.5.4
     description: Switch root_stack between status and main on ConnectionState changes; make main insensitive and show a header spinner while Reconnecting
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T16:38:32+02:00'
+    completed_at: '2026-10-14T16:38:32+02:00'
 - id: M3.6
   title: 'Apps page: read-only list'
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T16:38:32+02:00'
+  completed_at: '2026-10-14T16:38:32+02:00'
   tasks:
   - id: M3.6.1
     description: Implement the AppsPage SimpleComponent (AppsMsg, AppsOutput) with ScrolledWindow → adw::Clamp(720) → "Playing now" boxed ListBox
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T16:38:32+02:00'
+    completed_at: '2026-10-14T16:38:32+02:00'
   - id: M3.6.2
     description: Implement the AppRow FactoryComponent (ParentWidget gtk::ListBox) as adw::ActionRow with icon fallback, title, subtitle with stream count
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T16:38:32+02:00'
+    completed_at: '2026-10-14T16:38:32+02:00'
   - id: M3.6.3
     description: 'Implement row reconciliation in AppsMsg::Update using rows.guard(): remove vanished keys, insert new rows at index, send AppRowMsg::Update to existing rows (no clear())'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T16:38:32+02:00'
+    completed_at: '2026-10-14T16:38:32+02:00'
   - id: M3.6.4
     description: Add the empty-state adw::StatusPage "Nothing is playing"
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T16:38:32+02:00'
+    completed_at: '2026-10-14T16:38:32+02:00'
   - id: M3.6.5
     description: Add the "Outputs" group listing present hardware outputs with name, meter placeholder and volume
-    status: pending
-    started_at: null
-    completed_at: null
-  - id: M3.6.6
-    description: Set accessible labels on row meters, volume scales and dropdowns
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T16:38:32+02:00'
+    completed_at: '2026-10-14T16:38:32+02:00'
 - id: M4.1
   title: Ballistics (pure)
   status: pending
@@ -352,6 +281,11 @@ steps:
     status: pending
     started_at: null
     completed_at: null
+  - id: M4.4.5
+    description: Connect root notify::visible to send AppMsg::WindowShown and trigger MeterVisibility::schedule_recompute (moved from M3.3.5)
+    status: pending
+    started_at: null
+    completed_at: null
 - id: M5.1
   title: Volume math (pure)
   status: pending
@@ -434,6 +368,21 @@ steps:
     status: pending
     started_at: null
     completed_at: null
+  - id: M5.2.11
+    description: Export estuary-engine test fixtures behind feature `test-util` (cfg(any(test, feature = "test-util"))) when UI tests first need them (moved from engine M2.10.3) (moved from M3.1.4)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M5.2.12
+    description: Implement AppModel::dispatch_edit (apply_edit → send commands, add toasts, schedule_save, push_setup_to_pages) (moved from M3.4.8)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M5.2.13
+    description: Implement push_setup_to_pages sending Update{snapshot, setup} to AppsPage and MatrixPage (moved from M3.4.9)
+    status: pending
+    started_at: null
+    completed_at: null
 - id: M5.3
   title: Output dropdown
   status: pending
@@ -483,6 +432,11 @@ steps:
     completed_at: null
   - id: M5.4.4
     description: Wire device rows in the Outputs group to Edit::DeviceVolume with the same throttle
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M5.4.5
+    description: Set accessible labels on row meters, volume scales and dropdowns (moved from M3.6.6)
     status: pending
     started_at: null
     completed_at: null
@@ -556,6 +510,16 @@ steps:
     completed_at: null
   - id: M6.1.7
     description: 'Unit-test load in a tempfile dir: missing, valid, corrupt (backup name pattern), newer schema, repaired'
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M6.1.8
+    description: In AppModel::init call ConfigStore::load(config::config_file()) and queue LoadOutcome notices in UiState.pending_notices (moved from M3.4.1)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M6.1.9
+    description: Send the initial Command::SetSetup (empty Setup when the welcome is pending) (moved from M3.4.5)
     status: pending
     started_at: null
     completed_at: null
@@ -959,6 +923,11 @@ steps:
     status: pending
     started_at: null
     completed_at: null
+  - id: M11.2.8
+    description: Spawn apply_autostart at startup when the welcome is not pending (result → AutostartApplied) (moved from M3.4.6)
+    status: pending
+    started_at: null
+    completed_at: null
 - id: M11.3
   title: Window close and background notice
   status: pending
@@ -992,6 +961,28 @@ steps:
     completed_at: null
   - id: M11.3.6
     description: Handle ShowWindow via desktop::window::show_window and process queued notices on WindowShown
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.3.7
+    description: Define AppInit and the AppModel struct in app.rs with the desktop-required fields (engine, config, quit, quit_timers, hold, tray, background, env, denied_notice_shown_this_session, notice_open)
+      and UI fields (moved from M3.3.1)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.3.8
+    description: Define the AppMsg enum with all desktop-required variants plus UI variants (Edit, SetCloseAction, MeterTargets, SaveTick, WelcomeChosen, RestartEngine, WindowShown) (moved from M3.3.2)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.3.9
+    description: 'Write main.rs: tracing-subscriber with ESTUARY_LOG filter, i18n::init(), desktop::app::build_application(), RelmApp::from_app(app).visible_on_activate(true).run::<AppModel>(AppInit) (moved
+      from M3.3.9)'
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.3.10
+    description: In AppModel::init detect DesktopEnv, acquire the hold, call install_actions, install_close_handler, spawn_tray (→ TrayReady) and install_signal_handlers (moved from M3.4.2)
     status: pending
     started_at: null
     completed_at: null
@@ -1054,6 +1045,16 @@ steps:
     completed_at: null
   - id: M11.5.6
     description: 'Implement the EngineWarning mapping: badges per WarnedNode (60 s clear) and de-duplicated toasts'
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.5.7
+    description: Provide Italian translations for every UI msgid in it.po at the M12 hand-off (po/ build and install are owned by packaging; profile/devel styling is packaging M12.6) (moved from M3.2.6)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.5.8
+    description: Add a check (script or CI step) that greps crates/estuary/src for user-visible string literals not wrapped in i18n*/ni18n_f (moved from M3.2.7)
     status: pending
     started_at: null
     completed_at: null

@@ -125,6 +125,19 @@ Steps are numbered `M<milestone>.<n>` (master §Implementation Steps). Each step
 
 ### M3: UI shell and live Apps list
 
+**Implementation notes (M3 as built, 2026-10-14).** These deviate from or refine the text above. Where they conflict, the notes are authoritative.
+
+- **Scope.** The root component holds only what exists at M3: `engine`, `connection`, `fatal`, `snapshot`, the two page controllers and the toast overlay. The desktop-owned fields and `AppMsg` variants (`quit`, `quit_timers`, `hold`, `tray`, `background`, `env`, close/quit messages) are added with estuary-desktop in M11. `config` comes with M6. `AppMsg` is `Engine(Event) | RestartEngine | ShowAbout`.
+- **Startup.** `main.rs` keeps the M1 single-instance guard (relm4 remote-instance hang, see packaging M1.5 notes) instead of `desktop::app::build_application()`, which arrives in M11.D1. The engine gets no `SetSetup` at M3 (no config yet). It runs read-only, as M2 allows.
+- **Temporary `app.quit`.** A plain `app.quit()` action plus `<Control>q` exist until desktop M11.D4 replaces them with the Quit flow. `app.about` (UI-owned) and `win.show-apps` / `win.show-matrix` (`<Alt>1` / `<Alt>2`) are final.
+- **Root component written by hand.** `Component` is implemented manually rather than with the `view!` macro. `update_view` swaps the status page only when a `Cell<bool>` dirty flag is set (connection or fatal state changed). `root_view()` is a pure, tested mapping.
+- **Rows.** `AppRow` and `OutputRow` are hand-written `FactoryComponent`s on `gtk::ListBox` with `adw::ActionRow` roots. A generic `pages/reconcile.rs` (`KeyedRow` + `reconcile()`) removes, inserts, moves and updates rows in place (`guard.get_mut` → `update_view`), never rebuilding.
+- **Empty state.** "Nothing is playing" is a `gtk::ListBox` placeholder inside "Playing Now", not a page-wide `adw::StatusPage`, so the Outputs group stays visible while nothing plays.
+- **Output rows** show the description, "Default output" as the subtitle when applicable, and a read-only perceptual volume percentage (cubic mapping, `state/volume.rs::percent`). Meters arrive in M4, sliders in M5.
+- **Window** has `set_size_request(360, 294)`, which libadwaita requires once breakpoints are used. The 550sp breakpoint reveals the bottom `ViewSwitcherBar` and hides the header title.
+- **Matrix page** is a placeholder `adw::StatusPage` until M9.
+- **Wayland note for M11.** A second launch from a terminal has no activation token, so GNOME shows an "Estuary is ready" notice instead of raising the window. Launches from the app grid or desktop file carry a token and raise it.
+
 #### M3.1 Crate dependencies and module skeleton
 
 `crates/estuary/Cargo.toml` uses workspace deps only (C1): `relm4`, `gtk`, `adw`, `estuary-engine`, `async-channel`, `serde`, `toml`, `thiserror`, `tracing`, `tracing-subscriber`, `uuid`, `gettext-rs`. Dev-deps: `tempfile = "3"`. Create the empty module files from the layout above. Add `#![forbid(unsafe_code)]` in `main.rs`.
