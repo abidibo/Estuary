@@ -1,0 +1,59 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+jobs:
+  native:
+    name: fmt / clippy / test
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: System dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config clang \
+            libpipewire-0.3-dev libgtk-4-dev libadwaita-1-dev gettext
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+      - run: cargo test --workspace
+      - name: Engine and DSP must not depend on GTK (C1)
+        run: |
+          for c in estuary-engine estuary-dsp; do
+            if cargo tree -p "$c" -e normal --prefix none | grep -Eq '^(gtk4|libadwaita|relm4) '; then
+              echo "::error::$c depends on a UI crate (forbidden by master C1)"; exit 1
+            fi
+          done
+
+  msrv:
+    name: MSRV 1.93
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+      - run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential pkg-config clang libpipewire-0.3-dev libgtk-4-dev libadwaita-1-dev
+      - uses: dtolnay/rust-toolchain@1.93
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo check --workspace --all-targets
+        env:
+          RUSTFLAGS: ""   # do not fail MSRV on lints added in newer compilers
+
+  # Added in M12.9:
+  # cargo-sources: (drift check)
+  # flatpak:       (GNOME 51 container build + lint)

@@ -1,0 +1,32 @@
+[package]
+name = "estuary"
+description = "Audio matrix and isolator for PipeWire"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[[bin]]
+name = "estuary"          # C14: binary name
+path = "src/main.rs"
+
+[dependencies]
+estuary-engine.workspace = true
+relm4.workspace = true
+gtk.workspace = true
+adw.workspace = true
+ashpd.workspace = true
+ksni.workspace = true
+gettext-rs.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+serde.workspace = true
+toml.workspace = true
+async-channel.workspace = true
+uuid.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true

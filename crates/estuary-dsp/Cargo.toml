@@ -1,0 +1,24 @@
+[package]
+name = "estuary-dsp"
+description = "Realtime PipeWire filter nodes for Estuary (pw_filter wrapper, gain, denoise)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+pipewire.workspace = true
+pipewire-sys.workspace = true
+libspa.workspace = true
+libspa-sys.workspace = true
+nnnoiseless.workspace = true
+rubato.workspace = true
+thiserror.workspace = true
+
+[features]
+live-pw = []          # enables live tests that need a running PipeWire (never in CI)
+
+[lints]
+workspace = true

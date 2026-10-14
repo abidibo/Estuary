@@ -1,0 +1,1150 @@
+feature: estuary-engine
+spec: specs/estuary-engine/spec.md
+created: 2026-10-14
+status: pending
+started_at: ~
+completed_at: ~
+steps:
+  - id: "M2.1"
+    title: "Live experiment: registry props, own-client identification, WirePlumber version (UNVERIFIED-5)"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M2.1.1"
+        description: "Run `pw-cli ls Node`, `pw-cli ls Port`, `pw-cli ls Link` and record which keys (audio.channel, port.direction, node.id, port.monitor, link.*) appear in registry global props vs info props"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.1.2"
+        description: "Run the pw-dump WirePlumber-client query and record the version property key (UNVERIFIED-5); note result in docs/experiments.md"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.1.3"
+        description: "Write examples/registry_dump.rs: connect with application.name/media.category=Manager/estuary.instance props and print the own Client global and its id"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.1.4"
+        description: "Run registry_dump and record whether estuary.instance is visible in own client info props; choose own_client_id strategy (client vs per-node instance fallback)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.1.5"
+        description: "Document the port-binding decision (bind Port proxies or not) in pw/registry.rs module docs and apply any C13/C5 amendment to the master"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M2.2"
+    title: "Crate skeleton, errors and public API stubs"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M2.2.1"
+        description: "Create crates/estuary-engine/Cargo.toml with C1 workspace deps and features `live-pw` and `test-util`"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.2.2"
+        description: "Create src/lib.rs with #![forbid(unsafe_code)] and the C3 public API signatures (Engine, EngineConfig, Command, Event, ConnectionState)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.2.3"
+        description: "Implement src/error.rs: EngineError, UnsupportedReason, WarnedNode, EngineWarning, SetupIssue, VirtualDeviceUsage, UsageKind, Backoff per C3 (amended)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.2.4"
+        description: "Implement Backoff::default and Backoff::delay (saturating, capped) in src/error.rs"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.2.5"
+        description: "Implement SetupIssue::key, SetupIssue::cell and SetupIssue::message"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.2.6"
+        description: "Implement pub(crate) fn warned_node(&OwnedKey) -> Option<WarnedNode>"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.2.7"
+        description: "Unit test: Backoff::delay yields 0.5, 1, 2, 4, 5, 5 s"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.2.8"
+        description: "Unit test: SetupIssue::key is stable and distinct per variant/subject"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M2.3"
+    title: "Model types (per C4) and volume helpers"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M2.3.1"
+        description: "Implement C4 identity types in src/model.rs (AppKey, DeviceKey, ChannelId, VirtualMicId, RouteTarget, MatrixSource, MatrixDest, CellKey, Volume)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.3.2"
+        description: "Implement C4 snapshot types in src/model.rs (GraphSnapshot, AppGroup, StreamInfo, DeviceInfo, ChannelState, VirtualMicState, DenoiserState, CellState, CellStatus)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.3.3"
+        description: "Implement Volume::unity, Volume::average, Volume::with_all"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.3.4"
+        description: "Implement db_to_linear (only NEG_INFINITY → 0.0) and linear_to_db"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.3.5"
+        description: "Unit test: dB/linear round-trip within 1e-5, -60 dB → 0.001, NEG_INFINITY → 0.0"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M2.4"
+    title: "Graph mirror, change application and classification (pure)"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M2.4.1"
+        description: "Define GraphMirror, NodeEntry, PortEntry, LinkEntry, ClientEntry, MetaEntry, CoreInfo and GraphChange in src/graph/mod.rs"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.4.2"
+        description: "Implement graph/classify.rs: props → NodeKind/OwnedRole per the classification table, including ownership via client.id or estuary.instance"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.4.3"
+        description: "Implement GraphMirror::apply returning ChangeImpact, with cascading removal of ports/links on node removal"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.4.4"
+        description: "Implement owned-role parsing from node.name suffixes (channel/vmic uuid, cell/denoise hash, meter slot)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.4.5"
+        description: "Unit test classify.rs: one case per table row, incl. ForeignEstuary and stream.monitor exclusion"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.4.6"
+        description: "Unit test GraphMirror::apply: out-of-order removals keep the mirror consistent"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M2.5"
+    title: "Engine thread, guarded callbacks, control channel, shutdown"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M2.5.1"
+        description: "Define internal `Control { Cmd(Command), Shutdown }` and implement Engine::start (OnceLock pipewire::init, channels, named thread estuary-pw, catch_unwind → Event::Fatal)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.5.2"
+        description: "Implement Engine::send (ThreadGone on closed channel) and Engine::meters"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.5.3"
+        description: "Implement Engine::shutdown with done-channel recv_timeout and ShutdownTimeout"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.5.4"
+        description: "Implement guarded() helper with thread-local PANICKED flag in src/pw/thread.rs"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.5.5"
+        description: "Implement pw::thread::run: MainLoopRc/ContextRc creation, instance uuid, control receiver attach, ml.run(), resume_unwind on PANICKED"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.5.6"
+        description: "Implement Shell state (Rc<RefCell<ShellState>>) with GraphChange queue and drain() re-entrancy rule"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.5.7"
+        description: "Unit test: Engine::shutdown returns Ok within timeout when the loop exits; send after exit returns ThreadGone"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M2.6"
+    title: "Connection and registry shell"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M2.6.1"
+        description: "Implement connect in src/pw/connection.rs with C5 client props plus estuary.instance"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.6.2"
+        description: "Register core listener: info → CoreInfo, done → SyncDone, error → Disconnected (-EPIPE) or ProxyError via proxy_keys"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.6.3"
+        description: "Implement registry listener in src/pw/registry.rs: bind Node proxies, subscribe Props, attach info/param listeners"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.6.4"
+        description: "Handle Port, Link, Client and Metadata globals (bind default metadata, set own_client_id), and global_remove"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.6.5"
+        description: "Implement Props pod parsing (channelVolumes, mute) in src/pw/params.rs via PodDeserializer"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.6.6"
+        description: "Issue initial core.sync(0) after registry registration (SyncPurpose::InitialRegistry)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M2.7"
+    title: "Capability checks and write probe (per C13)"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M2.7.1"
+        description: "Implement evaluate_capabilities in src/core/conn.rs (PW >= 1.0, sm-settings gate, WaitForWp)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.7.2"
+        description: "Implement WpWait 5 s timer and re-evaluation on later registry changes"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.7.3"
+        description: "Implement the write probe sequence (MetaWrite set/delete estuary.probe + Sync(WriteProbe)) and PermissionDenied on ProxyError"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.7.4"
+        description: "Emit Connected plus an immediate first Snapshot on success; keep read-only behaviour for Unsupported/PermissionDenied"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.7.5"
+        description: "Unit tests: PW 0.3 → PipeWireTooOld; WP client without sm-settings → WirePlumberTooOld; no WP for 5 s → NoWirePlumber; probe error → PermissionDenied"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M2.8"
+    title: "Reconnect state machine"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M2.8.1"
+        description: "Implement ConnState enum and transitions in src/core/conn.rs per the state diagram"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.8.2"
+        description: "Implement reset_connection handling in the shell (drop order: meters, FilterNodes, proxies, metadata, bound objects, registry, core)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.8.3"
+        description: "Clear mirror/routing/pending/meter plan on reset while retaining Setup and meter subscription"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.8.4"
+        description: "Implement Reconnect timer with Backoff::delay and Connecting/Reconnecting events"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.8.5"
+        description: "Implement had_ready_before flag and one-shot Restored emission (nothing pending or 5 s after Ready)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.8.6"
+        description: "Unit tests: Disconnected → Reconnecting → Ready emits Restored once; initial connect never emits Restored"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M2.9"
+    title: "Snapshot builder and 50 ms coalescer"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M2.9.1"
+        description: "Implement build_snapshot in src/core/snapshot.rs with C4 ordering and known_devices offline merge"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.9.2"
+        description: "Parse default.audio.sink/default.audio.source JSON values into default_output/default_input"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.9.3"
+        description: "Implement 50 ms SnapshotFlush coalescer (dirty flag, single armed timer)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.9.4"
+        description: "Unit test with fake clock: 100 changes in 40 ms → 1 snapshot at 50 ms; change at 60 ms → second at 110 ms"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.9.5"
+        description: "Unit test: snapshot ordering (apps case-insensitive, devices by description, setup order for channels/mics/cells)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M2.10"
+    title: "Test harness and live smoke test"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M2.10.1"
+        description: "Implement testing/fake_graph.rs FakeGraph builder (core, wireplumber, output, input, app, link_app_to, changes())"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.10.2"
+        description: "Implement testing/fake_shell.rs FakeShell::execute for every PwOp, with fault injection (fail Nth create, delayed ports, external link drop)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.10.3"
+        description: "Gate testing module behind cfg(any(test, feature = \"test-util\"))"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M2.10.4"
+        description: "Write tests/live_pw.rs connects_and_snapshots (feature live-pw, #[ignore])"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M4.1"
+    title: "Live experiment: meter streams vs the GNOME Shell recording indicator (UNVERIFIED-3)"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M4.1.1"
+        description: "Live experiment A: pw-record monitor stream on the default sink without application.id; observe GNOME Shell recording indicator"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M4.1.2"
+        description: "Live experiment B: same with application.id=org.PulseAudio.pavucontrol"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M4.1.3"
+        description: "Repeat A/B with a hardware input as target; record outcomes (UNVERIFIED-3) in docs/experiments.md"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M4.1.4"
+        description: "Apply outcome: amend C5 meter props in the master (drop or keep application.id)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M4.2"
+    title: "MeterBank and slot allocator (per C9)"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M4.2.1"
+        description: "Implement MeterBank::new, read (MeterReading), write, reset in src/meter.rs per C9"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M4.2.2"
+        description: "Implement SlotAllocator (LIFO free list of 64) alloc/free"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M4.2.3"
+        description: "Unit test: write then read returns peaks and incremented seq; reset zeroes peaks"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M4.2.4"
+        description: "Unit test: allocator returns 64 unique slots then None; freed slot is reused"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M4.3"
+    title: "Meter stream wrapper (per C5)"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M4.3.1"
+        description: "Implement create_meter in src/pw/meter_stream.rs with exact C5 meter props (+ estuary.instance; autoconnect=false variant)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M4.3.2"
+        description: "Build the F32LE/50 Hz/2ch EnumFormat pod with AudioInfoRaw + PodSerializer"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M4.3.3"
+        description: "Implement RT process callback: dequeue buffer, per-channel max abs, MeterBank::write (no alloc, no log)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M4.3.4"
+        description: "Implement param_changed reset of channelVolumes to [1.0, 1.0]"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M4.3.5"
+        description: "Implement state_changed Error → GraphChange::MeterStreamFailed"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M4.4"
+    title: "Meter plan: targets → nodes → slots"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M4.4.1"
+        description: "Implement MeterPlan::set_targets and target → node-id resolution (App/Device/Channel/VirtualMic/Denoised) in src/core/meters.rs"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M4.4.2"
+        description: "Implement priority slot allocation with 64-slot budget and MeterDelta create/destroy ops"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M4.4.3"
+        description: "Implement MeterPlan::on_graph for appearing/disappearing nodes and MeterAssignments emission on change"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M4.4.4"
+        description: "Handle MeterStreamFailed: Warning(MeterFailed), free slot, failed-set bookkeeping"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M4.4.5"
+        description: "Wire Command::SetMeterTargets into EngineCore::on_command"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M4.5"
+    title: "Tests"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M4.5.1"
+        description: "Unit test: 70 targets → 64 assignments in priority order"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M4.5.2"
+        description: "Unit test: app with 3 streams → 3 slots under one target; stream removal frees slot and re-emits assignments"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M4.5.3"
+        description: "Unit test: Denoised target → autoconnect=false meter and desired meter links"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M4.5.4"
+        description: "Live test meter_moves: generate WAV, pw-play to default sink, expect peak > 0.1 within 1 s"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M5.1"
+    title: "Live experiment: device volume path (UNVERIFIED-2)"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M5.1.1"
+        description: "Live experiment: wpctl set-volume on default sink, inspect node Props and device Route params via pw-dump"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M5.1.2"
+        description: "Live experiment: pw-cli set-param Props channelVolumes on the sink node and check whether Route/hardware volume follows (UNVERIFIED-2)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M5.1.3"
+        description: "Record outcome A/B in docs/experiments.md and amend C3/C5 documentation in the master"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M5.2"
+    title: "AppKey derivation (per C7)"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M5.2.1"
+        description: "Implement derive_app_key with GENERIC_BINARIES and python3.N regex in src/appkey.rs"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M5.2.2"
+        description: "Implement display_name and is_excluded per C7"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M5.2.3"
+        description: "Unit test table: firefox, spotify flatpak, python Lutris, pw-play node-only"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M5.3"
+    title: "Default-metadata proxy and write tracking"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M5.3.1"
+        description: "Implement default-metadata binding and property listener in src/pw/metadata.rs → DefaultMetaProperty"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M5.3.2"
+        description: "Implement PwOp::MetaWrite execution via Metadata::set_property"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M5.3.3"
+        description: "Implement RoutingState/StreamTrack with written map and awaiting_ack in src/core/routing.rs"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M5.3.4"
+        description: "Implement retarget write helper (Spa:Id serial / delete for Default)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M5.4"
+    title: "Rule application"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M5.4.1"
+        description: "Track new AppPlayback streams and arm StreamSettle(500 ms); settle on first output link"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M5.4.2"
+        description: "Implement evaluate(stream): dont-move skip, rule lookup, target serial resolution, write if different"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M5.4.3"
+        description: "Re-evaluate on rule changes in SetSetup, on target node appearance, and after reconnect"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M5.5"
+    title: "External-change detection"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M5.5.1"
+        description: "Implement metadata-based external detection with ack matching and pre-settle grace window"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M5.5.2"
+        description: "Map external values (serial / node.name / deleted) to RouteTarget and emit ExternalRetarget; suppress re-application until next SetSetup"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M5.5.3"
+        description: "Implement narrowed link-based external detection (rule != Default, not default sink)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M5.6"
+    title: "Current-target resolution"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M5.6.1"
+        description: "Implement current_target(mirror, stream_id) (metadata first, then links, then Default)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M5.6.2"
+        description: "Populate AppGroup.current_target, movable and volume in build_snapshot"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M5.7"
+    title: "Volume fast paths and Props pods"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M5.7.1"
+        description: "Implement props_volume_pod in src/pw/params.rs"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M5.7.2"
+        description: "Implement route_volume_pod and Device Route write path (only if M5.1 outcome B)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M5.7.3"
+        description: "Implement SetAppVolume fast path (per-stream SetNodeVolume, channel-count adaptation)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M5.7.4"
+        description: "Implement SetDeviceVolume fast path per M5.1 outcome; VolumeWriteFailed{Device} on ProxyError"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M5.8"
+    title: "Tests"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M5.8.1"
+        description: "Unit test: new stream with rule to present channel → exactly one MetaWrite after settle"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M5.8.2"
+        description: "Unit test: target absent → no write; target appears → write"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M5.8.3"
+        description: "Unit test: external write after settle → ExternalRetarget and no counter-write; updated SetSetup → no write"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M5.8.4"
+        description: "Unit test: pre-settle write ignored; dont-move never written; rule → Default deletes key; default-sink change with Default rule → no event"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M5.8.5"
+        description: "Live test routes_test_app with pw-play application.name=estuary-test"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M6.1"
+    title: "Serde types (per C6)"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M6.1.1"
+        description: "Implement Setup, ConfigFile, Settings, ChannelDef, VirtualMicDef, DenoiserDef, CellDef, AppRule, KnownDevice, Position, DeviceKind in src/setup.rs"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M6.1.2"
+        description: "Add serde tagging (kind, snake_case) to MatrixSource, MatrixDest, RouteTarget and transparent/hyphenated encodings for keys and ids"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M6.1.3"
+        description: "Unit test: C6 example TOML parse → serialize → parse equality"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M6.2"
+    title: "Validation and sanitizing"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M6.2.1"
+        description: "Implement setup::validate(&Setup) -> Vec<SetupIssue> covering all C6 invariants"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M6.2.2"
+        description: "Implement setup::sanitize(Setup) -> (Setup, Vec<SetupIssue>) dropping dangling refs and clamping gains"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M6.2.3"
+        description: "Apply sanitize on every SetSetup in EngineCore and emit SetupIssues"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M6.2.4"
+        description: "Unit tests: one per invariant violation; non-finite gain dropped; sanitize keeps valid entries"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M6.3"
+    title: "Canonical keys and hashes"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M6.3.1"
+        description: "Implement canonical_cell_key in src/setup.rs"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M6.3.2"
+        description: "Implement cell_hash and input_hash (sha2, first 12 hex chars)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M6.3.3"
+        description: "Unit test: known-answer vectors for two fixed CellKeys and one DeviceKey"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M8.1"
+    title: "Live experiment: passive cell links and device suspend (UNVERIFIED-1)"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M8.1.1"
+        description: "Write examples/passive_probe.rs (channel null sink + new_gain_node cell + links, --passive variants)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.1.2"
+        description: "Live experiment UNVERIFIED-1: run variants both/cell-only/links-only/none and record sink state idle/playing/idle"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.1.3"
+        description: "Record outcome A/B/C in docs/experiments.md and amend C5 passivity in the master"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M8.2"
+    title: "Live experiment: virtual mic clocking (UNVERIFIED-4)"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M8.2.1"
+        description: "Write examples/vmic_clock_probe.rs (channel + mic cells into one vmic, gap detection on recording)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.2.2"
+        description: "Live experiment UNVERIFIED-4: 60 s pw-record of the vmic plus pw-top capture; check gaps and ERR"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.2.3"
+        description: "If failing, test node.group / priority.driver mitigations; record outcome and amend C5 or escalate"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M8.3"
+    title: "Desired graph builder (pure)"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M8.3.1"
+        description: "Define DesiredGraph, DesiredNodeKey, DesiredNode, DesiredLink, Endpoint in src/core/desired.rs"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.3.2"
+        description: "Implement build_desired: channels/vmics always, denoisers iff input present, enabled cells iff endpoints available"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.3.3"
+        description: "Implement hash_to_key map and denoised meter links"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.3.4"
+        description: "Implement disable fade (SetGain -60 + CellFade 50 ms) and enable fade-in (initial_db -60) handling"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M8.4"
+    title: "Port matching (pure, per C5)"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M8.4.1"
+        description: "Implement PortRole selection and source_ports in src/core/ports.rs"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.4.2"
+        description: "Implement match_ports (AUX0/AUX1 fallback, mono fan-out, front pair only)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.4.3"
+        description: "Unit tests: stereo↔stereo, mono→stereo, 6-channel, AUX-only, monitor vs playback selection"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M8.5"
+    title: "Diff and ownership (pure, per C8)"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M8.5.1"
+        description: "Implement diff steps 1–3 (node create/destroy/rename-recreate) in src/core/diff.rs"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.5.2"
+        description: "Implement diff step 4 (link creation with Unresolved reasons)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.5.3"
+        description: "Implement diff step 5 (C8 ownership-rule link destruction, never touching app/WP links)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.5.4"
+        description: "Implement diff step 6 (SetGain/SetDenoise handle updates) and op ordering"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.5.5"
+        description: "Unit test: diff idempotency (second pass yields zero ops)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M8.6"
+    title: "Pending operations, retries and debounce"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M8.6.1"
+        description: "Implement PendingOps with on_node_appeared, on_link_appeared, on_error, expire, failed_permanently, reset_failures_for"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.6.2"
+        description: "Implement 30 ms Reconcile debounce timer and 500 ms PendingTimeout timer"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.6.3"
+        description: "Emit CellStatus::Error and SetupIssues(CellFailed) after 3 consecutive failures"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M8.7"
+    title: "Executor: creating and destroying owned objects"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M8.7.1"
+        description: "Implement CreateAdapter execution with proxy retention and proxy_keys mapping in src/pw/objects.rs"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.7.2"
+        description: "Implement CreateCell via new_gain_node + set_state_listener in src/pw/dsp_nodes.rs"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.7.3"
+        description: "Implement CreateDenoiser via new_denoiser_node + initial set_enabled/set_vad_gate"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.7.4"
+        description: "Implement CreateLink via link-factory with C5 props (+ estuary.instance, passive per M8.1)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.7.5"
+        description: "Implement Destroy (destroy_global then drop proxy/FilterNode) and SetGain/SetDenoise handle execution"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.7.6"
+        description: "Handle FilterState::Error and DspError → failure accounting + Warning(NodeCreateFailed)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M8.8"
+    title: "Volumes, gains and enable/disable"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M8.8.1"
+        description: "Apply initial Setup volume once when owned channel/vmic node info arrives (initial_volume_applied set)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.8.2"
+        description: "Implement SetChannelVolume and SetVirtualMicVolume fast paths (VolumeWriteFailed on error)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.8.3"
+        description: "Implement SetCellGain fast path (clamp, fold into Setup, SetGain)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.8.4"
+        description: "Implement SetVadGate fast path (clamp, fold into Setup, SetDenoise)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M8.9"
+    title: "Status derivation and snapshot integration"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M8.9.1"
+        description: "Implement StatusTable and derive_status precedence in src/core/status.rs"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.9.2"
+        description: "Compute recording_apps per vmic from AppCapture links"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.9.3"
+        description: "Integrate statuses, present flags and denoiser state into build_snapshot"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M8.10"
+    title: "Rebuild after reconnect"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M8.10.1"
+        description: "Verify rebuild path: after reset, Ready triggers full desired/diff pass and rule/meter re-application (integration with M2.8)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M8.11"
+    title: "PrepareQuit and Teardown (per C10)"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M8.11.1"
+        description: "Implement usages() in src/core/quit.rs (PlayingToChannel / RecordingFromVirtualMic, deduplicated)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.11.2"
+        description: "Implement PrepareQuit → Event::QuitCheck"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.11.3"
+        description: "Implement Teardown: TornDown state, metadata clear, ordered destroys, Sync(Teardown), 2 s timeout, TeardownComplete"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M8.12"
+    title: "Node stats polling (xruns, poisoning, underruns, unsupported rate)"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M8.12.1"
+        description: "Implement StatsPoll 1 s timer and xrun ring per node → Warning(Xruns{WarnedNode})"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.12.2"
+        description: "Implement poisoned handling → FilterPoisoned → destroy/recreate + failure + Warning(NodeCreateFailed)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.12.3"
+        description: "Implement underruns warn-log and max_process_ns debug-log/reset"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.12.4"
+        description: "Implement unsupported_rate change detection → Warning(DenoiseRateUnsupported)"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M8.13"
+    title: "Tests"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M8.13.1"
+        description: "Fake test: preset from empty graph builds all nodes/links; second pass zero ops"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.13.2"
+        description: "Fake test: foreign link on cell destroyed; app→channel and vmic→recorder links untouched"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.13.3"
+        description: "Fake test: output removed → DestinationMissing, present=false; re-added → restored and rules re-applied"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.13.4"
+        description: "Fake test: delayed ports → Pending then links"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.13.5"
+        description: "Fake test: 3 create failures → Error + CellFailed, reset on SetSetup change"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.13.6"
+        description: "Fake test: channel rename → recreate and rule re-applied"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.13.7"
+        description: "Fake test: disable/enable fades"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.13.8"
+        description: "Fake test: Disconnected → rebuild → Restored once"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.13.9"
+        description: "Fake test: PrepareQuit usages and Teardown order + TeardownComplete"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M8.13.10"
+        description: "Live tests: preset_builds, cell_gain_audible, teardown_leaves_nothing, sigkill_leaves_nothing"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M10.1"
+    title: "Desired denoisers and links"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M10.1.1"
+        description: "Add Denoised endpoint resolution (FilterOut role) to match_ports/desired graph"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M10.1.2"
+        description: "Add DenoisedWithoutDenoiser validation to setup::validate"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M10.2"
+    title: "Executor and handle updates"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M10.2.1"
+        description: "Wire SetSetup enabled/vad_gate changes to SetDenoise without node recreation"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M10.3"
+    title: "Denoised meters and DenoiserState"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M10.3.1"
+        description: "Resolve Denoised meter links to estuary.meter.<slot> ports once the meter node appears"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M10.3.2"
+        description: "Populate DenoiserState (enabled, active, xruns) in the snapshot"
+        status: pending
+        started_at: ~
+        completed_at: ~
+  - id: "M10.4"
+    title: "Tests"
+    status: pending
+    started_at: ~
+    completed_at: ~
+    tasks:
+      - id: "M10.4.1"
+        description: "Fake test: denoiser absent input → no node; input appears → node + mono fan-out links"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M10.4.2"
+        description: "Fake test: toggle and SetVadGate → SetDenoise only, Setup copy updated"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M10.4.3"
+        description: "Fake test: Denoised meter links created and not destroyed by C8"
+        status: pending
+        started_at: ~
+        completed_at: ~
+      - id: "M10.4.4"
+        description: "Live test denoise_attenuates (>= 10 dB on stationary noise, threshold tuned in M10)"
+        status: pending
+        started_at: ~
+        completed_at: ~

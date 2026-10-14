@@ -1,0 +1,266 @@
+feature: estuary
+spec: specs/estuary/spec.md
+created: 2026-10-14
+status: in_progress
+started_at: '2026-10-14T14:39:22+02:00'
+completed_at: null
+steps:
+- id: 1
+  title: M1 Workspace scaffold
+  status: completed
+  started_at: '2026-10-14T14:39:22+02:00'
+  completed_at: '2026-10-14T14:52:00+02:00'
+  tasks:
+  - id: '1.1'
+    description: Complete estuary-packaging steps M1.1-M1.8 (specs/estuary-packaging/progress.yaml)
+    status: completed
+    started_at: '2026-10-14T14:52:00+02:00'
+    completed_at: '2026-10-14T14:52:00+02:00'
+  - id: '1.2'
+    description: 'Exit check: `cargo build --workspace`, `cargo clippy --workspace -- -D warnings` and `cargo test --workspace` pass on Rust >= 1.93'
+    status: completed
+    started_at: '2026-10-14T14:52:00+02:00'
+    completed_at: '2026-10-14T14:52:00+02:00'
+  - id: '1.3'
+    description: 'Exit check: `cargo run -p estuary` opens an empty adw::ApplicationWindow; CI workflow green on the first push'
+    status: completed
+    started_at: '2026-10-14T14:52:00+02:00'
+    completed_at: '2026-10-14T14:52:00+02:00'
+- id: 2
+  title: M2 Engine core (read-only)
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: '2.1'
+    description: Complete estuary-engine steps M2.1-M2.10 (specs/estuary-engine/progress.yaml)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: '2.2'
+    description: Record UNVERIFIED-5 outcome (WirePlumber version property) and amend master C13 if needed
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: '2.3'
+    description: 'Exit check: live smoke test (`cargo test -p estuary-engine --features live-pw -- --ignored`) connects, reports Connected with PW/WP versions and emits a Snapshot listing devices'
+    status: pending
+    started_at: null
+    completed_at: null
+- id: 3
+  title: M3 UI shell + live Apps list
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: '3.1'
+    description: Complete estuary-ui steps M3.1-M3.6 (specs/estuary-ui/progress.yaml)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: '3.2'
+    description: 'Exit check: starting/stopping `pw-play` test streams adds/removes rows in the Apps page live; stopping PipeWire shows the ''Waiting for PipeWire'' status page'
+    status: pending
+    started_at: null
+    completed_at: null
+- id: 4
+  title: M4 Level meters
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: '4.1'
+    description: Complete estuary-engine steps M4.1-M4.5
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: '4.2'
+    description: Complete estuary-ui steps M4.1-M4.4
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: '4.3'
+    description: Record UNVERIFIED-3 outcome (GNOME Shell recording indicator) and amend master C5 meter props if the borrowed application.id is unnecessary
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: '4.4'
+    description: 'Exit check: meters move smoothly for visible apps and devices; estuary CPU < 5% of one core with 16 visible meters'
+    status: pending
+    started_at: null
+    completed_at: null
+- id: 5
+  title: M5 Per-app routing + rules
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: '5.1'
+    description: Complete estuary-engine steps M5.1-M5.8
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: '5.2'
+    description: Complete estuary-ui steps M5.1-M5.6
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: '5.3'
+    description: Record UNVERIFIED-2 outcome (device volume via Props vs Route, outputs and inputs) and amend master if needed
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: '5.4'
+    description: 'Exit check: assigning an app to an output moves it within 200 ms without restart; app restart lands on the rule target; a move from GNOME Settings updates the rule and is not reverted'
+    status: pending
+    started_at: null
+    completed_at: null
+- id: 6
+  title: M6 Config persistence
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: '6.1'
+    description: Complete estuary-engine steps M6.1-M6.3
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: '6.2'
+    description: Complete estuary-ui steps M6.1-M6.3
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: '6.3'
+    description: 'Exit check: rules survive restart; a hand-corrupted config.toml is renamed to config.toml.broken-* with a notice; a schema_version=2 file opens read-only with a banner'
+    status: pending
+    started_at: null
+    completed_at: null
+- id: 7
+  title: M7 pw_filter wrapper + gain node
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: '7.1'
+    description: Complete estuary-dsp steps M7.1-M7.8 (specs/estuary-dsp/progress.yaml)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: '7.2'
+    description: 'Exit check: no-allocation test passes; live smoke test shows a gain node with 4 correctly named ports and audible, click-free gain changes'
+    status: pending
+    started_at: null
+    completed_at: null
+- id: 8
+  title: M8 Channels, virtual mics, matrix engine
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: '8.1'
+    description: Complete estuary-engine steps M8.1-M8.13
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: '8.2'
+    description: Record UNVERIFIED-1 (passive links / device suspend) and UNVERIFIED-4 (virtual mic scheduling across clocks) outcomes; amend master C5 if needed
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: '8.3'
+    description: 'Exit check: SetSetup with channels, a virtual mic and cells creates estuary.* nodes and links visible in pw-dump; deleting a link by hand is repaired; Bluetooth off/on restores routes
+      automatically'
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: '8.4'
+    description: 'Exit check: `systemctl --user restart pipewire wireplumber` rebuilds the setup within 5 s and emits Restored; SIGKILL leaves no estuary.* nodes'
+    status: pending
+    started_at: null
+    completed_at: null
+- id: 9
+  title: M9 Matrix grid UI
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: '9.1'
+    description: Complete estuary-ui steps M9.1-M9.9
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: '9.2'
+    description: 'Exit check: cells toggle and change gain by click/drag/scroll and keyboard; changes persist to config.toml within 1 s; offline devices dim and offer ''Forget device'''
+    status: pending
+    started_at: null
+    completed_at: null
+- id: 10
+  title: M10 Noise suppression
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: '10.1'
+    description: Complete estuary-dsp steps M10.1-M10.7
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: '10.2'
+    description: Complete estuary-engine steps M10.1-M10.4
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: '10.3'
+    description: Complete estuary-ui steps M10.1-M10.2
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: '10.4'
+    description: 'Exit check: virtual-mic recording (`pw-record --target <vmic>`) has fan noise and typing clearly attenuated; denoiser latency measured ~20 ms at 48 kHz'
+    status: pending
+    started_at: null
+    completed_at: null
+- id: 11
+  title: M11 Desktop lifecycle
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: '11.1'
+    description: Complete estuary-desktop steps M11.D1-M11.D13 (specs/estuary-desktop/progress.yaml)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: '11.2'
+    description: Complete estuary-ui steps M11.1-M11.5
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: '11.3'
+    description: 'Exit check: first run shows the welcome dialog and the preset builds the expected nodes; X hides with one-time notice; Quit with a recording app shows the warning and removes all estuary.*
+      nodes; SIGTERM quits cleanly'
+    status: pending
+    started_at: null
+    completed_at: null
+- id: 12
+  title: M12 Flatpak and release
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: '12.1'
+    description: Complete estuary-packaging steps M12.1-M12.12
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: '12.2'
+    description: 'Exit check: flatpak-builder build on GNOME 51 runs with C14 permissions, can retarget apps and create nodes (Manager access), and passes flatpak-builder-lint manifest + repo'
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: '12.3'
+    description: 'Exit check: UI fully usable in Italian with LANGUAGE=it; all master acceptance criteria re-verified'
+    status: pending
+    started_at: null
+    completed_at: null

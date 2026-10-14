@@ -1,0 +1,8 @@
+/target
+/.flatpak-builder
+/build-dir
+/repo
+/_build
+*.flatpak
+/po/*.mo
+/po/*~
