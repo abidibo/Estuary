@@ -1,7 +1,7 @@
 //! Rows of the Apps page (UI M3.6, M4, M5): app rows with meter, volume and output dropdown;
 //! output rows with meter and volume; remembered rules for apps not playing.
 
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use adw::prelude::*;
@@ -107,11 +107,15 @@ pub struct AppRowWidgets {
     model: gtk::StringList,
     labels: Vec<String>,
     updating: Rc<Cell<bool>>,
+    /// The choices behind the dropdown entries, read at click time.
+    shown: Rc<RefCell<Vec<TargetChoice>>>,
 }
 
 #[derive(Debug)]
 pub enum AppRowInput {
-    TargetSelected(u32),
+    /// The user picked an entry; resolved to its target when clicked, so a snapshot that
+    /// reorders the list in between can't change what was chosen.
+    TargetSelected(RouteTarget),
 }
 
 #[derive(Debug)]
@@ -195,11 +199,18 @@ impl FactoryComponent for AppRow {
             &[&name],
         ))]);
         let updating = Rc::new(Cell::new(false));
+        let shown: Rc<RefCell<Vec<TargetChoice>>> = Rc::default();
         dropdown.connect_selected_notify({
-            let (updating, sender) = (updating.clone(), sender.clone());
+            let (updating, shown, sender) = (updating.clone(), shown.clone(), sender.clone());
             move |d| {
-                if !updating.get() {
-                    sender.input(AppRowInput::TargetSelected(d.selected()));
+                if updating.get() {
+                    return;
+                }
+                let picked = usize::try_from(d.selected())
+                    .ok()
+                    .and_then(|i| shown.borrow().get(i).map(|c| c.target.clone()));
+                if let Some(target) = picked {
+                    sender.input(AppRowInput::TargetSelected(target));
                 }
             }
         });
@@ -214,6 +225,7 @@ impl FactoryComponent for AppRow {
             model,
             labels: Vec::new(),
             updating,
+            shown,
         };
         self.update_view(&mut widgets, sender);
         widgets
@@ -221,20 +233,14 @@ impl FactoryComponent for AppRow {
 
     fn update(&mut self, msg: AppRowInput, sender: FactorySender<Self>) {
         match msg {
-            AppRowInput::TargetSelected(i) => {
-                let Some(choice) = usize::try_from(i)
-                    .ok()
-                    .and_then(|i| self.data.choices.get(i))
-                else {
-                    return;
-                };
-                if choice.target == self.data.group.current_target {
+            AppRowInput::TargetSelected(target) => {
+                if target == self.data.group.current_target {
                     return;
                 }
                 let _ = sender.output(RowOutput::Edit(Edit::AssignApp {
                     app: self.data.group.key.clone(),
                     display_name: self.data.group.display_name.clone(),
-                    target: choice.target.clone(),
+                    target,
                 }));
             }
         }
@@ -258,6 +264,7 @@ impl FactoryComponent for AppRow {
             widgets.model.splice(0, n, &refs);
             widgets.labels = labels;
         }
+        widgets.shown.borrow_mut().clone_from(&self.data.choices);
         if let Some(i) = self
             .data
             .choices

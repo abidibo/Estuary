@@ -584,6 +584,14 @@ A second group on the Apps page, "Remembered apps", lists `app_rules` whose `app
 
 ### M6: Config I/O
 
+**Implementation notes (M6 as built, 2026-10-14).**
+
+- **`ConfigStore`** is implemented per M6.1/M6.2. `attach(callback)` replaces `attach(Sender<AppMsg>)` (the callback emits `SaveTick`). The pending debounce source clears itself when it fires, so it is never removed after running. `settings()`, `update_settings()` and `welcome_pending()` arrive with the desktop and welcome work (M11).
+- **Missing vs corrupt.** A read error where the file doesn't exist (including an unusable parent directory, `ENOTDIR`) is `Fresh`. Only an existing but unreadable or unparsable file is `Recovered`. If the corrupt file can't be moved aside, the store goes read-only so it is never overwritten.
+- **Notices.** The load outcome is shown when the window is first **mapped** (`connect_map` → `AppMsg::WindowShown`). The newer-schema banner is added at init. Pending changes are also flushed in the root component's `shutdown`.
+- **Dropdown fix (found while testing M6).** `TargetSelected` now carries the `RouteTarget`, resolved from the shown choices at click time, instead of an index resolved later. A snapshot that reordered the list in between could otherwise have picked the wrong output.
+- **Verified live:** a hand-written rule in `config.toml` was applied to a playing stream at startup, and a dropdown change was written to `config.toml` within 0.5 s. The test config was removed afterwards.
+
 #### M6.1 `ConfigStore::load`
 
 `config.rs`. `ConfigStore` owns the `ConfigFile`, so the desktop sub-spec can use `settings()`, `update_settings()` and `flush_sync()` on `AppModel::config` directly.

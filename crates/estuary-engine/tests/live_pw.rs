@@ -492,3 +492,88 @@ fn routes_test_app() {
     destroy_node_named(B);
     result.unwrap();
 }
+
+/// Exploratory regression for the M6 live finding: changing a rule twice (B, then A).
+#[test]
+#[ignore = "live-pw: needs a running PipeWire + WirePlumber session"]
+fn rule_changed_twice() {
+    use estuary_engine::{AppKey, Command, DeviceKey, RouteTarget, Setup, setup::AppRule};
+    const A: &str = "estuary-test-sink-a";
+    const B: &str = "estuary-test-sink-b";
+    const APP: &str = "Estuary Twice Test";
+    const STREAM: &str = "estuary-twice-stream";
+    init_logs();
+    create_null_sink(A);
+    create_null_sink(B);
+    let path = std::env::temp_dir().join("estuary-twice-test.raw");
+    std::fs::write(&path, vec![0u8; 48_000 * 4 * 15]).unwrap();
+    let mut player = std::process::Command::new("pw-cat")
+        .args([
+            "--playback",
+            "--raw",
+            "--format",
+            "s16",
+            "--rate",
+            "48000",
+            "--channels",
+            "2",
+        ])
+        .args([
+            "-P",
+            &format!("{{ application.name = \"{APP}\" node.name = \"{STREAM}\" }}"),
+        ])
+        .arg(&path)
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .expect("pw-cat");
+    let result = (|| -> Result<(), String> {
+        std::thread::sleep(Duration::from_millis(800));
+        let (engine, rx) = Engine::start(EngineConfig::default()).map_err(|e| e.to_string())?;
+        recv_until(&rx, Duration::from_secs(3), |ev| {
+            matches!(ev, Event::Connection(ConnectionState::Connected { .. })).then_some(())
+        })
+        .ok_or("not connected")?;
+        let app = AppKey(format!("name:{APP}"));
+        let rule = |key: &str| Setup {
+            app_rules: vec![AppRule {
+                app: app.clone(),
+                target: RouteTarget::Device {
+                    key: DeviceKey(key.into()),
+                },
+                display_name: APP.into(),
+            }],
+            ..Default::default()
+        };
+        for (step, sink) in [(1, B), (2, A), (3, B)] {
+            engine
+                .send(Command::SetSetup(rule(sink)))
+                .map_err(|e| e.to_string())?;
+            let deadline = Instant::now() + Duration::from_millis(1500);
+            while Instant::now() < deadline {
+                if let Ok(ev) = rx.try_recv() {
+                    if let Event::ExternalRetarget { .. } = ev {
+                        eprintln!("step {step}: UNEXPECTED {ev:?}");
+                    }
+                } else {
+                    std::thread::sleep(Duration::from_millis(10));
+                }
+            }
+            let now = linked_sink_of(STREAM);
+            eprintln!("step {step}: rule → {sink}, linked to {now:?}");
+            if now.as_deref() != Some(sink) {
+                return Err(format!("step {step}: expected {sink}, got {now:?}"));
+            }
+        }
+        engine
+            .shutdown(Duration::from_secs(1))
+            .map_err(|e| e.to_string())?;
+        Ok(())
+    })();
+    let _ = player.kill();
+    let _ = player.wait();
+    let _ = std::fs::remove_file(&path);
+    destroy_node_named(A);
+    destroy_node_named(B);
+    result.unwrap();
+}

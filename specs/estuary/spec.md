@@ -526,6 +526,11 @@ key = "bluez_output.88_0E_85_5C_98_1B.1"
 kind = "output"                    # "output" | "input"
 description = "WH-1000XM4"
 position = { x = 800.0, y = 80.0 } # optional
+
+[[known_devices]]                  # the denoiser's input above must be known too (invariant below; example fixed at M6)
+key = "alsa_input.pci-0000_00_1f.3.analog-stereo"
+kind = "input"
+description = "Built-in Microphone"
 ```
 
 Rust shape:

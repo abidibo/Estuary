@@ -655,72 +655,72 @@ steps:
     completed_at: '2026-10-14T17:18:17+02:00'
 - id: M6.1
   title: Serde types (per C6)
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:28:08+02:00'
+  completed_at: '2026-10-14T17:28:08+02:00'
   tasks:
   - id: M6.1.1
     description: Implement Setup, ConfigFile, Settings, ChannelDef, VirtualMicDef, DenoiserDef, CellDef, AppRule, KnownDevice, Position, DeviceKind in src/setup.rs
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:28:08+02:00'
+    completed_at: '2026-10-14T17:28:08+02:00'
   - id: M6.1.2
     description: Add serde tagging (kind, snake_case) to MatrixSource, MatrixDest, RouteTarget and transparent/hyphenated encodings for keys and ids
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:28:08+02:00'
+    completed_at: '2026-10-14T17:28:08+02:00'
   - id: M6.1.3
     description: 'Unit test: C6 example TOML parse → serialize → parse equality'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:28:08+02:00'
+    completed_at: '2026-10-14T17:28:08+02:00'
 - id: M6.2
   title: Validation and sanitizing
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:28:08+02:00'
+  completed_at: '2026-10-14T17:28:08+02:00'
   tasks:
   - id: M6.2.1
     description: Implement setup::validate(&Setup) -> Vec<SetupIssue> covering all C6 invariants
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:28:08+02:00'
+    completed_at: '2026-10-14T17:28:08+02:00'
   - id: M6.2.2
     description: Implement setup::sanitize(Setup) -> (Setup, Vec<SetupIssue>) dropping dangling refs and clamping gains
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:28:08+02:00'
+    completed_at: '2026-10-14T17:28:08+02:00'
   - id: M6.2.3
     description: Apply sanitize on every SetSetup in EngineCore and emit SetupIssues
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:28:08+02:00'
+    completed_at: '2026-10-14T17:28:08+02:00'
   - id: M6.2.4
     description: 'Unit tests: one per invariant violation; non-finite gain dropped; sanitize keeps valid entries'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:28:08+02:00'
+    completed_at: '2026-10-14T17:28:08+02:00'
 - id: M6.3
   title: Canonical keys and hashes
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:28:08+02:00'
+  completed_at: '2026-10-14T17:28:08+02:00'
   tasks:
   - id: M6.3.1
     description: Implement canonical_cell_key in src/setup.rs
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:28:08+02:00'
+    completed_at: '2026-10-14T17:28:08+02:00'
   - id: M6.3.2
     description: Implement cell_hash and input_hash (sha2, first 12 hex chars)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:28:08+02:00'
+    completed_at: '2026-10-14T17:28:08+02:00'
   - id: M6.3.3
-    description: 'Unit test: known-answer vectors for two fixed CellKeys and one DeviceKey'
-    status: pending
-    started_at: null
-    completed_at: null
+    description: 'Unit test: SHA-256 known-answer prefixes ("abc", "") and cell-hash stability'
+    status: completed
+    started_at: '2026-10-14T17:28:08+02:00'
+    completed_at: '2026-10-14T17:28:08+02:00'
 - id: M8.1
   title: 'Live experiment: passive cell links and device suspend (UNVERIFIED-1)'
   status: pending

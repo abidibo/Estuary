@@ -117,25 +117,25 @@ steps:
     completed_at: '2026-10-14T17:18:17+02:00'
 - id: 6
   title: M6 Config persistence
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:28:08+02:00'
+  completed_at: '2026-10-14T17:28:08+02:00'
   tasks:
   - id: '6.1'
     description: Complete estuary-engine steps M6.1-M6.3
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:28:08+02:00'
+    completed_at: '2026-10-14T17:28:08+02:00'
   - id: '6.2'
     description: Complete estuary-ui steps M6.1-M6.3
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:28:08+02:00'
+    completed_at: '2026-10-14T17:28:08+02:00'
   - id: '6.3'
     description: 'Exit check: rules survive restart; a hand-corrupted config.toml is renamed to config.toml.broken-* with a notice; a schema_version=2 file opens read-only with a banner'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:28:08+02:00'
+    completed_at: '2026-10-14T17:28:08+02:00'
 - id: 7
   title: M7 pw_filter wrapper + gain node
   status: pending

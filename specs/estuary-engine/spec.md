@@ -806,6 +806,13 @@ Fake-graph scenarios in `core/routing.rs`:
 
 ### M6 (types only): Setup and ConfigFile
 
+**Implementation notes (M6 as built, 2026-10-14).**
+
+- **`sanitize`** repairs rather than only drops. It removes duplicate ids, rules and cells, dangling cell and rule references, `denoised` cells without a denoiser, and non-finite gains. It clamps finite gains to −60..+6 dB and `vad_gate` to 0..0.95, and **adds** referenced devices missing from `known_devices` (with an empty description). Every change is a `SetupIssue`. `validate(s)` = `sanitize(s.clone()).1`.
+- The engine applies the sanitized setup on every `SetSetup` and emits `Event::SetupIssues` when anything was repaired.
+- `cell_hash` / `input_hash` are the first 6 bytes (12 hex chars) of SHA-256, formatted byte by byte (sha2 0.11).
+- The documented C6 example broke its own invariant (its denoiser's input wasn't in `known_devices`). The example in the master was fixed.
+
 #### M6.1 Serde types (per C6)
 
 `setup.rs` mirrors the C6 TOML exactly:

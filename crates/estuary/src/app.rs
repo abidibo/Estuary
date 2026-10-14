@@ -2,7 +2,7 @@
 //! the blocking status page and the main Apps/Matrix view.
 //!
 //! Desktop integration fields (quit controller, hold, tray, background permission) arrive with
-//! estuary-desktop in M11; the persisted config with M6.
+//! estuary-desktop in M11.
 
 use std::cell::Cell;
 use std::sync::Arc;
@@ -11,14 +11,15 @@ use std::time::Duration;
 use adw::prelude::*;
 use estuary_engine::{
     Command, ConnectionState, Engine, EngineConfig, EngineError, EngineWarning, Event,
-    GraphSnapshot, MeterTarget, setup::ConfigFile,
+    GraphSnapshot, MeterTarget,
 };
 use relm4::{
     Component, ComponentController, ComponentParts, ComponentSender, Controller, adw, gtk,
 };
 
+use crate::config::{ConfigError, ConfigStore, LoadOutcome};
 use crate::config_build::APP_ID;
-use crate::i18n::i18n;
+use crate::i18n::{i18n, i18n_f, ni18n_f};
 use crate::pages::apps::{AppsMsg, AppsOutput, AppsPage};
 use crate::pages::matrix::MatrixPage;
 use crate::pages::status::{RootView, root_view, status_page};
@@ -33,7 +34,11 @@ const REPOSITORY: &str = "https://github.com/abidibo/estuary";
 pub struct AppModel {
     engine: Option<Engine>,
     /// Desired state (C6). In memory until M6 loads and saves it.
-    config: ConfigFile,
+    config: ConfigStore,
+    /// Load result to show once the window is visible (UI M6.3).
+    pending_notice: Option<LoadOutcome>,
+    /// F15: toast each distinct save error once.
+    toasted_save_error: Option<String>,
     connection: Option<ConnectionState>,
     fatal: Option<EngineError>,
     /// Status page needs rebuilding (connection or fatal state changed).
@@ -77,6 +82,10 @@ pub enum AppMsg {
     RecomputeMeters,
     /// A user action from a page (UI M5.2).
     Edit(Edit),
+    /// The debounced save is due (UI M6.2).
+    SaveTick,
+    /// The window became visible: show queued notices (UI M6.3).
+    WindowShown,
 }
 
 impl Component for AppModel {
@@ -173,12 +182,32 @@ impl Component for AppModel {
             Err(e) => tracing::warn!("breakpoint: {e}"),
         }
 
+        let (mut config, outcome) = ConfigStore::load(crate::config::config_file());
+        config.attach({
+            let s = sender.input_sender().clone();
+            move || s.emit(AppMsg::SaveTick)
+        });
+        if matches!(outcome, LoadOutcome::NewerSchema { .. }) {
+            // F16: permanent; no window needed.
+            let banner = adw::Banner::new(&i18n(
+                "This configuration was saved by a newer version of Estuary. Changes won't be saved.",
+            ));
+            banner.set_revealed(true);
+            toolbar.add_top_bar(&banner);
+        }
+        root.connect_map({
+            let s = sender.input_sender().clone();
+            move |_| s.emit(AppMsg::WindowShown)
+        });
+
         install_actions(&root, &main_view, &sender);
         connect_meter_visibility(&root, &main_view, apps_page.widget(), &sender);
 
         let mut model = AppModel {
             engine: None,
-            config: ConfigFile::default(),
+            config,
+            pending_notice: Some(outcome),
+            toasted_save_error: None,
             connection: None,
             fatal: None,
             status_dirty: Cell::new(true),
@@ -227,10 +256,25 @@ impl Component for AppModel {
             AppMsg::ShowAbout => show_about(root),
             AppMsg::ScheduleMeters => self.schedule_meters(&sender),
             AppMsg::Edit(edit) => self.dispatch_edit(edit),
+            AppMsg::SaveTick => self.save_now(),
+            AppMsg::WindowShown => {
+                if let Some(outcome) = self.pending_notice.take() {
+                    self.show_load_notice(outcome, root);
+                }
+            }
             AppMsg::RecomputeMeters => {
                 self.meter_recompute_pending = false;
                 self.recompute_meters(root);
             }
+        }
+    }
+
+    /// Application shutdown: write any pending change (C12 flush on quit).
+    fn shutdown(&mut self, _widgets: &mut AppWidgets, _output: relm4::Sender<()>) {
+        if let Err(e) = self.config.flush_sync()
+            && !matches!(e, ConfigError::ReadOnly)
+        {
+            tracing::error!("cannot save settings on quit: {e}");
         }
     }
 
@@ -264,13 +308,16 @@ impl AppModel {
 
     /// The only mutation path for the desired state (UI M3.4/M5.2).
     fn dispatch_edit(&mut self, edit: Edit) {
-        let out = apply_edit(&mut self.config, &self.snapshot, edit);
+        tracing::debug!(?edit, "edit");
+        let out = apply_edit(self.config.file_mut(), &self.snapshot, edit);
         for cmd in out.commands {
             if let Some(e) = &self.engine {
                 let _ = e.send(cmd);
             }
         }
-        // out.save: persisted from M6 (ConfigStore).
+        if out.save {
+            self.config.schedule_save();
+        }
         if out.structure_changed {
             self.push_to_pages();
         }
@@ -279,8 +326,53 @@ impl AppModel {
     fn push_to_pages(&self) {
         self.apps_page.emit(AppsMsg::Update {
             snapshot: self.snapshot.clone(),
-            setup: Arc::new(self.config.setup.clone()),
+            setup: Arc::new(self.config.file().setup.clone()),
         });
+    }
+
+    /// F15: keep state in memory on failure, toast each distinct error once, retry on the
+    /// next edit. Read-only mode (F16) never writes.
+    fn save_now(&mut self) {
+        match self.config.flush_sync() {
+            Ok(()) => self.toasted_save_error = None,
+            Err(ConfigError::ReadOnly) => {}
+            Err(e) => {
+                let msg = e.to_string();
+                tracing::error!("cannot save settings: {msg}");
+                if self.toasted_save_error.as_deref() != Some(msg.as_str()) {
+                    self.show_toast(&i18n("Couldn't save settings"));
+                    self.toasted_save_error = Some(msg);
+                }
+            }
+        }
+    }
+
+    fn show_load_notice(&self, outcome: LoadOutcome, root: &adw::ApplicationWindow) {
+        match outcome {
+            LoadOutcome::Recovered { backup, error } => {
+                let name = backup.file_name().map_or_else(
+                    || backup.display().to_string(),
+                    |n| n.to_string_lossy().into_owned(),
+                );
+                let dialog = adw::AlertDialog::new(
+                    Some(&i18n("Your saved setup couldn't be read")),
+                    // Translators: {} are a file name and a technical error message
+                    Some(&i18n_f("It was kept as {}.\n\n{}", &[&name, &error])),
+                );
+                dialog.add_response("ok", &i18n("OK"));
+                dialog.present(Some(root));
+            }
+            LoadOutcome::Repaired { issues } => {
+                let n = u32::try_from(issues.len()).unwrap_or(u32::MAX);
+                self.show_toast(&ni18n_f(
+                    "Removed {} invalid entry from the saved setup",
+                    "Removed {} invalid entries from the saved setup",
+                    n,
+                    &[&n.to_string()],
+                ));
+            }
+            LoadOutcome::Fresh | LoadOutcome::Loaded | LoadOutcome::NewerSchema { .. } => {}
+        }
     }
 
     fn schedule_meters(&mut self, sender: &ComponentSender<Self>) {
@@ -321,7 +413,7 @@ impl AppModel {
                 self.meters.set_bank(engine.meters());
                 self.meter_targets_sent = None;
                 // C10 step 3: the engine applies the desired state as soon as it is connected.
-                let _ = engine.send(Command::SetSetup(self.config.setup.clone()));
+                let _ = engine.send(Command::SetSetup(self.config.file().setup.clone()));
                 self.engine = Some(engine);
                 // C2: forward engine events into the component. A closed channel without a
                 // Fatal event still means the engine is gone (UI-4).

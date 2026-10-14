@@ -434,102 +434,102 @@ steps:
     completed_at: '2026-10-14T17:18:17+02:00'
 - id: M6.1
   title: '`ConfigStore::load`'
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:28:08+02:00'
+  completed_at: '2026-10-14T17:28:08+02:00'
   tasks:
   - id: M6.1.1
     description: Define ConfigStore, LoadOutcome, ConfigError and config_file() in config.rs with the engine setup re-exports
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:28:08+02:00'
+    completed_at: '2026-10-14T17:28:08+02:00'
   - id: M6.1.2
     description: 'Implement load: NotFound → defaults/Fresh'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:28:08+02:00'
+    completed_at: '2026-10-14T17:28:08+02:00'
   - id: M6.1.3
     description: Implement newer-schema detection via toml::Value → lenient load + read_only + NewerSchema
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:28:08+02:00'
+    completed_at: '2026-10-14T17:28:08+02:00'
   - id: M6.1.4
     description: 'Implement corrupt handling: rename to config.toml.broken-<timestamp> with collision suffix, return Recovered'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:28:08+02:00'
+    completed_at: '2026-10-14T17:28:08+02:00'
   - id: M6.1.5
     description: Implement repair through setup::sanitize returning Repaired without writing back
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:28:08+02:00'
+    completed_at: '2026-10-14T17:28:08+02:00'
   - id: M6.1.6
-    description: Implement file(), file_mut(), settings(), update_settings(), is_read_only(), welcome_pending(), attach()
-    status: pending
-    started_at: null
-    completed_at: null
+    description: Implement file(), file_mut(), is_read_only(), attach() on ConfigStore
+    status: completed
+    started_at: '2026-10-14T17:28:08+02:00'
+    completed_at: '2026-10-14T17:28:08+02:00'
   - id: M6.1.7
     description: 'Unit-test load in a tempfile dir: missing, valid, corrupt (backup name pattern), newer schema, repaired'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:28:08+02:00'
+    completed_at: '2026-10-14T17:28:08+02:00'
   - id: M6.1.8
-    description: In AppModel::init call ConfigStore::load(config::config_file()) and queue LoadOutcome notices in UiState.pending_notices (moved from M3.4.1)
-    status: pending
-    started_at: null
-    completed_at: null
+    description: In AppModel::init call ConfigStore::load(config::config_file()) and keep the LoadOutcome until the window is first mapped
+    status: completed
+    started_at: '2026-10-14T17:28:08+02:00'
+    completed_at: '2026-10-14T17:28:08+02:00'
   - id: M6.1.9
-    description: Send the initial Command::SetSetup (empty Setup when the welcome is pending) (moved from M3.4.5)
-    status: pending
-    started_at: null
-    completed_at: null
+    description: Send Command::SetSetup(config setup) on every engine (re)start
+    status: completed
+    started_at: '2026-10-14T17:28:08+02:00'
+    completed_at: '2026-10-14T17:28:08+02:00'
 - id: M6.2
   title: Save
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:28:08+02:00'
+  completed_at: '2026-10-14T17:28:08+02:00'
   tasks:
   - id: M6.2.1
     description: Implement schedule_save with 500 ms glib::timeout_add_local_once emitting AppMsg::SaveTick (skip when read-only or unattached)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:28:08+02:00'
+    completed_at: '2026-10-14T17:28:08+02:00'
   - id: M6.2.2
     description: 'Implement flush_sync: create dir, toml::to_string_pretty, write .tmp, sync_all, rename'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:28:08+02:00'
+    completed_at: '2026-10-14T17:28:08+02:00'
   - id: M6.2.3
-    description: Handle SaveTick in AppModel::update and show the "Couldn't save settings" toast once per distinct error
-    status: pending
-    started_at: null
-    completed_at: null
+    description: Handle SaveTick by flush_sync; toast 'Couldn't save settings' once per distinct error; flush again on application shutdown
+    status: completed
+    started_at: '2026-10-14T17:28:08+02:00'
+    completed_at: '2026-10-14T17:28:08+02:00'
   - id: M6.2.4
     description: Unit-test atomic save (no .tmp left on success, content round-trips) and read-only refusal
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:28:08+02:00'
+    completed_at: '2026-10-14T17:28:08+02:00'
 - id: M6.3
   title: Load-outcome surfaces
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:28:08+02:00'
+  completed_at: '2026-10-14T17:28:08+02:00'
   tasks:
   - id: M6.3.1
-    description: Show the Recovered adw::AlertDialog (backup name + parse error) on WindowShown, followed by the welcome
-    status: pending
-    started_at: null
-    completed_at: null
+    description: Show the Recovered adw::AlertDialog (backup name + parse error) when the window is first mapped (welcome follows in M11)
+    status: completed
+    started_at: '2026-10-14T17:28:08+02:00'
+    completed_at: '2026-10-14T17:28:08+02:00'
   - id: M6.3.2
     description: Reveal the permanent read-only adw::Banner for NewerSchema at init
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:28:08+02:00'
+    completed_at: '2026-10-14T17:28:08+02:00'
   - id: M6.3.3
     description: Show the Repaired plural toast and log issue_text() details at warn
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:28:08+02:00'
+    completed_at: '2026-10-14T17:28:08+02:00'
 - id: M9.1
   title: Matrix layout (pure)
   status: pending
@@ -931,6 +931,11 @@ steps:
     completed_at: null
   - id: M11.2.8
     description: Spawn apply_autostart at startup when the welcome is not pending (result → AutostartApplied) (moved from M3.4.6)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.2.9
+    description: ConfigStore::settings(), update_settings() and welcome_pending() for the desktop and welcome flows (moved from M6.1.6)
     status: pending
     started_at: null
     completed_at: null

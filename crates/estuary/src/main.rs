@@ -2,6 +2,7 @@
 #![cfg_attr(test, allow(clippy::unwrap_used))]
 
 mod app;
+mod config;
 mod config_build;
 mod i18n;
 mod pages;

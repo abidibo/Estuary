@@ -134,6 +134,7 @@ impl RoutingState {
         if track.awaiting_ack.as_ref() == Some(&value) {
             return out; // already written, echo pending
         }
+        tracing::debug!(stream = id, app = %track.key.0, ?value, "applying app rule");
         track.awaiting_ack = Some(value.clone());
         out.ops.push(PwOp::MetaWrite {
             subject: id,
@@ -156,6 +157,7 @@ impl RoutingState {
             return out;
         };
         let value = value.map(str::to_owned);
+        tracing::debug!(stream = subject, ?value, awaiting = ?track.awaiting_ack, settled = track.settled, "target.object changed");
         if track.awaiting_ack.as_ref() == Some(&value) {
             track.awaiting_ack = None; // our own echo
             return out;

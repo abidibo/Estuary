@@ -390,6 +390,7 @@ dependencies = [
  "libadwaita",
  "relm4",
  "serde",
+ "tempfile",
  "thiserror",
  "toml",
  "tracing",

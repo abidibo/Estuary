@@ -217,6 +217,11 @@ impl EngineCore {
         let mut fx = Effects::default();
         match cmd {
             Command::SetSetup(setup) => {
+                // One bad entry never blocks the rest: apply the sanitized setup (M6.2).
+                let (setup, issues) = crate::setup::sanitize(setup);
+                if !issues.is_empty() {
+                    fx.events.push(Event::SetupIssues(issues));
+                }
                 // Channels, mics and cells are built from M8; app rules apply now (M5).
                 self.setup = Some(setup);
                 fx.merge(self.mark_dirty());
