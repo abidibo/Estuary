@@ -409,6 +409,7 @@ dependencies = [
  "pipewire-sys",
  "rubato",
  "thiserror",
+ "tracing",
 ]
 
 [[package]]

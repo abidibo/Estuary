@@ -138,20 +138,20 @@ steps:
     completed_at: '2026-10-14T17:28:08+02:00'
 - id: 7
   title: M7 pw_filter wrapper + gain node
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:36:03+02:00'
+  completed_at: '2026-10-14T17:36:03+02:00'
   tasks:
   - id: '7.1'
     description: Complete estuary-dsp steps M7.1-M7.8 (specs/estuary-dsp/progress.yaml)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
   - id: '7.2'
     description: 'Exit check: no-allocation test passes; live smoke test shows a gain node with 4 correctly named ports and audible, click-free gain changes'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
 - id: 8
   title: M8 Channels, virtual mics, matrix engine
   status: pending

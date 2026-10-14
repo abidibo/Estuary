@@ -135,6 +135,16 @@ rand = "0.9"           # randomized quantum sequences (seeded)
 
 Step numbering follows the master's milestone numbering (`M7.n`, `M10.n`).
 
+**Implementation notes (M7 as built, 2026-10-14).**
+
+- **FFI names (M7.1)** were verified in the generated `bindings.rs`. All match: `pw_filter_flags_PW_FILTER_FLAG_RT_PROCESS`, `pw_filter_port_flags_PW_FILTER_PORT_FLAG_MAP_BUFFERS`, `pw_filter_state_PW_FILTER_STATE_*`, `PW_VERSION_FILTER_EVENTS = 1`, and the event fields `version, destroy, state_changed, io_changed, param_changed, add_buffer, remove_buffer, process, drained, command`. `pw_filter_get_dsp_buffer` takes the **port handle** returned by `pw_filter_add_port`, and `pw_filter_get_nsec` returns `u64`.
+- **Layout.** `filter/props.rs` is folded into `filter/mod.rs`. Denoise constants, `new_with_params` / `ProcessLatency` and `denoise_block_const` move to M10.
+- **`run_cycle`** is as specified (fetch every port first; contain panics; chunk at `MAX_QUANTUM`; account xruns against n/rate). `MainState.filter` holds the copy of the filter pointer used on the engine thread, as the spec required.
+- **The gain loop** runs the same ramp per channel from the same start and commits the state after the last channel. There are no special-cased unity or silence paths yet.
+- **Live tests** use a `pw-cat` tone with `node.autoconnect=false` (silent: WirePlumber never links it to an output) wired with `pw-link` into our filters, plus a `Probe` filter that records peaks. **Results:** 0 dB passes the signal unchanged (+0.00 dB against the direct path), −18 dB measures −18.00 dB, and 100 create/link/stream/drop cycles finish with no crash and no leaked nodes (the drop-safety UNVERIFIED item held). The reference is measured directly because WirePlumber restores a saved volume for `pw-cat` streams, so absolute levels aren't predictable.
+- **C11 props guarantee:** custom node props (`estuary.role`) appear in the node's **info** props (`pw-dump`), not its registry globals, which is what the engine reads.
+- **`tests/no_alloc.rs`:** 10,000 gain cycles with random quanta and target changes make zero allocations.
+
 ### M7.1: Crate skeleton and FFI name verification
 
 **What.** Create the crate with the layout above, `consts.rs` and `error.rs`. Build once against the installed `libpipewire-0.3-dev` and grep the generated `bindings.rs` (in `target/*/build/pipewire-sys-*/out/`) to confirm the exact constified names this spec assumes. If any differ, fix the spec, not just the code.

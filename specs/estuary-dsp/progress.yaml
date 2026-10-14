@@ -1,598 +1,600 @@
 feature: estuary-dsp
 spec: specs/estuary-dsp/spec.md
 created: 2026-10-14
-status: pending
-started_at: ~
-completed_at: ~
-
+status: in_progress
+started_at: '2026-10-14T17:36:03+02:00'
+completed_at: null
 steps:
-  - id: "M7.1"
-    title: "Crate skeleton and FFI name verification"
+- id: M7.1
+  title: Crate skeleton and FFI name verification
+  status: completed
+  started_at: '2026-10-14T17:36:03+02:00'
+  completed_at: '2026-10-14T17:36:03+02:00'
+  tasks:
+  - id: M7.1.1
+    description: Create crates/estuary-dsp/Cargo.toml with workspace package fields, live-pw feature and dependencies (pipewire, pipewire-sys, libspa, libspa-sys, nnnoiseless default-features=false, rubato
+      5.0.1, thiserror, tracing, log release_max_level_debug; dev-dep rand)
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.1.2
+    description: 'Create src/lib.rs with module declarations, public re-exports and #![deny(unsafe_op_in_unsafe_fn, clippy::undocumented_unsafe_blocks)]'
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.1.3
+    description: Write src/consts.rs with MAX_QUANTUM=8192, MAX_PORTS=8, GAIN_RAMP_SECS=0.010 (denoise constants join in M10)
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.1.4
+    description: Write src/error.rs with DspError variants TooManyPorts, InvalidName, FilterNew, AddPort, Connect (thiserror, capturing last_os_error)
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.1.5
+    description: Build once against libpipewire-0.3-dev and grep the generated pipewire-sys bindings.rs for pw_filter_flags_PW_FILTER_FLAG_RT_PROCESS, pw_filter_port_flags_PW_FILTER_PORT_FLAG_MAP_BUFFERS,
+      pw_filter_state_PW_FILTER_STATE_*, PW_VERSION_FILTER_EVENTS and the pw_filter_events field list
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.1.7
+    description: 'FFI identifiers verified against the generated bindings: all match the spec (no change needed)'
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+- id: M7.2
+  title: Processor trait, PortSpec, NodeStats
+  status: completed
+  started_at: '2026-10-14T17:36:03+02:00'
+  completed_at: '2026-10-14T17:36:03+02:00'
+  tasks:
+  - id: M7.2.1
+    description: Define the Processor trait in src/processor.rs with the C11 process() signature, documented A3 guarantee (1 <= n_samples <= MAX_QUANTUM, rate > 0) and provided attach_stats(&mut self, Arc<NodeStats>)
+      no-op (A8)
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.2.2
+    description: Define PortSpec plus STEREO_IN and STEREO_OUT constants (input_FL/FR, output_FL/FR with audio.channel FL/FR) in src/processor.rs
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.2.3
+    description: Define NodeStats in src/stats.rs with xruns, processed_blocks, max_process_ns, poisoned, underruns, unsupported_rate atomics (A2) and Default derive
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+- id: M7.3
+  title: CallbackData partition and RtState::run_cycle
+  status: completed
+  started_at: '2026-10-14T17:36:03+02:00'
+  completed_at: '2026-10-14T17:36:03+02:00'
+  tasks:
+  - id: M7.3.1
+    description: Define CallbackData, Shared, MainState (including a raw main.filter copy) and RtState structs in src/filter/rt.rs with the documented thread-partition safety invariant
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.3.2
+    description: Define the PortIo trait (dsp_buffer, now_ns) and the FfiIo implementation calling pw_filter_get_dsp_buffer and pw_filter_get_nsec
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.3.3
+    description: 'Implement RtState::run_cycle phase 1: fetch each input/output port pointer exactly once per cycle'
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.3.4
+    description: Implement the shutdown/poisoned/rate==0/n==0 early-exit path that zero-fills outputs and skips the processor
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.3.5
+    description: 'Implement phase 2: chunked processing in <= MAX_QUANTUM slices with silence buffer for null inputs and disjoint scratch chunks for null outputs, inside catch_unwind'
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.3.6
+    description: 'Implement panic handling in run_cycle: set stats.poisoned and zero all fetched outputs'
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.3.7
+    description: 'Implement timing accounting: processed_blocks increment, max_process_ns fetch_max, xruns when elapsed exceeds n/rate'
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.3.8
+    description: Write the zero_outputs helper for raw output pointers
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+- id: M7.4
+  title: Denormal flushing (fpu.rs)
+  status: completed
+  started_at: '2026-10-14T17:36:03+02:00'
+  completed_at: '2026-10-14T17:36:03+02:00'
+  tasks:
+  - id: M7.4.1
+    description: Implement fpu::flush_denormals() for x86_64 setting MXCSR FTZ|DAZ (0x8040) via stmxcsr/ldmxcsr inline asm with SAFETY comment
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.4.2
+    description: Implement the aarch64 branch setting FPCR FZ bit 24 via mrs/msr inline asm, and a no-op for other targets
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.4.3
+    description: Add a unit test asserting a subnormal multiplication result is flushed to zero after flush_denormals() on x86_64
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+- id: M7.5
+  title: FilterNode (safe API, FFI lifecycle)
+  status: completed
+  started_at: '2026-10-14T17:36:03+02:00'
+  completed_at: '2026-10-14T17:36:03+02:00'
+  tasks:
+  - id: M7.5.1
+    description: Define the FilterState enum and the FilterNode struct (NonNull filter, pinned spa_hook, pinned pw_filter_events, pinned CallbackData, PhantomData !Send) in src/filter/mod.rs
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.5.2
+    description: Port properties (format.dsp, port.name, audio.channel) built inline in FilterNode::new
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.5.3
+    description: Implement FilterNode::new validation of name (non-empty, no NUL) and port counts <= MAX_PORTS
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.5.4
+    description: Implement node.name insertion when absent and pw_filter_new(core.as_raw_ptr(), name, props.into_raw()) with FilterNew error mapping
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.5.5
+    description: Allocate the pinned CallbackData with silence (MAX_QUANTUM) and scratch (MAX_QUANTUM*MAX_PORTS) buffers and call processor.attach_stats
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.5.6
+    description: Build the pw_filter_events table and register it with pw_filter_add_listener
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.5.7
+    description: Add ports in order with pw_filter_add_port(direction, MAP_BUFFERS, 0, props, null, 0), storing handles in RtState and cleaning up the filter on failure (AddPort error)
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.5.9
+    description: Implement the on_process trampoline in src/filter/ffi.rs (position null check, duration/rate extraction, run_cycle under backstop catch_unwind)
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.5.10
+    description: Implement the on_state_changed trampoline mapping pw_filter_state to FilterState, reading node_id on Paused/Streaming via main.filter, invoking the listener, logging errors
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.5.11
+    description: Implement the on_destroy trampoline resetting state to Unconnected and node_id to None
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.5.12
+    description: Implement node_id(), state(), stats() and set_state_listener() (A4) accessors
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.5.13
+    description: 'Implement Drop for FilterNode: set shutdown flag, pw_filter_disconnect, pw_filter_destroy, without hook::remove afterwards'
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+- id: M7.6
+  title: GainProcessor and GainHandle
+  status: completed
+  started_at: '2026-10-14T17:36:03+02:00'
+  completed_at: '2026-10-14T17:36:03+02:00'
+  tasks:
+  - id: M7.6.1
+    description: Implement db_to_linear (NEG_INFINITY -> 0, non-finite -> 1) and sanitize (NaN/negative -> 0, cap 4.0) in src/gain.rs
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.6.2
+    description: Implement GainHandle with set_db, set_linear and linear over Arc<AtomicU32>
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.6.3
+    description: Implement gain_processor(initial_db) returning GainProcessor (current = initial, no creation ramp) and GainHandle
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.6.4
+    description: Implement GainProcessor::process target read and ramp setup (len = max(1, round(0.010*rate)), step, remaining)
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.6.5
+    description: Implement the per-sample ramp loop with exact landing on target for both channels
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.6.6
+    description: Steady-gain path is the plain multiply loop (fast paths deferred until profiling shows a need)
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.6.7
+    description: Implement new_gain_node(core, name, props, initial_db) convenience constructor using STEREO_IN/STEREO_OUT (A9)
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+- id: M7.7
+  title: Unit tests (M7)
+  status: completed
+  started_at: '2026-10-14T17:36:03+02:00'
+  completed_at: '2026-10-14T17:36:03+02:00'
+  tasks:
+  - id: M7.7.1
+    description: Write test gain_ramp_shape (48 kHz, 1.0 -> 0.125, per-sample values, exact landing at sample 479)
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.7.2
+    description: Write test gain_ramp_across_quanta (3x256 bit-identical to one 768 call)
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.7.3
+    description: Write test gain_retarget_mid_ramp (restart from current value, no discontinuity)
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.7.4
+    description: Write test gain_rates (ramp lengths 441/480/960 at 44.1/48/96 kHz)
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.7.5
+    description: Write test gain_neg_inf_and_nan (NEG_INFINITY -> silence, NaN -> 0)
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.7.6
+    description: Write fake PortIo test helper backed by Vec<f32> buffers with a controllable clock
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.7.7
+    description: Write tests run_cycle_null_input_is_silence and run_cycle_null_output_goes_to_scratch
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.7.8
+    description: Write test run_cycle_chunks_large_quanta (n=20000 -> calls of 8192, 8192, 3616)
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.7.9
+    description: Write tests run_cycle_panic_poisons and run_cycle_shutdown_flag
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.7.10
+    description: Write test xrun_accounting (fake clock exceeding n/rate increments xruns, updates max_process_ns)
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.7.12
+    description: Create tests/no_alloc.rs with the Counting global allocator, ARMED flag and serialization mutex
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.7.13
+    description: 'Add the gain no_alloc case: 10 warm-up cycles then 10,000 armed cycles with random quanta and target changes asserting 0 allocations'
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+- id: M7.8
+  title: Live smoke test (--features live-pw)
+  status: completed
+  started_at: '2026-10-14T17:36:03+02:00'
+  completed_at: '2026-10-14T17:36:03+02:00'
+  tasks:
+  - id: M7.8.1
+    description: Create tests/live_pw.rs gated on feature live-pw with a helper that builds MainLoopRc/ContextRc/CoreRc and iterates the loop with a timeout
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.8.2
+    description: Write ignored test filter_appears_in_registry (state Paused, node_id set, registry shows node.name and 4 ports with correct port.name/audio.channel)
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.8.3
+    description: 'Live test signal: a pw-cat tone with node.autoconnect=false plus a Probe FilterNode recording peaks (no StreamBox helpers needed)'
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.8.4
+    description: 'Live test gain_applies_in_graph: direct vs via-gain reference (+0.00 dB) and -18.00 dB measured; click-freedom covered by the unit ramp tests'
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+  - id: M7.8.5
+    description: 'Live test create_link_drop_repeatedly_leaves_nothing_behind: 100 create/link/stream/drop cycles, no crash, no leaked nodes'
+    status: completed
+    started_at: '2026-10-14T17:36:03+02:00'
+    completed_at: '2026-10-14T17:36:03+02:00'
+- id: M10.1
+  title: Fifo, DelayLine, Crossfade, VadGate building blocks
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M10.1.1
+    description: Implement Fifo in src/denoise/fifo.rs (with_capacity, len, free, push, push_zeros, pop_into, peek_contiguous, discard, clear)
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M7.1.1"
-        description: "Create crates/estuary-dsp/Cargo.toml with workspace package fields, live-pw feature and dependencies (pipewire, pipewire-sys, libspa, libspa-sys, nnnoiseless default-features=false, rubato 5.0.1, thiserror, tracing, log release_max_level_debug; dev-dep rand)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.1.2"
-        description: "Create src/lib.rs with module declarations, public re-exports and #![deny(unsafe_op_in_unsafe_fn, clippy::undocumented_unsafe_blocks)]"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.1.3"
-        description: "Write src/consts.rs with MAX_QUANTUM=8192, MAX_PORTS=8, DENOISE_RATE=48000, DENOISE_BLOCK=480, GAIN_RAMP_SECS=0.010"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.1.4"
-        description: "Write src/error.rs with DspError variants TooManyPorts, InvalidName, FilterNew, AddPort, Connect (thiserror, capturing last_os_error)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.1.5"
-        description: "Build once against libpipewire-0.3-dev and grep the generated pipewire-sys bindings.rs for pw_filter_flags_PW_FILTER_FLAG_RT_PROCESS, pw_filter_port_flags_PW_FILTER_PORT_FLAG_MAP_BUFFERS, pw_filter_state_PW_FILTER_STATE_*, PW_VERSION_FILTER_EVENTS and the pw_filter_events field list"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.1.6"
-        description: "Grep libspa-sys bindings for SPA_PARAM_PROCESS_LATENCY_ns and SPA_ID_INVALID"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.1.7"
-        description: "Update specs/estuary-dsp/spec.md with any FFI identifier that differs from the assumed names"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M7.2"
-    title: "Processor trait, PortSpec, NodeStats"
+    started_at: null
+    completed_at: null
+  - id: M10.1.2
+    description: Write Fifo unit tests covering wrap-around, full and empty conditions
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M7.2.1"
-        description: "Define the Processor trait in src/processor.rs with the C11 process() signature, documented A3 guarantee (1 <= n_samples <= MAX_QUANTUM, rate > 0) and provided attach_stats(&mut self, Arc<NodeStats>) no-op (A8)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.2.2"
-        description: "Define PortSpec plus STEREO_IN and STEREO_OUT constants (input_FL/FR, output_FL/FR with audio.channel FL/FR) in src/processor.rs"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.2.3"
-        description: "Define NodeStats in src/stats.rs with xruns, processed_blocks, max_process_ns, poisoned, underruns, unsupported_rate atomics (A2) and Default derive"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M7.3"
-    title: "CallbackData partition and RtState::run_cycle"
+    started_at: null
+    completed_at: null
+  - id: M10.1.3
+    description: Implement DelayLine (new(d) including d=0, process, reset) in src/denoise/xfade.rs
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M7.3.1"
-        description: "Define CallbackData, Shared, MainState (including a raw main.filter copy) and RtState structs in src/filter/rt.rs with the documented thread-partition safety invariant"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.3.2"
-        description: "Define the PortIo trait (dsp_buffer, now_ns) and the FfiIo implementation calling pw_filter_get_dsp_buffer and pw_filter_get_nsec"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.3.3"
-        description: "Implement RtState::run_cycle phase 1: fetch each input/output port pointer exactly once per cycle"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.3.4"
-        description: "Implement the shutdown/poisoned/rate==0/n==0 early-exit path that zero-fills outputs and skips the processor"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.3.5"
-        description: "Implement phase 2: chunked processing in <= MAX_QUANTUM slices with silence buffer for null inputs and disjoint scratch chunks for null outputs, inside catch_unwind"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.3.6"
-        description: "Implement panic handling in run_cycle: set stats.poisoned and zero all fetched outputs"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.3.7"
-        description: "Implement timing accounting: processed_blocks increment, max_process_ns fetch_max, xruns when elapsed exceeds n/rate"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.3.8"
-        description: "Write the zero_outputs helper for raw output pointers"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M7.4"
-    title: "Denormal flushing (fpu.rs)"
+    started_at: null
+    completed_at: null
+  - id: M10.1.4
+    description: Implement Crossfade (new, set_target mid-fade without jump, mix, is_fully_dry) in src/denoise/xfade.rs
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M7.4.1"
-        description: "Implement fpu::flush_denormals() for x86_64 setting MXCSR FTZ|DAZ (0x8040) via stmxcsr/ldmxcsr inline asm with SAFETY comment"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.4.2"
-        description: "Implement the aarch64 branch setting FPCR FZ bit 24 via mrs/msr inline asm, and a no-op for other targets"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.4.3"
-        description: "Add a unit test asserting a subnormal multiplication result is flushed to zero after flush_denormals() on x86_64"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M7.5"
-    title: "FilterNode (safe API, FFI lifecycle)"
+    started_at: null
+    completed_at: null
+  - id: M10.1.5
+    description: Implement VadGate::apply in src/denoise/gate.rs with gate==0 open, HOLD_BLOCKS=20 hold and per-block linear ramp
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M7.5.1"
-        description: "Define the FilterState enum and the FilterNode struct (NonNull filter, pinned spa_hook, pinned pw_filter_events, pinned CallbackData, PhantomData !Send) in src/filter/mod.rs"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.5.2"
-        description: "Implement port property builder in src/filter/props.rs producing FORMAT_DSP, PORT_NAME and AUDIO_CHANNEL PropertiesBox for a PortSpec"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.5.3"
-        description: "Implement FilterNode::new validation of name (non-empty, no NUL) and port counts <= MAX_PORTS"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.5.4"
-        description: "Implement node.name insertion when absent and pw_filter_new(core.as_raw_ptr(), name, props.into_raw()) with FilterNew error mapping"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.5.5"
-        description: "Allocate the pinned CallbackData with silence (MAX_QUANTUM) and scratch (MAX_QUANTUM*MAX_PORTS) buffers and call processor.attach_stats"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.5.6"
-        description: "Build the pw_filter_events table and register it with pw_filter_add_listener"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.5.7"
-        description: "Add ports in order with pw_filter_add_port(direction, MAP_BUFFERS, 0, props, null, 0), storing handles in RtState and cleaning up the filter on failure (AddPort error)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.5.8"
-        description: "Implement crate-private FilterNode::new_with_params passing optional global params to pw_filter_connect with PW_FILTER_FLAG_RT_PROCESS and Connect error cleanup"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.5.9"
-        description: "Implement the on_process trampoline in src/filter/ffi.rs (position null check, duration/rate extraction, run_cycle under backstop catch_unwind)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.5.10"
-        description: "Implement the on_state_changed trampoline mapping pw_filter_state to FilterState, reading node_id on Paused/Streaming via main.filter, invoking the listener, logging errors"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.5.11"
-        description: "Implement the on_destroy trampoline resetting state to Unconnected and node_id to None"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.5.12"
-        description: "Implement node_id(), state(), stats() and set_state_listener() (A4) accessors"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.5.13"
-        description: "Implement Drop for FilterNode: set shutdown flag, pw_filter_disconnect, pw_filter_destroy, without hook::remove afterwards"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M7.6"
-    title: "GainProcessor and GainHandle"
+    started_at: null
+    completed_at: null
+  - id: M10.1.6
+    description: Write unit tests for DelayLine exact delay, Crossfade continuity and VadGate hold/close timing
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M7.6.1"
-        description: "Implement db_to_linear (NEG_INFINITY -> 0, non-finite -> 1) and sanitize (NaN/negative -> 0, cap 4.0) in src/gain.rs"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.6.2"
-        description: "Implement GainHandle with set_db, set_linear and linear over Arc<AtomicU32>"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.6.3"
-        description: "Implement gain_processor(initial_db) returning GainProcessor (current = initial, no creation ramp) and GainHandle"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.6.4"
-        description: "Implement GainProcessor::process target read and ramp setup (len = max(1, round(0.010*rate)), step, remaining)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.6.5"
-        description: "Implement the per-sample ramp loop with exact landing on target for both channels"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.6.6"
-        description: "Implement fast paths for steady gain: copy at 1.0, fill zeros at 0.0, multiply loop otherwise"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.6.7"
-        description: "Implement new_gain_node(core, name, props, initial_db) convenience constructor using STEREO_IN/STEREO_OUT (A9)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M7.7"
-    title: "Unit tests (M7)"
+    started_at: null
+    completed_at: null
+- id: M10.2
+  title: RatePath and the preconstructed rate table
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M10.2.1
+    description: Define RATE_TABLE and RatePath in src/denoise/rate.rs with down = Fft::new(rate, 48000, 480, 1, FixedSync::Output) and up = Fft::new(48000, rate, 480, 1, FixedSync::Input)
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M7.7.1"
-        description: "Write test gain_ramp_shape (48 kHz, 1.0 -> 0.125, per-sample values, exact landing at sample 479)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.7.2"
-        description: "Write test gain_ramp_across_quanta (3x256 bit-identical to one 768 call)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.7.3"
-        description: "Write test gain_retarget_mid_ramp (restart from current value, no discontinuity)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.7.4"
-        description: "Write test gain_rates (ramp lengths 441/480/960 at 44.1/48/96 kHz)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.7.5"
-        description: "Write test gain_neg_inf_and_nan (NEG_INFINITY -> silence, NaN -> 0)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.7.6"
-        description: "Write fake PortIo test helper backed by Vec<f32> buffers with a controllable clock"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.7.7"
-        description: "Write tests run_cycle_null_input_is_silence and run_cycle_null_output_goes_to_scratch"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.7.8"
-        description: "Write test run_cycle_chunks_large_quanta (n=20000 -> calls of 8192, 8192, 3616)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.7.9"
-        description: "Write tests run_cycle_panic_poisons and run_cycle_shutdown_flag"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.7.10"
-        description: "Write test xrun_accounting (fake clock exceeding n/rate increments xruns, updates max_process_ns)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.7.11"
-        description: "Write test denoise_block_const asserting DENOISE_BLOCK == nnnoiseless::DenoiseState::FRAME_SIZE"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.7.12"
-        description: "Create tests/no_alloc.rs with the Counting global allocator, ARMED flag and serialization mutex"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.7.13"
-        description: "Add the gain no_alloc case: 10 warm-up cycles then 10,000 armed cycles with random quanta and target changes asserting 0 allocations"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M7.8"
-    title: "Live smoke test (--features live-pw)"
+    started_at: null
+    completed_at: null
+  - id: M10.2.2
+    description: Implement RatePath::downsample using SequentialSlice::new / new_mut and process_into_buffer(.., None) with debug_assert on consumed/produced frames
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M7.8.1"
-        description: "Create tests/live_pw.rs gated on feature live-pw with a helper that builds MainLoopRc/ContextRc/CoreRc and iterates the loop with a timeout"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.8.2"
-        description: "Write ignored test filter_appears_in_registry (state Paused, node_id set, registry shows node.name and 4 ports with correct port.name/audio.channel)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.8.3"
-        description: "Write a sine-generator output StreamBox and capture input StreamBox helper (node.autoconnect=false) for live tests"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.8.4"
-        description: "Write ignored test gain_applies_in_graph linking via link-factory and asserting -18 +/- 0.5 dB RMS ratio and no click during the ramp"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M7.8.5"
-        description: "Write ignored test drop_while_streaming (1,000 create/link/stream/drop cycles, no crash, no leaked estuary.test.* nodes)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M10.1"
-    title: "Fifo, DelayLine, Crossfade, VadGate building blocks"
+    started_at: null
+    completed_at: null
+  - id: M10.2.3
+    description: Implement RatePath::upsample returning the produced slice at the graph rate
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M10.1.1"
-        description: "Implement Fifo in src/denoise/fifo.rs (with_capacity, len, free, push, push_zeros, pop_into, peek_contiguous, discard, clear)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.1.2"
-        description: "Write Fifo unit tests covering wrap-around, full and empty conditions"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.1.3"
-        description: "Implement DelayLine (new(d) including d=0, process, reset) in src/denoise/xfade.rs"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.1.4"
-        description: "Implement Crossfade (new, set_target mid-fade without jump, mix, is_fully_dry) in src/denoise/xfade.rs"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.1.5"
-        description: "Implement VadGate::apply in src/denoise/gate.rs with gate==0 open, HOLD_BLOCKS=20 hold and per-block linear ramp"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.1.6"
-        description: "Write unit tests for DelayLine exact delay, Crossfade continuity and VadGate hold/close timing"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M10.2"
-    title: "RatePath and the preconstructed rate table"
+    started_at: null
+    completed_at: null
+  - id: M10.2.4
+    description: Implement input_needed, priming (input_frames_max + output_frames_max), delay_frames_at_rate and reset
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M10.2.1"
-        description: "Define RATE_TABLE and RatePath in src/denoise/rate.rs with down = Fft::new(rate, 48000, 480, 1, FixedSync::Output) and up = Fft::new(48000, rate, 480, 1, FixedSync::Input)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.2.2"
-        description: "Implement RatePath::downsample using SequentialSlice::new / new_mut and process_into_buffer(.., None) with debug_assert on consumed/produced frames"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.2.3"
-        description: "Implement RatePath::upsample returning the produced slice at the graph rate"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.2.4"
-        description: "Implement input_needed, priming (input_frames_max + output_frames_max), delay_frames_at_rate and reset"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.2.5"
-        description: "Map rubato errors to the unsupported-rate fallback (stats.unsupported_rate, bypass)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.2.6"
-        description: "Add the log dependency with release_max_level_debug to estuary-dsp Cargo.toml (A6) and document the no rubato=trace rule in the crate docs"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M10.3"
-    title: "DenoiseProcessor pipeline"
+    started_at: null
+    completed_at: null
+  - id: M10.2.5
+    description: Map rubato errors to the unsupported-rate fallback (stats.unsupported_rate, bypass)
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M10.3.1"
-        description: "Define the DenoiseProcessor struct in src/denoise/mod.rs with FIFOs (2*MAX_QUANTUM+4096), mono scratch, fixed 480-frame block arrays, dry DelayLine, Crossfade, VadGate and warm-up counter"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.3.2"
-        description: "Implement rate-change reconfiguration: select path or 48 kHz direct or unsupported, clear FIFOs, reset state, prime out_fifo with zeros"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.3.3"
-        description: "Implement the (L+R)/2 downmix into the mono scratch buffer"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.3.4"
-        description: "Implement the unsupported-rate passthrough writing the downmix to both outputs"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.3.5"
-        description: "Implement block extraction into blk48 (direct pop at 48 kHz or downsample + discard otherwise) and the delay-matched dry copy"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.3.6"
-        description: "Implement enable-toggle handling (crossfade target, warm-up reset) and the denoise branch with x32768 scaling, process_frame, /32768, first-block discard and VAD gate"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.3.7"
-        description: "Implement the fully-bypassed branch skipping process_frame, the crossfade mix and the push back to the output FIFO (upsample when needed)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.3.8"
-        description: "Implement output pop with zero-fill and stats.underruns increment, and copy FL to FR"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M10.4"
-    title: "DenoiseHandle and constructor"
+    started_at: null
+    completed_at: null
+  - id: M10.2.6
+    description: Add the log dependency with release_max_level_debug to estuary-dsp Cargo.toml (A6) and document the no rubato=trace rule in the crate docs
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M10.4.1"
-        description: "Implement DenoiseHandle with set_enabled and set_vad_gate (clamped 0.0-0.95)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.4.2"
-        description: "Implement denoise_processor() allocating DenoiseState, all RatePaths, FIFOs and delay line, with enabled=true, vad_gate=0.0 and cur_rate=0"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.4.3"
-        description: "Override Processor::attach_stats in DenoiseProcessor to keep the NodeStats Arc"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M10.5"
-    title: "Measure and pin nnnoiseless algorithmic delay (NN_DELAY)"
+    started_at: null
+    completed_at: null
+- id: M10.3
+  title: DenoiseProcessor pipeline
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M10.3.1
+    description: Define the DenoiseProcessor struct in src/denoise/mod.rs with FIFOs (2*MAX_QUANTUM+4096), mono scratch, fixed 480-frame block arrays, dry DelayLine, Crossfade, VadGate and warm-up counter
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M10.5.1"
-        description: "Write test nn_delay_is_pinned cross-correlating seeded band-limited noise input and output over lags 0..=1440"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.5.2"
-        description: "Run the measurement and set const NN_DELAY to the measured value"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.5.3"
-        description: "Update the latency table in specs/estuary-dsp/spec.md (M10.5) with the measured NN_DELAY and resulting 48 kHz latency"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M10.6"
-    title: "Wiring stats and ProcessLatency into the denoiser node"
+    started_at: null
+    completed_at: null
+  - id: M10.3.2
+    description: 'Implement rate-change reconfiguration: select path or 48 kHz direct or unsupported, clear FIFOs, reset state, prime out_fifo with zeros'
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M10.6.1"
-        description: "Implement the ProcessLatency pod builder in src/filter/props.rs (ObjectParamProcessLatency, SPA_PARAM_PROCESS_LATENCY_ns = (NN_DELAY+DENOISE_BLOCK) at 48 kHz) via PodSerializer"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.6.2"
-        description: "Implement new_denoiser_node(core, name, props) using new_with_params with the ProcessLatency param and STEREO ports"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.6.3"
-        description: "Implement pub fn latency_frames(rate) returning the denoiser latency per graph rate"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M10.7"
-    title: "Denoiser tests"
+    started_at: null
+    completed_at: null
+  - id: M10.3.3
+    description: Implement the (L+R)/2 downmix into the mono scratch buffer
     status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M10.7.1"
-        description: "Write test denoise_latency_per_rate (impulse in bypass and enabled modes for 48000, 44100, 96000, 16000)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.7.2"
-        description: "Write test denoise_odd_quanta_no_underrun (10^6 seeded random cycles per rate, underruns == 0, bounded FIFOs)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.7.3"
-        description: "Write test denoise_bypass_bit_exact_after_delay at 48 kHz"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.7.4"
-        description: "Write test denoise_toggle_click_free (300 Hz sine, toggle every 50 ms, max delta <= 1.5x sine slope)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.7.5"
-        description: "Write test denoise_attenuates_noise (white noise -30 dBFS, >= 10 dB attenuation, tune and record threshold >= 6 dB)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.7.6"
-        description: "Write test vad_gate_closes_on_noise (gate 0.9, exact silence after hold + one block)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.7.7"
-        description: "Write tests rate_change_resets_cleanly and unsupported_rate_bypasses (rate 50000)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.7.8"
-        description: "Add stereo_outputs_identical assertions (out_FL == out_FR) to the denoise tests"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.7.9"
-        description: "Add the denoise no_alloc case in tests/no_alloc.rs (>= 20 warm-up blocks on the same thread, rates 48000/44100, toggles and table-rate changes)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.7.10"
-        description: "Write ignored release benchmark bench_cpu measuring time per 480-frame block and record the result in the spec"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.7.11"
-        description: "Write ignored test rate_table_construction measuring RatePath construction time and memory and record the M10.2 decision"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M10.7.12"
-        description: "Measure 44.1 kHz denoiser latency and record it in the spec latency table"
-        status: pending
-        started_at: ~
-        completed_at: ~
+    started_at: null
+    completed_at: null
+  - id: M10.3.4
+    description: Implement the unsupported-rate passthrough writing the downmix to both outputs
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.3.5
+    description: Implement block extraction into blk48 (direct pop at 48 kHz or downsample + discard otherwise) and the delay-matched dry copy
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.3.6
+    description: Implement enable-toggle handling (crossfade target, warm-up reset) and the denoise branch with x32768 scaling, process_frame, /32768, first-block discard and VAD gate
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.3.7
+    description: Implement the fully-bypassed branch skipping process_frame, the crossfade mix and the push back to the output FIFO (upsample when needed)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.3.8
+    description: Implement output pop with zero-fill and stats.underruns increment, and copy FL to FR
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M10.4
+  title: DenoiseHandle and constructor
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M10.4.1
+    description: Implement DenoiseHandle with set_enabled and set_vad_gate (clamped 0.0-0.95)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.4.2
+    description: Implement denoise_processor() allocating DenoiseState, all RatePaths, FIFOs and delay line, with enabled=true, vad_gate=0.0 and cur_rate=0
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.4.3
+    description: Override Processor::attach_stats in DenoiseProcessor to keep the NodeStats Arc
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M10.5
+  title: Measure and pin nnnoiseless algorithmic delay (NN_DELAY)
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M10.5.1
+    description: Write test nn_delay_is_pinned cross-correlating seeded band-limited noise input and output over lags 0..=1440
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.5.2
+    description: Run the measurement and set const NN_DELAY to the measured value
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.5.3
+    description: Update the latency table in specs/estuary-dsp/spec.md (M10.5) with the measured NN_DELAY and resulting 48 kHz latency
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M10.6
+  title: Wiring stats and ProcessLatency into the denoiser node
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M10.6.1
+    description: Implement the ProcessLatency pod builder in src/filter/props.rs (ObjectParamProcessLatency, SPA_PARAM_PROCESS_LATENCY_ns = (NN_DELAY+DENOISE_BLOCK) at 48 kHz) via PodSerializer
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.6.2
+    description: Implement new_denoiser_node(core, name, props) using new_with_params with the ProcessLatency param and STEREO ports
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.6.3
+    description: Implement pub fn latency_frames(rate) returning the denoiser latency per graph rate
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.6.4
+    description: Grep libspa-sys bindings for SPA_PARAM_PROCESS_LATENCY_ns and SPA_ID_INVALID (moved from M7.1.6)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.6.5
+    description: Implement crate-private FilterNode::new_with_params passing optional global params to pw_filter_connect with PW_FILTER_FLAG_RT_PROCESS and Connect error cleanup (moved from M7.5.8)
+    status: pending
+    started_at: null
+    completed_at: null
+- id: M10.7
+  title: Denoiser tests
+  status: pending
+  started_at: null
+  completed_at: null
+  tasks:
+  - id: M10.7.1
+    description: Write test denoise_latency_per_rate (impulse in bypass and enabled modes for 48000, 44100, 96000, 16000)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.7.2
+    description: Write test denoise_odd_quanta_no_underrun (10^6 seeded random cycles per rate, underruns == 0, bounded FIFOs)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.7.3
+    description: Write test denoise_bypass_bit_exact_after_delay at 48 kHz
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.7.4
+    description: Write test denoise_toggle_click_free (300 Hz sine, toggle every 50 ms, max delta <= 1.5x sine slope)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.7.5
+    description: Write test denoise_attenuates_noise (white noise -30 dBFS, >= 10 dB attenuation, tune and record threshold >= 6 dB)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.7.6
+    description: Write test vad_gate_closes_on_noise (gate 0.9, exact silence after hold + one block)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.7.7
+    description: Write tests rate_change_resets_cleanly and unsupported_rate_bypasses (rate 50000)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.7.8
+    description: Add stereo_outputs_identical assertions (out_FL == out_FR) to the denoise tests
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.7.9
+    description: Add the denoise no_alloc case in tests/no_alloc.rs (>= 20 warm-up blocks on the same thread, rates 48000/44100, toggles and table-rate changes)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.7.10
+    description: Write ignored release benchmark bench_cpu measuring time per 480-frame block and record the result in the spec
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.7.11
+    description: Write ignored test rate_table_construction measuring RatePath construction time and memory and record the M10.2 decision
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.7.12
+    description: Measure 44.1 kHz denoiser latency and record it in the spec latency table
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.7.13
+    description: Write test denoise_block_const asserting DENOISE_BLOCK == nnnoiseless::DenoiseState::FRAME_SIZE (moved from M7.7.11)
+    status: pending
+    started_at: null
+    completed_at: null
