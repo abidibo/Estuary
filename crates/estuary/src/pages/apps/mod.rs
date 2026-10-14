@@ -12,9 +12,11 @@ use relm4::{ComponentParts, ComponentSender, SimpleComponent, adw, gtk};
 use self::row::{AppRow, AppRowData, OutputRow, OutputRowData, target_label};
 use crate::i18n::i18n;
 use crate::pages::reconcile::reconcile;
+use crate::widgets::meter_hub::MeterHub;
 
 #[derive(Debug)]
 pub struct AppsPage {
+    hub: MeterHub,
     apps: FactoryVecDeque<AppRow>,
     outputs: FactoryVecDeque<OutputRow>,
 }
@@ -25,7 +27,7 @@ pub enum AppsMsg {
 }
 
 impl SimpleComponent for AppsPage {
-    type Init = ();
+    type Init = MeterHub;
     type Input = AppsMsg;
     type Output = ();
     type Root = gtk::ScrolledWindow;
@@ -39,7 +41,7 @@ impl SimpleComponent for AppsPage {
     }
 
     fn init(
-        _: (),
+        hub: MeterHub,
         root: gtk::ScrolledWindow,
         _sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
@@ -71,6 +73,7 @@ impl SimpleComponent for AppsPage {
         root.set_child(Some(&clamp));
 
         let model = AppsPage {
+            hub,
             apps: FactoryVecDeque::builder().launch(apps_list).detach(),
             outputs: FactoryVecDeque::builder().launch(outputs_list).detach(),
         };
@@ -86,6 +89,7 @@ impl SimpleComponent for AppsPage {
                     .map(|g| AppRowData {
                         group: g.clone(),
                         target_label: target_label(&g.current_target, &snap),
+                        hub: self.hub.clone(),
                     })
                     .collect();
                 reconcile(&mut self.apps, apps);
@@ -96,6 +100,7 @@ impl SimpleComponent for AppsPage {
                     .map(|d| OutputRowData {
                         device: d.clone(),
                         is_default: snap.default_output.as_ref() == Some(&d.key),
+                        hub: self.hub.clone(),
                     })
                     .collect();
                 reconcile(&mut self.outputs, outputs);

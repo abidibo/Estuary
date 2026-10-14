@@ -3,6 +3,7 @@
 use std::time::Duration;
 
 use crate::Event;
+use crate::meter::MeterSlotId;
 
 /// Objects the engine owns or tracks by proxy. Grows with the reconciler (M8).
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -21,6 +22,15 @@ pub(crate) enum PwOp {
     },
     Sync {
         purpose: SyncPurpose,
+    },
+    CreateMeter {
+        slot: MeterSlotId,
+        target_serial: u64,
+        capture_sink: bool,
+        autoconnect: bool,
+    },
+    DestroyMeter {
+        slot: MeterSlotId,
     },
 }
 

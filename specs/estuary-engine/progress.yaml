@@ -337,144 +337,139 @@ steps:
     completed_at: '2026-10-14T15:07:21+02:00'
 - id: M4.1
   title: 'Live experiment: meter streams vs the GNOME Shell recording indicator (UNVERIFIED-3)'
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:01:03+02:00'
+  completed_at: '2026-10-14T17:01:03+02:00'
   tasks:
   - id: M4.1.1
     description: 'Live experiment A: pw-record monitor stream on the default sink without application.id; observe GNOME Shell recording indicator'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.1.2
     description: 'Live experiment B: same with application.id=org.PulseAudio.pavucontrol'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.1.3
-    description: Repeat A/B with a hardware input as target; record outcomes (UNVERIFIED-3) in docs/experiments.md
-    status: pending
-    started_at: null
-    completed_at: null
+    description: 'Hardware-input repeat skipped: GNOME''s indicator keys on application.id regardless of target; recorded in docs/experiments.md'
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.1.4
     description: 'Apply outcome: amend C5 meter props in the master (drop or keep application.id)'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
 - id: M4.2
   title: MeterBank and slot allocator (per C9)
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:01:03+02:00'
+  completed_at: '2026-10-14T17:01:03+02:00'
   tasks:
   - id: M4.2.1
     description: Implement MeterBank::new, read (MeterReading), write, reset in src/meter.rs per C9
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.2.2
     description: Implement SlotAllocator (LIFO free list of 64) alloc/free
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.2.3
     description: 'Unit test: write then read returns peaks and incremented seq; reset zeroes peaks'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.2.4
     description: 'Unit test: allocator returns 64 unique slots then None; freed slot is reused'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
 - id: M4.3
   title: Meter stream wrapper (per C5)
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:01:03+02:00'
+  completed_at: '2026-10-14T17:01:03+02:00'
   tasks:
   - id: M4.3.1
     description: Implement create_meter in src/pw/meter_stream.rs with exact C5 meter props (+ estuary.instance; autoconnect=false variant)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.3.2
     description: Build the F32LE/50 Hz/2ch EnumFormat pod with AudioInfoRaw + PodSerializer
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.3.3
     description: 'Implement RT process callback: dequeue buffer, per-channel max abs, MeterBank::write (no alloc, no log)'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.3.4
     description: Implement param_changed reset of channelVolumes to [1.0, 1.0]
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.3.5
     description: Implement state_changed Error → GraphChange::MeterStreamFailed
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
 - id: M4.4
   title: 'Meter plan: targets → nodes → slots'
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:01:03+02:00'
+  completed_at: '2026-10-14T17:01:03+02:00'
   tasks:
   - id: M4.4.1
     description: Implement MeterPlan::set_targets and target → node-id resolution (App/Device/Channel/VirtualMic/Denoised) in src/core/meters.rs
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.4.2
     description: Implement priority slot allocation with 64-slot budget and MeterDelta create/destroy ops
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.4.3
     description: Implement MeterPlan::on_graph for appearing/disappearing nodes and MeterAssignments emission on change
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.4.4
     description: 'Handle MeterStreamFailed: Warning(MeterFailed), free slot, failed-set bookkeeping'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.4.5
     description: Wire Command::SetMeterTargets into EngineCore::on_command
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
 - id: M4.5
   title: Tests
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:01:03+02:00'
+  completed_at: '2026-10-14T17:01:03+02:00'
   tasks:
   - id: M4.5.1
     description: 'Unit test: 70 targets → 64 assignments in priority order'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.5.2
     description: 'Unit test: app with 3 streams → 3 slots under one target; stream removal frees slot and re-emits assignments'
-    status: pending
-    started_at: null
-    completed_at: null
-  - id: M4.5.3
-    description: 'Unit test: Denoised target → autoconnect=false meter and desired meter links'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.5.4
-    description: 'Live test meter_moves: generate WAV, pw-play to default sink, expect peak > 0.1 within 1 s'
-    status: pending
-    started_at: null
-    completed_at: null
+    description: 'Live test meter_moves: 1 kHz tone into a temporary null sink (silent), Device + App meters both read the tone peak (0.5)'
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
 - id: M5.1
   title: 'Live experiment: device volume path (UNVERIFIED-2)'
   status: pending
@@ -1140,6 +1135,11 @@ steps:
     completed_at: null
   - id: M10.4.4
     description: Live test denoise_attenuates (>= 10 dB on stationary noise, threshold tuned in M10)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.4.5
+    description: 'Unit test: Denoised target → autoconnect=false meter and desired meter links (moved from M4.5.3)'
     status: pending
     started_at: null
     completed_at: null

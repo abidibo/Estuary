@@ -6,6 +6,7 @@ mod config_build;
 mod i18n;
 mod pages;
 mod state;
+mod widgets;
 
 use adw::prelude::*;
 use config_build::APP_ID;

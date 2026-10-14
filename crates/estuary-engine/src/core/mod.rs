@@ -3,6 +3,7 @@
 
 pub(crate) mod conn;
 pub(crate) mod effects;
+pub(crate) mod meters;
 pub(crate) mod snapshot;
 
 use std::sync::Arc;
@@ -10,10 +11,11 @@ use std::time::{Duration, Instant};
 
 use conn::{CapabilityResult, ConnState, evaluate_capabilities};
 use effects::{Effects, OwnedKey, PwOp, SyncPurpose, TimerKind};
+use meters::MeterPlan;
 
+use crate::error::EngineWarning;
 use crate::error::{Backoff, UnsupportedReason};
 use crate::graph::{GraphChange, GraphMirror};
-use crate::meter::MeterTarget;
 use crate::setup::Setup;
 use crate::{Command, ConnectionState, Event};
 
@@ -27,7 +29,7 @@ pub(crate) struct EngineCore {
     state: ConnState,
     mirror: GraphMirror,
     setup: Option<Setup>,
-    meter_targets: Vec<MeterTarget>,
+    meters: MeterPlan,
     had_ready_before: bool,
     /// Sync requests in flight: purpose → sequence number returned by `core.sync()`.
     pending_syncs: Vec<(SyncPurpose, i32)>,
@@ -44,7 +46,7 @@ impl EngineCore {
             state: ConnState::Connecting { attempt: 0 },
             mirror: GraphMirror::default(),
             setup: None,
-            meter_targets: Vec::new(),
+            meters: MeterPlan::new(),
             had_ready_before: false,
             pending_syncs: Vec::new(),
             probe_failed: false,
@@ -138,6 +140,15 @@ impl EngineCore {
                 }
                 return fx;
             }
+            GraphChange::MeterStreamFailed { slot, message } => {
+                tracing::warn!(slot = slot.0, %message, "meter stream failed");
+                if let Some(target) = self.meters.on_failed(*slot) {
+                    fx.events
+                        .push(Event::Warning(EngineWarning::MeterFailed(target)));
+                }
+                fx.merge(self.reconcile_meters());
+                return fx;
+            }
             _ => {}
         }
 
@@ -153,6 +164,9 @@ impl EngineCore {
         if impact.snapshot {
             fx.merge(self.mark_dirty());
         }
+        if impact.topology {
+            fx.merge(self.reconcile_meters());
+        }
         fx
     }
 
@@ -164,7 +178,10 @@ impl EngineCore {
                 self.setup = Some(setup);
                 fx.merge(self.mark_dirty());
             }
-            Command::SetMeterTargets(targets) => self.meter_targets = targets,
+            Command::SetMeterTargets(targets) => {
+                self.meters.set_targets(targets);
+                fx.merge(self.reconcile_meters());
+            }
             Command::PrepareQuit => {
                 // No owned objects exist yet, so nothing can be in use.
                 fx.events.push(Event::QuitCheck(Vec::new()));
@@ -293,6 +310,23 @@ impl EngineCore {
             fx.events.push(Event::Restored);
         }
         self.had_ready_before = true;
+        fx.merge(self.reconcile_meters());
+        fx
+    }
+
+    /// Meter streams exist only while Ready (C9).
+    fn reconcile_meters(&mut self) -> Effects {
+        if self.state != ConnState::Ready {
+            return Effects::default();
+        }
+        let delta = self.meters.reconcile(&self.mirror);
+        let mut fx = Effects {
+            ops: delta.ops,
+            ..Default::default()
+        };
+        if let Some(a) = delta.assignments {
+            fx.events.push(Event::MeterAssignments(a));
+        }
         fx
     }
 
@@ -304,6 +338,7 @@ impl EngineCore {
             return Effects::default();
         }
         self.mirror.clear();
+        self.meters.reset();
         self.pending_syncs.clear();
         self.snapshot_dirty = false;
         let since = Instant::now();

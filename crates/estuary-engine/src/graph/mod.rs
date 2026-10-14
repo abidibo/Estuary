@@ -5,6 +5,7 @@ pub(crate) mod classify;
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::core::effects::OwnedKey;
+use crate::meter::MeterSlotId;
 use crate::model::{ChannelId, VirtualMicId, Volume};
 
 pub(crate) type Props = BTreeMap<String, String>;
@@ -141,6 +142,10 @@ pub(crate) enum GraphChange {
         res: i32,
         message: String,
     },
+    MeterStreamFailed {
+        slot: MeterSlotId,
+        message: String,
+    },
     SyncDone {
         seq: i32,
     },
@@ -223,6 +228,10 @@ impl GraphMirror {
                 ChangeImpact::all()
             }
             GraphChange::NodeInfo { id, props } => {
+                if props.is_empty() {
+                    // Defensive: an update without props must never wipe a node's identity.
+                    return ChangeImpact::default();
+                }
                 let own = self.own_client_id;
                 let Some(n) = self.nodes.get_mut(id) else {
                     return ChangeImpact::default();
@@ -354,9 +363,9 @@ impl GraphMirror {
                     ..Default::default()
                 }
             }
-            GraphChange::ProxyError { .. } | GraphChange::SyncDone { .. } => {
-                ChangeImpact::default()
-            }
+            GraphChange::ProxyError { .. }
+            | GraphChange::MeterStreamFailed { .. }
+            | GraphChange::SyncDone { .. } => ChangeImpact::default(),
             GraphChange::Disconnected => {
                 self.clear();
                 ChangeImpact::default()
@@ -482,6 +491,32 @@ mod tests {
         assert!(m.ports.is_empty());
         assert!(m.links.is_empty());
         assert!(m.nodes.contains_key(&11));
+    }
+
+    #[test]
+    fn empty_info_props_keep_the_node() {
+        let mut m = GraphMirror::default();
+        let p = props(&[("node.name", "spk"), ("media.class", "Audio/Sink")]);
+        m.apply(
+            &GraphChange::NodeAdded {
+                id: 1,
+                global_props: p.clone(),
+            },
+            "x",
+        );
+        m.apply(&GraphChange::NodeInfo { id: 1, props: p }, "x");
+        m.apply(
+            &GraphChange::NodeInfo {
+                id: 1,
+                props: Props::new(),
+            },
+            "x",
+        );
+        assert_eq!(m.nodes[&1].kind, NodeKind::Output);
+        assert_eq!(
+            m.nodes[&1].props.get("node.name").map(String::as_str),
+            Some("spk")
+        );
     }
 
     #[test]

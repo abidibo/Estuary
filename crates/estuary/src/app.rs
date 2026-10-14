@@ -9,7 +9,10 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use adw::prelude::*;
-use estuary_engine::{ConnectionState, Engine, EngineConfig, EngineError, Event, GraphSnapshot};
+use estuary_engine::{
+    Command, ConnectionState, Engine, EngineConfig, EngineError, EngineWarning, Event,
+    GraphSnapshot, MeterTarget,
+};
 use relm4::{
     Component, ComponentController, ComponentParts, ComponentSender, Controller, adw, gtk,
 };
@@ -19,6 +22,10 @@ use crate::i18n::i18n;
 use crate::pages::apps::{AppsMsg, AppsPage};
 use crate::pages::matrix::MatrixPage;
 use crate::pages::status::{RootView, root_view, status_page};
+use crate::widgets::meter_hub::MeterHub;
+
+/// Debounce for recomputing which meters are visible (UI M4.4).
+const METER_RECOMPUTE: Duration = Duration::from_millis(100);
 
 const REPOSITORY: &str = "https://github.com/abidibo/estuary";
 
@@ -32,6 +39,11 @@ pub struct AppModel {
     apps_page: Controller<AppsPage>,
     _matrix_page: Controller<MatrixPage>,
     toasts: adw::ToastOverlay,
+    main_view: adw::ViewStack,
+    meters: MeterHub,
+    meter_recompute_pending: bool,
+    /// Last subscription sent to the engine; `None` forces a resend (new engine).
+    meter_targets_sent: Option<Vec<MeterTarget>>,
 }
 
 impl std::fmt::Debug for AppModel {
@@ -57,6 +69,9 @@ pub enum AppMsg {
     /// F5 "Restart Engine" button.
     RestartEngine,
     ShowAbout,
+    /// Something affecting meter visibility changed (scroll, page, window, rows).
+    ScheduleMeters,
+    RecomputeMeters,
 }
 
 impl Component for AppModel {
@@ -81,7 +96,8 @@ impl Component for AppModel {
         root: adw::ApplicationWindow,
         sender: ComponentSender<Self>,
     ) -> ComponentParts<Self> {
-        let apps_page = AppsPage::builder().launch(()).detach();
+        let meters = MeterHub::default();
+        let apps_page = AppsPage::builder().launch(meters.clone()).detach();
         let matrix_page = MatrixPage::builder().launch(()).detach();
 
         // Pages
@@ -148,6 +164,7 @@ impl Component for AppModel {
         }
 
         install_actions(&root, &main_view, &sender);
+        connect_meter_visibility(&root, &main_view, apps_page.widget(), &sender);
 
         let mut model = AppModel {
             engine: None,
@@ -158,6 +175,10 @@ impl Component for AppModel {
             apps_page,
             _matrix_page: matrix_page,
             toasts,
+            main_view: main_view.clone(),
+            meters,
+            meter_recompute_pending: false,
+            meter_targets_sent: None,
         };
         model.start_engine(&sender);
         let mut widgets = AppWidgets {
@@ -177,7 +198,13 @@ impl Component for AppModel {
         root: &adw::ApplicationWindow,
     ) {
         match msg {
-            AppMsg::Engine(ev) => self.on_engine_event(ev),
+            AppMsg::Engine(ev) => {
+                let rows_may_change = matches!(ev, Event::Snapshot(_));
+                self.on_engine_event(ev);
+                if rows_may_change {
+                    self.schedule_meters(&sender);
+                }
+            }
             AppMsg::RestartEngine => {
                 if let Some(engine) = self.engine.take()
                     && let Err(e) = engine.shutdown(Duration::from_secs(1))
@@ -187,6 +214,11 @@ impl Component for AppModel {
                 self.start_engine(&sender);
             }
             AppMsg::ShowAbout => show_about(root),
+            AppMsg::ScheduleMeters => self.schedule_meters(&sender),
+            AppMsg::RecomputeMeters => {
+                self.meter_recompute_pending = false;
+                self.recompute_meters(root);
+            }
         }
     }
 
@@ -218,12 +250,43 @@ impl AppModel {
         self.toasts.add_toast(toast);
     }
 
+    fn schedule_meters(&mut self, sender: &ComponentSender<Self>) {
+        if self.meter_recompute_pending {
+            return;
+        }
+        self.meter_recompute_pending = true;
+        let s = sender.input_sender().clone();
+        gtk::glib::timeout_add_local_once(METER_RECOMPUTE, move || s.emit(AppMsg::RecomputeMeters));
+    }
+
+    /// Meter only what is on screen (UI M4.4); nothing while the window is hidden.
+    fn recompute_meters(&mut self, root: &adw::ApplicationWindow) {
+        let on_apps = self.main_view.visible_child_name().as_deref() == Some("apps");
+        let targets = if root.is_visible() && on_apps {
+            self.meters.visible_targets(self.apps_page.widget())
+        } else {
+            Vec::new()
+        };
+        if self.meter_targets_sent.as_ref() == Some(&targets) {
+            return;
+        }
+        if let Some(engine) = &self.engine
+            && engine
+                .send(Command::SetMeterTargets(targets.clone()))
+                .is_ok()
+        {
+            self.meter_targets_sent = Some(targets);
+        }
+    }
+
     fn start_engine(&mut self, sender: &ComponentSender<Self>) {
         self.fatal = None;
         self.connection = None;
         self.status_dirty.set(true);
         match Engine::start(EngineConfig::default()) {
             Ok((engine, rx)) => {
+                self.meters.set_bank(engine.meters());
+                self.meter_targets_sent = None;
                 self.engine = Some(engine);
                 // C2: forward engine events into the component. A closed channel without a
                 // Fatal event still means the engine is gone (UI-4).
@@ -257,6 +320,8 @@ impl AppModel {
                 self.apps_page.emit(AppsMsg::Update(self.snapshot.clone()));
             }
             Event::Restored => self.show_toast(&i18n("Audio system restarted, setup restored")),
+            Event::MeterAssignments(a) => self.meters.set_assignments(a),
+            Event::Warning(EngineWarning::MeterFailed(target)) => self.meters.set_failed(target),
             Event::Fatal(e) => {
                 // Only the first fatal error matters; the forwarder's ThreadGone may follow it.
                 if self.fatal.is_none() {
@@ -266,7 +331,7 @@ impl AppModel {
                 }
                 self.engine = None;
             }
-            // Routed to their features in later milestones (meters M4, rules M5, quit M11).
+            // Routed to their features in later milestones (rules M5, quit M11).
             other => tracing::debug!(?other, "engine event not handled yet"),
         }
     }
@@ -320,4 +385,30 @@ fn show_about(root: &adw::ApplicationWindow) {
         ))
         .build();
     about.present(Some(root));
+}
+
+fn connect_meter_visibility(
+    root: &adw::ApplicationWindow,
+    main_view: &adw::ViewStack,
+    scroller: &gtk::ScrolledWindow,
+    sender: &ComponentSender<AppModel>,
+) {
+    let schedule = {
+        let s = sender.input_sender().clone();
+        move || s.emit(AppMsg::ScheduleMeters)
+    };
+    let adj = scroller.vadjustment();
+    adj.connect_value_changed({
+        let f = schedule.clone();
+        move |_| f()
+    });
+    adj.connect_changed({
+        let f = schedule.clone();
+        move |_| f()
+    });
+    main_view.connect_visible_child_notify({
+        let f = schedule.clone();
+        move |_| f()
+    });
+    root.connect_visible_notify(move |_| schedule());
 }

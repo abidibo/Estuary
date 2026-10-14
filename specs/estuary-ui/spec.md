@@ -358,6 +358,12 @@ In M3, rows show the name and current target as plain subtitle text only.
 
 ### M4: Level meters (widget side)
 
+**Implementation notes (M4 as built, 2026-10-14).**
+
+- **`PeakMeter` wraps a `gtk::DrawingArea`** (`Rc<Inner>`), not a glib subclass. Drawing is a cairo draw function; the frame-clock tick runs only while bound and mapped. The accessible role is `Meter` (set at construction), with label "Level of {name}". The failed state draws a short dash and sets the tooltip "Level unavailable". The visuals are the same as specified: stereo L/R bars, green/yellow/red zones, 2 px hold tick. The user confirmed stereo bars over a single bar (2026-10-14). The high-contrast outline moves to M11.5.
+- **`MeterHub` replaces `BindMeters` broadcasting and `MeterVisibility`.** It's a shared registry (weak references to meters plus their targets) that rows register with when created. It rebinds on `MeterAssignments`, on `MeterFailed` and on a new engine's bank (`set_bank`), and computes visible targets (mapped meters inside the Apps scroller, top-to-bottom). The root debounces recomputes by 100 ms, triggered by scroller adjustments, ViewStack page changes, window visibility and every snapshot, and sends `SetMeterTargets` only on change. A new or restarted engine forces a resend.
+- **Measured CPU:** 0.6 % of one core with 2 live meters (debug build). The 16-meter acceptance check waits until the matrix provides enough rows.
+
 #### M4.1 Ballistics (pure)
 
 `widgets/peak_meter/ballistics.rs`:

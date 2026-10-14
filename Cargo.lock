@@ -423,6 +423,7 @@ dependencies = [
  "thiserror",
  "toml",
  "tracing",
+ "tracing-subscriber",
  "uuid",
 ]
 

@@ -4,6 +4,7 @@
 //! Re-entrancy rule: callbacks only enqueue inputs; a single `drain` processes the queue. No
 //! `RefCell` borrow is held while the core runs or while effects are executed.
 
+mod meter_stream;
 mod params;
 pub(crate) mod thread;
 mod timers;
@@ -13,12 +14,12 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use std::rc::{Rc, Weak};
 use std::sync::Arc;
 
-use pipewire::client::{Client, ClientListener};
+use pipewire::client::{Client, ClientChangeMask, ClientListener};
 use pipewire::context::ContextRc;
 use pipewire::core::{CoreRc, PW_ID_CORE};
 use pipewire::main_loop::MainLoopRc;
 use pipewire::metadata::{Metadata, MetadataListener};
-use pipewire::node::{Node, NodeListener};
+use pipewire::node::{Node, NodeChangeMask, NodeListener};
 use pipewire::properties::properties;
 use pipewire::proxy::ProxyT;
 use pipewire::registry::{GlobalObject, RegistryRc};
@@ -26,6 +27,7 @@ use pipewire::spa::param::ParamType;
 use pipewire::spa::utils::dict::DictRef;
 use pipewire::types::ObjectType;
 
+use self::meter_stream::{MeterSpec, MeterStream, create_meter};
 use self::thread::{Control, guarded};
 use self::timers::Timers;
 use crate::core::EngineCore;
@@ -33,7 +35,7 @@ use crate::core::effects::{Effects, OwnedKey, PwOp, TimerKind};
 use crate::graph::{
     ClientEntry, CoreInfo, GraphChange, LinkEntry, PortDir, PortEntry, Props, parse_u32,
 };
-use crate::meter::MeterBank;
+use crate::meter::{MeterBank, MeterSlotId};
 use crate::{Command, EngineConfig, Event};
 
 /// Linux `EPIPE`: the core reports a lost connection as `error(PW_ID_CORE, .., -EPIPE, ..)`.
@@ -49,6 +51,7 @@ enum Input {
 /// Everything tied to one connection. Field order is drop order: proxies and their listeners
 /// first, then the registry, then the core.
 struct Conn {
+    meters: HashMap<u16, MeterStream>,
     nodes: HashMap<u32, (Node, NodeListener)>,
     clients: HashMap<u32, (Client, ClientListener)>,
     default_meta: Option<DefaultMeta>,
@@ -73,6 +76,8 @@ struct State {
     conn: Option<Conn>,
     /// Connections retired inside a callback; dropped from the control channel (`DropGraveyard`).
     graveyard: Vec<Conn>,
+    /// Same for meter streams destroyed while one of their own callbacks may be running.
+    meter_graveyard: Vec<MeterStream>,
 }
 
 struct Inner {
@@ -82,7 +87,7 @@ struct Inner {
     ev_tx: async_channel::Sender<Event>,
     timers: Timers,
     ctl_tx: pipewire::channel::Sender<Control>,
-    _meters: Arc<MeterBank>,
+    meters: Arc<MeterBank>,
     state: RefCell<State>,
     queue: RefCell<VecDeque<Input>>,
     draining: Cell<bool>,
@@ -111,11 +116,12 @@ impl Shell {
             ev_tx,
             timers,
             ctl_tx,
-            _meters: meters,
+            meters,
             state: RefCell::new(State {
                 core,
                 conn: None,
                 graveyard: Vec::new(),
+                meter_graveyard: Vec::new(),
             }),
             queue: RefCell::new(VecDeque::new()),
             draining: Cell::new(false),
@@ -131,7 +137,11 @@ impl Shell {
         match c {
             Control::Cmd(cmd) => self.push(Input::Cmd(cmd)),
             Control::Timer(kind) => self.push(Input::Timer(kind)),
-            Control::DropGraveyard => self.0.state.borrow_mut().graveyard.clear(),
+            Control::DropGraveyard => {
+                let mut st = self.0.state.borrow_mut();
+                st.graveyard.clear();
+                st.meter_graveyard.clear();
+            }
             Control::Shutdown => self.0.ml.quit(),
         }
     }
@@ -139,6 +149,7 @@ impl Shell {
     /// Drops every PipeWire object. Called after the loop stopped.
     pub fn finish(&self) {
         let mut st = self.0.state.borrow_mut();
+        st.meter_graveyard.clear();
         st.graveyard.clear();
         st.conn = None;
         self.0.queue.borrow_mut().clear();
@@ -182,7 +193,9 @@ impl Shell {
             }
         }
         for op in fx.ops {
-            self.run_op(op);
+            if let Some(change) = self.run_op(op) {
+                self.0.queue.borrow_mut().push_back(Input::Graph(change));
+            }
         }
         for ev in fx.events {
             // The UI may already be gone during shutdown; nothing to do then.
@@ -198,12 +211,13 @@ impl Shell {
         }
     }
 
-    fn run_op(&self, op: PwOp) {
+    /// Executes one op. A synchronous failure is returned as a change for the core.
+    fn run_op(&self, op: PwOp) -> Option<GraphChange> {
         let mut st = self.0.state.borrow_mut();
         let st = &mut *st;
-        let Some(conn) = st.conn.as_ref() else {
+        let Some(conn) = st.conn.as_mut() else {
             tracing::debug!(?op, "no connection; op dropped");
-            return;
+            return None;
         };
         match op {
             PwOp::MetaWrite {
@@ -219,7 +233,49 @@ impl Shell {
                 Ok(seq) => st.core.on_sync_issued(purpose, seq.seq()),
                 Err(e) => tracing::warn!(?purpose, "core.sync failed: {e}"),
             },
+            PwOp::CreateMeter {
+                slot,
+                target_serial,
+                capture_sink,
+                autoconnect,
+            } => {
+                let spec = MeterSpec {
+                    slot,
+                    target_serial,
+                    capture_sink,
+                    autoconnect,
+                    instance: st.core.instance(),
+                };
+                let weak = Rc::downgrade(&self.0);
+                let on_error = move |slot: MeterSlotId, message: String| {
+                    Self::callback(&weak, |s| {
+                        s.push(Input::Graph(GraphChange::MeterStreamFailed {
+                            slot,
+                            message,
+                        }));
+                    });
+                };
+                match create_meter(&conn.core, self.0.meters.clone(), &spec, on_error) {
+                    Ok(meter) => {
+                        conn.meters.insert(slot.0, meter);
+                    }
+                    Err(e) => {
+                        return Some(GraphChange::MeterStreamFailed {
+                            slot,
+                            message: e.to_string(),
+                        });
+                    }
+                }
+            }
+            PwOp::DestroyMeter { slot } => {
+                if let Some(meter) = conn.meters.remove(&slot.0) {
+                    st.meter_graveyard.push(meter);
+                    let _ = self.0.ctl_tx.send(Control::DropGraveyard);
+                }
+                self.0.meters.reset(slot);
+            }
         }
+        None
     }
 
     /// Wraps a callback: upgrade the weak handle, contain panics.
@@ -293,6 +349,7 @@ impl Shell {
             })
             .register();
         self.0.state.borrow_mut().conn = Some(Conn {
+            meters: HashMap::new(),
             nodes: HashMap::new(),
             clients: HashMap::new(),
             default_meta: None,
@@ -435,6 +492,11 @@ impl Shell {
             .info({
                 let w = weak.clone();
                 move |info| {
+                    // State-only updates (idle ↔ running) carry no props: applying them would
+                    // wipe the node's identity (found at M4).
+                    if !info.change_mask().contains(NodeChangeMask::PROPS) {
+                        return;
+                    }
                     let props = dict_to_props(info.props());
                     Self::callback(&w, |s| {
                         s.push(Input::Graph(GraphChange::NodeInfo { id, props }));
@@ -467,6 +529,9 @@ impl Shell {
         client
             .add_listener_local()
             .info(move |info| {
+                if !info.change_mask().contains(ClientChangeMask::PROPS) {
+                    return;
+                }
                 let props = dict_to_props(info.props());
                 Self::callback(&weak, |s| {
                     s.push(Input::Graph(GraphChange::ClientAdded(ClientEntry {

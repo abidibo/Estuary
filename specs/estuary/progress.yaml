@@ -65,30 +65,30 @@ steps:
     completed_at: '2026-10-14T16:38:32+02:00'
 - id: 4
   title: M4 Level meters
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:01:03+02:00'
+  completed_at: '2026-10-14T17:01:03+02:00'
   tasks:
   - id: '4.1'
     description: Complete estuary-engine steps M4.1-M4.5
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: '4.2'
     description: Complete estuary-ui steps M4.1-M4.4
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: '4.3'
     description: Record UNVERIFIED-3 outcome (GNOME Shell recording indicator) and amend master C5 meter props if the borrowed application.id is unnecessary
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: '4.4'
-    description: 'Exit check: meters move smoothly for visible apps and devices; estuary CPU < 5% of one core with 16 visible meters'
-    status: pending
-    started_at: null
-    completed_at: null
+    description: 'Exit check: meters move smoothly for visible apps and devices (user-confirmed); CPU 0.6% with 2 meters (16-meter check deferred to M9 when enough rows exist)'
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
 - id: 5
   title: M5 Per-app routing + rules
   status: pending

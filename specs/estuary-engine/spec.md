@@ -576,6 +576,16 @@ Configurable fault injection: fail the Nth create, delay port appearance, drop a
 
 ### M4 (engine side): Level meters
 
+**Implementation notes (M4 as built, 2026-10-14).**
+
+- **Bug found and fixed: state-only node info wiped props.** When a node goes idle ↔ running, PipeWire sends a node `info` event whose change mask lacks `PROPS`, and `info.props()` comes back empty. Applying it replaced the node's props, so sinks lost `node.name` and became `NodeKind::Other`. Devices vanished from snapshots and their meters were destroyed. The shell now ignores node and client info events without the `PROPS` change-mask bit, and `GraphMirror::apply` ignores `NodeInfo` with empty props as a second line of defence (unit test `empty_info_props_keep_the_node`).
+- **Meter streams** use `StreamRc` (`StreamBox<'c>` borrows the core and can't live in `Conn`). Destroyed meters go through a `meter_graveyard`, emptied by `Control::DropGraveyard`, so a stream is never dropped inside its own callback. A synchronous creation failure becomes `MeterStreamFailed`.
+- **WirePlumber volume reset** on meter streams uses `Stream::set_control(SPA_PROP_channelVolumes, [1.0, 1.0])` once, on the first Props `param_changed`.
+- **`MeterPlan::reconcile(&mirror)`** replaces the separate `set_targets`/`on_graph` deltas. It runs on `SetMeterTargets`, on any topology change and on `Ready`. Meters exist only in `Ready`. A destroyed meter logs "meter no longer wanted" at debug level with the node's kind and name.
+- **`Denoised` targets** resolve to no nodes until the denoiser exists (M10). Their test moves to M10.
+- **Live test `meter_moves`** plays a 0.5-amplitude 1 kHz tone into a temporary lingering null sink (silent for the user) instead of the default sink, meters both the sink (`Device`) and the stream (`App`), and cleans up. Measured peaks: 0.500 / 0.500. Live tests initialise logs from `ESTUARY_LOG` (`tracing-subscriber` dev-dependency).
+- **M4.1** (docs/experiments.md): without the borrowed `application.id`, GNOME Shell shows the microphone indicator for a peak-only monitor stream; with it, it doesn't. C5 is kept.
+
 #### M4.1 Live experiment: meter streams vs the GNOME Shell recording indicator (UNVERIFIED-3)
 
 ```sh

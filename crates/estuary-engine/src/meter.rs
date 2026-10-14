@@ -61,12 +61,43 @@ impl MeterBank {
     }
 
     /// RT-side write: peaks with Relaxed, then bump `seq` with Release (C9).
-    #[allow(dead_code)] // called by the meter streams' process callback (M4)
     pub(crate) fn write(&self, id: MeterSlotId, peak: [f32; 2]) {
         if let Some(slot) = self.slots.get(usize::from(id.0)) {
             slot.peak[0].store(peak[0].to_bits(), Ordering::Relaxed);
             slot.peak[1].store(peak[1].to_bits(), Ordering::Relaxed);
             slot.seq.fetch_add(1, Ordering::Release);
+        }
+    }
+}
+
+impl MeterBank {
+    /// Zero a freed slot and bump `seq`, so a reader sees the change.
+    pub(crate) fn reset(&self, id: MeterSlotId) {
+        self.write(id, [0.0, 0.0]);
+    }
+}
+
+/// LIFO allocator over the 64 slots (C9).
+#[derive(Debug)]
+pub(crate) struct SlotAllocator {
+    free: Vec<u16>,
+}
+
+impl SlotAllocator {
+    pub fn new() -> Self {
+        let n = u16::try_from(METER_SLOTS).unwrap_or(u16::MAX);
+        Self {
+            free: (0..n).rev().collect(),
+        }
+    }
+
+    pub fn alloc(&mut self) -> Option<MeterSlotId> {
+        self.free.pop().map(MeterSlotId)
+    }
+
+    pub fn free(&mut self, id: MeterSlotId) {
+        if !self.free.contains(&id.0) {
+            self.free.push(id.0);
         }
     }
 }
@@ -80,6 +111,20 @@ impl Default for MeterBank {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn allocator_hands_out_64_distinct_slots() {
+        let mut a = SlotAllocator::new();
+        let mut got = std::collections::HashSet::new();
+        while let Some(id) = a.alloc() {
+            got.insert(id);
+        }
+        assert_eq!(got.len(), METER_SLOTS);
+        a.free(MeterSlotId(7));
+        a.free(MeterSlotId(7));
+        assert_eq!(a.alloc(), Some(MeterSlotId(7)));
+        assert_eq!(a.alloc(), None, "double free does not duplicate");
+    }
 
     #[test]
     fn write_then_read() {

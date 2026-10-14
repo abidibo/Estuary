@@ -1,13 +1,17 @@
 //! Rows of the Apps page (UI M3.6). Read-only in M3: meters arrive in M4, controls in M5.
 
 use adw::prelude::*;
-use estuary_engine::{AppGroup, AppKey, DeviceInfo, DeviceKey, GraphSnapshot, RouteTarget};
+use estuary_engine::{
+    AppGroup, AppKey, DeviceInfo, DeviceKey, GraphSnapshot, MeterTarget, RouteTarget,
+};
 use relm4::factory::{DynamicIndex, FactoryComponent, FactorySender};
 use relm4::{adw, gtk};
 
 use crate::i18n::{i18n, i18n_f, ni18n_f};
 use crate::pages::reconcile::KeyedRow;
 use crate::state::volume;
+use crate::widgets::meter_hub::MeterHub;
+use crate::widgets::peak_meter::PeakMeter;
 
 /// Human-readable name of where an app currently plays.
 pub fn target_label(target: &RouteTarget, snap: &GraphSnapshot) -> String {
@@ -41,6 +45,7 @@ pub fn target_label(target: &RouteTarget, snap: &GraphSnapshot) -> String {
 pub struct AppRowData {
     pub group: AppGroup,
     pub target_label: String,
+    pub hub: MeterHub,
 }
 
 #[derive(Debug)]
@@ -52,6 +57,7 @@ pub struct AppRow {
 pub struct AppRowWidgets {
     row: adw::ActionRow,
     icon: gtk::Image,
+    _meter: PeakMeter,
 }
 
 impl AppRow {
@@ -101,7 +107,17 @@ impl FactoryComponent for AppRow {
         let icon = gtk::Image::new();
         icon.set_pixel_size(32);
         root.add_prefix(&icon);
-        let mut widgets = AppRowWidgets { row: root, icon };
+        // Translators: accessible name of a level meter; {} is an app name
+        let meter = PeakMeter::new(&i18n_f("Level of {}", &[&self.data.group.display_name]));
+        root.add_suffix(meter.widget());
+        self.data
+            .hub
+            .register(&meter, MeterTarget::App(self.data.group.key.clone()));
+        let mut widgets = AppRowWidgets {
+            row: root,
+            icon,
+            _meter: meter,
+        };
         self.update_view(&mut widgets, sender);
         widgets
     }
@@ -134,6 +150,7 @@ impl KeyedRow for AppRow {
 pub struct OutputRowData {
     pub device: DeviceInfo,
     pub is_default: bool,
+    pub hub: MeterHub,
 }
 
 #[derive(Debug)]
@@ -145,6 +162,7 @@ pub struct OutputRow {
 pub struct OutputRowWidgets {
     row: adw::ActionRow,
     volume: gtk::Label,
+    _meter: PeakMeter,
 }
 
 impl FactoryComponent for OutputRow {
@@ -180,11 +198,21 @@ impl FactoryComponent for OutputRow {
     ) -> OutputRowWidgets {
         let icon = gtk::Image::from_icon_name("audio-speakers-symbolic");
         root.add_prefix(&icon);
+        // Translators: accessible name of a level meter; {} is a device name
+        let meter = PeakMeter::new(&i18n_f("Level of {}", &[&self.data.device.description]));
+        root.add_suffix(meter.widget());
+        self.data
+            .hub
+            .register(&meter, MeterTarget::Device(self.data.device.key.clone()));
         let volume = gtk::Label::new(None);
         volume.add_css_class("dim-label");
         volume.add_css_class("numeric");
         root.add_suffix(&volume);
-        let mut widgets = OutputRowWidgets { row: root, volume };
+        let mut widgets = OutputRowWidgets {
+            row: root,
+            volume,
+            _meter: meter,
+        };
         self.update_view(&mut widgets, sender);
         widgets
     }

@@ -169,123 +169,123 @@ steps:
     completed_at: '2026-10-14T16:38:32+02:00'
 - id: M4.1
   title: Ballistics (pure)
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:01:03+02:00'
+  completed_at: '2026-10-14T17:01:03+02:00'
   tasks:
   - id: M4.1.1
     description: Implement widgets/peak_meter/ballistics.rs constants (FLOOR_DB, RELEASE_DB_PER_S, HOLD_S, STALE_S, WARN_DB, CLIP_DB) and lin_to_db
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.1.2
     description: Implement ballistics::step with instant attack, 20 dB/s release, 1.5 s hold
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.1.3
     description: Implement ballistics::zone and ballistics::fraction (powf 1.5 curve)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.1.4
     description: Unit-test step (attack, release, hold expiry, stale decay), zone thresholds and fraction bounds
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
 - id: M4.2
   title: '`PeakMeter` widget'
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:01:03+02:00'
+  completed_at: '2026-10-14T17:01:03+02:00'
   tasks:
   - id: M4.2.1
-    description: Create the PeakMeter glib subclass (imp.rs, NAME EstuaryPeakMeter, parent gtk::Widget) with the MeterState RefCell
-    status: pending
-    started_at: null
-    completed_at: null
+    description: PeakMeter as a gtk::DrawingArea wrapper (Rc<Inner>, MeterState RefCell) instead of a glib subclass
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.2.2
     description: Implement the public wrapper new(orientation), bind(bank, slots), unbind(), set_failed(bool) in widgets/peak_meter/mod.rs
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.2.3
     description: 'Implement the tick callback: MeterBank::read per slot, max across slots, seq staleness, ballistics::step, queue_draw on > 0.1 dB change'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.2.4
     description: Install/remove the tick callback on bind/unbind and map/unmap
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.2.5
-    description: Implement snapshot() drawing L/R bars, zone-colored segments, 2 px hold tick and background
-    status: pending
-    started_at: null
-    completed_at: null
+    description: 'Cairo draw func: L/R bars, zone-colored segments, 2 px hold tick, track background'
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.2.6
-    description: Implement measure() (min 6x48, natural 8x120) and the failed-state "—" label with "Level unavailable" tooltip
-    status: pending
-    started_at: null
-    completed_at: null
+    description: Content size 120x8 / min 48x6; failed state draws a dash with the 'Level unavailable' tooltip
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.2.7
-    description: Set AccessibleRole::Meter without value updates and add the high-contrast outline
-    status: pending
-    started_at: null
-    completed_at: null
+    description: AccessibleRole::Meter at construction, 'Level of {name}' label, no value updates
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
 - id: M4.3
   title: Meter binding
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:01:03+02:00'
+  completed_at: '2026-10-14T17:01:03+02:00'
   tasks:
   - id: M4.3.1
-    description: Store MeterAssignments in UiState.meter_slots and broadcast BindMeters(Arc<HashMap>) to AppsPage and MatrixPage
-    status: pending
-    started_at: null
-    completed_at: null
+    description: MeterHub stores MeterAssignments and rebinds every registered meter (replaces BindMeters broadcast)
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.3.2
-    description: In each page keep HashMap<MeterTarget, PeakMeter> and bind/unbind meters on BindMeters (AppsPage forwards via rows.broadcast)
-    status: pending
-    started_at: null
-    completed_at: null
+    description: Rows register their PeakMeter + MeterTarget with the MeterHub on creation; dead meters pruned via weak refs
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.3.3
     description: Handle Warning(MeterFailed(target)) by calling set_failed(true) until the next assignment containing the target
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
 - id: M4.4
   title: Visibility tracking → `SetMeterTargets`
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T17:01:03+02:00'
+  completed_at: '2026-10-14T17:01:03+02:00'
   tasks:
   - id: M4.4.1
-    description: Implement MeterVisibility (register, clear_page, schedule_recompute with 100 ms debounce) in widgets/meter_visibility.rs
-    status: pending
-    started_at: null
-    completed_at: null
+    description: Root debounces meter recomputes (100 ms) via AppMsg::ScheduleMeters/RecomputeMeters (replaces MeterVisibility)
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.4.2
     description: 'Implement the recompute: empty when the window is hidden, else mapped meters intersecting the scroller ordered top-to-bottom, left-to-right, deduped'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.4.3
     description: 'Connect triggers: scroller adjustments value-changed/changed, ViewStack visible-child, window visible/is-active, page rebuilds'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.4.4
     description: Send AppMsg::MeterTargets on change and forward Command::SetMeterTargets from AppModel::update
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
   - id: M4.4.5
-    description: Connect root notify::visible to send AppMsg::WindowShown and trigger MeterVisibility::schedule_recompute (moved from M3.3.5)
-    status: pending
-    started_at: null
-    completed_at: null
+    description: Root notify::visible triggers a meter recompute (WindowShown notices move to M11.3)
+    status: completed
+    started_at: '2026-10-14T17:01:03+02:00'
+    completed_at: '2026-10-14T17:01:03+02:00'
 - id: M5.1
   title: Volume math (pure)
   status: pending
@@ -1055,6 +1055,11 @@ steps:
     completed_at: null
   - id: M11.5.8
     description: Add a check (script or CI step) that greps crates/estuary/src for user-visible string literals not wrapped in i18n*/ni18n_f (moved from M3.2.7)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.5.9
+    description: PeakMeter high-contrast outline (adw::StyleManager::is_high_contrast) (moved from M4.2.7)
     status: pending
     started_at: null
     completed_at: null
