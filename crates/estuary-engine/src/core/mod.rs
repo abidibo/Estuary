@@ -2,9 +2,15 @@
 //! No PipeWire objects live here, so all of it is unit-testable (engine "functional core").
 
 pub(crate) mod conn;
+pub(crate) mod desired;
 pub(crate) mod effects;
 pub(crate) mod meters;
+pub(crate) mod ports;
+pub(crate) mod quit;
+pub(crate) mod reconcile;
 pub(crate) mod routing;
+#[cfg(test)]
+mod scenarios;
 pub(crate) mod snapshot;
 
 use std::sync::Arc;
@@ -13,10 +19,11 @@ use std::time::{Duration, Instant};
 use conn::{CapabilityResult, ConnState, evaluate_capabilities};
 use effects::{Effects, OwnedKey, PwOp, SyncPurpose, TimerKind};
 use meters::MeterPlan;
+use reconcile::Reconciler;
 use routing::{RoutingOutput, RoutingState, TARGET_KEY};
 
 use crate::error::{Backoff, UnsupportedReason};
-use crate::error::{EngineWarning, WarnedNode};
+use crate::error::{EngineWarning, SetupIssue, WarnedNode};
 use crate::graph::{GraphChange, GraphMirror};
 use crate::setup::Setup;
 use crate::{Command, ConnectionState, Event};
@@ -25,6 +32,14 @@ const SNAPSHOT_COALESCE: Duration = Duration::from_millis(50);
 const WP_WAIT: Duration = Duration::from_secs(5);
 /// C7: a stream counts as settled at most this long after appearing.
 const STREAM_SETTLE: Duration = Duration::from_millis(500);
+/// C8: graph changes are reconciled after this debounce.
+const RECONCILE_DEBOUNCE: Duration = Duration::from_millis(30);
+const STATS_POLL: Duration = Duration::from_secs(1);
+const TEARDOWN_TIMEOUT: Duration = Duration::from_secs(2);
+/// After a reconnect, `Restored` is sent once the rebuild settles, or after this long.
+const RESTORE_MAX_WAIT: Duration = Duration::from_secs(5);
+/// F12: more xruns than this within a minute on one cell → warning (at most once a minute).
+const XRUNS_PER_MINUTE_WARN: u64 = 10;
 
 #[derive(Debug)]
 pub(crate) struct EngineCore {
@@ -35,6 +50,15 @@ pub(crate) struct EngineCore {
     setup: Option<Setup>,
     meters: MeterPlan,
     routing: RoutingState,
+    reconciler: Reconciler,
+    /// When the armed Reconcile timer fires; an earlier request re-arms it.
+    reconcile_due: Option<Instant>,
+    stats_armed: bool,
+    /// After a reconnect: when Ready happened, until `Restored` is sent.
+    restore_pending: Option<Instant>,
+    torn_down: bool,
+    /// Per-cell xrun history for F12: (first total seen this minute, when, last warning).
+    xruns: std::collections::HashMap<crate::model::CellKey, (u64, Instant, Option<Instant>)>,
     had_ready_before: bool,
     /// Sync requests in flight: purpose → sequence number returned by `core.sync()`.
     pending_syncs: Vec<(SyncPurpose, i32)>,
@@ -53,6 +77,12 @@ impl EngineCore {
             setup: None,
             meters: MeterPlan::new(),
             routing: RoutingState::default(),
+            reconciler: Reconciler::default(),
+            reconcile_due: None,
+            stats_armed: false,
+            restore_pending: None,
+            torn_down: false,
+            xruns: std::collections::HashMap::new(),
             had_ready_before: false,
             pending_syncs: Vec::new(),
             probe_failed: false,
@@ -162,6 +192,37 @@ impl EngineCore {
                 }
                 return fx;
             }
+            GraphChange::ProxyError { key, res, message } => {
+                tracing::warn!(?key, res, %message, "creating an owned object failed");
+                self.reconciler.on_failure(key);
+                fx.merge(self.schedule_reconcile(RECONCILE_DEBOUNCE));
+                return fx;
+            }
+            GraphChange::CreateFailed { key, message } => {
+                tracing::warn!(?key, %message, "creating an owned object failed");
+                self.reconciler.on_failure(key);
+                if let Some(node) = warned_node(key) {
+                    fx.events
+                        .push(Event::Warning(EngineWarning::NodeCreateFailed {
+                            node,
+                            message: message.clone(),
+                        }));
+                }
+                fx.merge(self.schedule_reconcile(RECONCILE_DEBOUNCE));
+                return fx;
+            }
+            GraphChange::FilterError { key, message } => {
+                fx.merge(self.cell_failed(key, message));
+                return fx;
+            }
+            GraphChange::FilterPoisoned { key } => {
+                fx.merge(self.cell_failed(key, "processing panicked; send recreated"));
+                return fx;
+            }
+            GraphChange::FilterXruns { key, total } => {
+                fx.merge(self.on_xruns(key, *total));
+                return fx;
+            }
             GraphChange::MeterStreamFailed { slot, message } => {
                 tracing::warn!(slot = slot.0, %message, "meter stream failed");
                 if let Some(target) = self.meters.on_failed(*slot) {
@@ -187,6 +248,7 @@ impl EngineCore {
             fx.merge(self.mark_dirty());
         }
         if impact.topology {
+            fx.merge(self.schedule_reconcile(RECONCILE_DEBOUNCE));
             fx.merge(self.reconcile_meters());
             if self.state == ConnState::Ready {
                 let setup = self.setup.as_ref();
@@ -222,9 +284,10 @@ impl EngineCore {
                 if !issues.is_empty() {
                     fx.events.push(Event::SetupIssues(issues));
                 }
-                // Channels, mics and cells are built from M8; app rules apply now (M5).
                 self.setup = Some(setup);
                 fx.merge(self.mark_dirty());
+                self.reconciler.forget_failures();
+                fx.merge(self.schedule_reconcile(RECONCILE_DEBOUNCE));
                 self.routing.on_setup();
                 if self.state == ConnState::Ready {
                     let out = self.routing.evaluate_all(&self.mirror, self.setup.as_ref());
@@ -283,12 +346,58 @@ impl EngineCore {
                 self.meters.set_targets(targets);
                 fx.merge(self.reconcile_meters());
             }
-            Command::PrepareQuit => {
-                // No owned objects exist yet, so nothing can be in use.
-                fx.events.push(Event::QuitCheck(Vec::new()));
+            Command::SetCellGain { cell, gain_db } => {
+                let db = gain_db.clamp(crate::setup::GAIN_MIN_DB, crate::setup::GAIN_MAX_DB);
+                if let Some(c) = self
+                    .setup
+                    .as_mut()
+                    .and_then(|s| s.cells.iter_mut().find(|c| c.key() == cell))
+                {
+                    c.gain_db = db;
+                }
+                if self.owned_cell_exists(&cell) {
+                    self.reconciler.on_gain_applied(&cell, db);
+                    fx.ops.push(PwOp::SetGain { key: cell, db });
+                }
             }
-            Command::Teardown => fx.events.push(Event::TeardownComplete),
-            other => tracing::debug!(?other, "command not implemented before M5/M8; ignored"),
+            Command::SetChannelVolume { id, volume } => {
+                if let Some(c) = self
+                    .setup
+                    .as_mut()
+                    .and_then(|s| s.channels.iter_mut().find(|c| c.id == id))
+                {
+                    c.volume = volume.clone();
+                }
+                if let Some(n) = self
+                    .owned_node(|r| matches!(r, crate::graph::OwnedRole::Channel(c) if *c == id))
+                {
+                    fx.ops.push(PwOp::SetNodeVolume { node_id: n, volume });
+                }
+            }
+            Command::SetVirtualMicVolume { id, volume } => {
+                if let Some(v) = self
+                    .setup
+                    .as_mut()
+                    .and_then(|s| s.virtual_mics.iter_mut().find(|v| v.id == id))
+                {
+                    v.volume = volume.clone();
+                }
+                if let Some(n) =
+                    self.owned_node(|r| matches!(r, crate::graph::OwnedRole::Vmic(v) if *v == id))
+                {
+                    fx.ops.push(PwOp::SetNodeVolume { node_id: n, volume });
+                }
+            }
+            Command::PrepareQuit => {
+                let usages = self
+                    .setup
+                    .as_ref()
+                    .map(|s| quit::usages(&self.mirror, s))
+                    .unwrap_or_default();
+                fx.events.push(Event::QuitCheck(usages));
+            }
+            Command::Teardown => fx.merge(self.teardown()),
+            Command::SetVadGate { .. } => tracing::debug!("noise suppression arrives in M10"),
         }
         fx
     }
@@ -321,6 +430,31 @@ impl EngineCore {
                     fx.merge(routing_effects(out));
                 }
             }
+            TimerKind::Reconcile => {
+                self.reconcile_due = None;
+                fx.merge(self.reconcile());
+            }
+            TimerKind::StatsPoll => {
+                self.stats_armed = false;
+                if self.state == ConnState::Ready && self.any_owned_cell() {
+                    fx.ops.push(PwOp::PollStats);
+                    self.stats_armed = true;
+                    fx.timers.push((TimerKind::StatsPoll, STATS_POLL));
+                }
+            }
+            TimerKind::TeardownTimeout => {
+                if self.torn_down
+                    && self
+                        .pending_syncs
+                        .iter()
+                        .any(|(p, _)| *p == SyncPurpose::Teardown)
+                {
+                    tracing::warn!("teardown timed out");
+                    self.pending_syncs
+                        .retain(|(p, _)| *p != SyncPurpose::Teardown);
+                    fx.events.push(Event::TeardownComplete);
+                }
+            }
         }
         fx
     }
@@ -328,6 +462,11 @@ impl EngineCore {
     fn sync_done(&mut self, purpose: SyncPurpose) -> Effects {
         match (purpose, &self.state) {
             (SyncPurpose::InitialRegistry, ConnState::Syncing) => self.check_capabilities(),
+            (SyncPurpose::Teardown, _) => Effects {
+                events: vec![Event::TeardownComplete],
+                cancel_timers: vec![TimerKind::TeardownTimeout],
+                ..Default::default()
+            },
             (SyncPurpose::WriteProbe, ConnState::Probing) => {
                 if self.probe_failed {
                     self.state = ConnState::PermissionDenied;
@@ -413,16 +552,222 @@ impl EngineCore {
         // The first snapshot after Connected bypasses the coalescer (C3).
         fx.events.push(self.snapshot_event());
         if self.had_ready_before {
-            // Nothing is owned before M8, so the setup is "rebuilt" as soon as we're ready.
-            fx.events.push(Event::Restored);
+            // F4: sent once the rebuild settles (or after RESTORE_MAX_WAIT), see reconcile().
+            self.restore_pending = Some(Instant::now());
         }
         self.had_ready_before = true;
+        fx.merge(self.schedule_reconcile(Duration::ZERO));
         fx.merge(self.reconcile_meters());
         let setup = self.setup.as_ref();
         let mut out = self.routing.sync(&self.mirror, setup);
         out.merge_from(self.routing.evaluate_all(&self.mirror, setup));
         fx.merge(routing_effects(out));
         fx
+    }
+
+    fn schedule_reconcile(&mut self, after: Duration) -> Effects {
+        if self.state != ConnState::Ready || self.torn_down {
+            return Effects::default();
+        }
+        self.arm_reconcile(after)
+    }
+
+    /// Arms the Reconcile timer unless it already fires no later than `after` from now.
+    fn arm_reconcile(&mut self, after: Duration) -> Effects {
+        let at = Instant::now() + after;
+        if self.reconcile_due.is_some_and(|due| due <= at) {
+            return Effects::default();
+        }
+        self.reconcile_due = Some(at);
+        Effects {
+            timers: vec![(TimerKind::Reconcile, after)],
+            ..Default::default()
+        }
+    }
+
+    /// One reconcile pass (C8): ops, statuses, re-run scheduling, F4 `Restored`.
+    fn reconcile(&mut self) -> Effects {
+        let mut fx = Effects::default();
+        if self.state != ConnState::Ready || self.torn_down {
+            return fx;
+        }
+        let empty = Setup::default();
+        let setup = self.setup.as_ref().unwrap_or(&empty);
+        let desired = desired::build_desired(setup, &self.mirror);
+        let now = Instant::now();
+        let out = self
+            .reconciler
+            .pass(&desired, &self.mirror, setup, &self.instance, now);
+        tracing::debug!(
+            ops = out.ops.len(),
+            rerun_in = ?out.rerun_in,
+            statuses = ?self.reconciler.statuses_debug(),
+            "reconcile pass"
+        );
+        let creating = out.ops.iter().any(|op| {
+            matches!(
+                op,
+                PwOp::CreateAdapter { .. } | PwOp::CreateCell { .. } | PwOp::CreateLink { .. }
+            )
+        });
+        if !out.newly_failed.is_empty() {
+            fx.events.push(Event::SetupIssues(
+                out.newly_failed
+                    .into_iter()
+                    .map(|(cell, message)| SetupIssue::CellFailed { cell, message })
+                    .collect(),
+            ));
+        }
+        fx.ops = out.ops;
+        if let Some(d) = out.rerun_in {
+            fx.merge(self.arm_reconcile(d));
+        }
+        if let Some(since) = self.restore_pending
+            && ((!creating && out.rerun_in.is_none()) || since.elapsed() >= RESTORE_MAX_WAIT)
+        {
+            self.restore_pending = None;
+            fx.events.push(Event::Restored);
+        }
+        if !self.stats_armed
+            && fx
+                .ops
+                .iter()
+                .any(|op| matches!(op, PwOp::CreateCell { .. }))
+        {
+            self.stats_armed = true;
+            fx.timers.push((TimerKind::StatsPoll, STATS_POLL));
+        }
+        fx.merge(self.mark_dirty());
+        fx
+    }
+
+    /// A cell's filter failed or panicked: drop it (the next pass recreates it) and count it.
+    fn cell_failed(&mut self, key: &crate::model::CellKey, message: &str) -> Effects {
+        tracing::warn!(cell = %crate::setup::canonical_cell_key(key), %message, "send failed");
+        let owned = OwnedKey::Cell(key.clone());
+        self.reconciler.on_failure(&owned);
+        let mut fx = Effects {
+            ops: vec![PwOp::Destroy {
+                key: owned,
+                global_id: self.owned_cell_id(key),
+            }],
+            events: vec![Event::Warning(EngineWarning::NodeCreateFailed {
+                node: WarnedNode::Cell(key.clone()),
+                message: message.to_owned(),
+            })],
+            ..Default::default()
+        };
+        fx.merge(self.schedule_reconcile(RECONCILE_DEBOUNCE));
+        fx
+    }
+
+    /// F12: warn when a cell exceeds the xrun rate, at most once a minute.
+    fn on_xruns(&mut self, key: &crate::model::CellKey, total: u64) -> Effects {
+        let now = Instant::now();
+        let entry = self.xruns.entry(key.clone()).or_insert((total, now, None));
+        if now.duration_since(entry.1) >= Duration::from_secs(60) {
+            *entry = (total, now, entry.2);
+        }
+        let per_minute = total.saturating_sub(entry.0);
+        let recently_warned = entry
+            .2
+            .is_some_and(|t| now.duration_since(t) < Duration::from_secs(60));
+        if per_minute > XRUNS_PER_MINUTE_WARN && !recently_warned {
+            entry.2 = Some(now);
+            return Effects {
+                events: vec![Event::Warning(EngineWarning::Xruns {
+                    node: WarnedNode::Cell(key.clone()),
+                    per_minute: u32::try_from(per_minute).unwrap_or(u32::MAX),
+                })],
+                ..Default::default()
+            };
+        }
+        Effects::default()
+    }
+
+    /// C10 step 3: clear our retargets, destroy everything we own (sends, mics, channels),
+    /// then confirm with a sync.
+    fn teardown(&mut self) -> Effects {
+        let mut fx = Effects::default();
+        if self.state != ConnState::Ready {
+            fx.events.push(Event::TeardownComplete);
+            return fx;
+        }
+        self.torn_down = true;
+        let owned_ids: std::collections::BTreeSet<u64> = self
+            .mirror
+            .nodes
+            .values()
+            .filter(|n| matches!(n.kind, crate::graph::NodeKind::Owned(_)))
+            .map(|n| n.serial)
+            .collect();
+        for ((subject, key), entry) in &self.mirror.default_meta {
+            if key == TARGET_KEY
+                && entry
+                    .value
+                    .parse::<u64>()
+                    .is_ok_and(|s| owned_ids.contains(&s))
+            {
+                fx.ops.push(PwOp::MetaWrite {
+                    subject: *subject,
+                    key: TARGET_KEY,
+                    type_: None,
+                    value: None,
+                });
+            }
+        }
+        for rank in 0..3 {
+            for n in self.mirror.nodes.values() {
+                let (r, key) = match &n.kind {
+                    crate::graph::NodeKind::Owned(crate::graph::OwnedRole::Cell(_)) => {
+                        (0, OwnedKey::StaleNode(n.id))
+                    }
+                    crate::graph::NodeKind::Owned(crate::graph::OwnedRole::Vmic(id)) => {
+                        (1, OwnedKey::Vmic(*id))
+                    }
+                    crate::graph::NodeKind::Owned(crate::graph::OwnedRole::Channel(id)) => {
+                        (2, OwnedKey::Channel(*id))
+                    }
+                    _ => continue,
+                };
+                if r == rank {
+                    fx.ops.push(PwOp::Destroy {
+                        key,
+                        global_id: Some(n.id),
+                    });
+                }
+            }
+        }
+        fx.ops.push(PwOp::Sync {
+            purpose: SyncPurpose::Teardown,
+        });
+        fx.timers
+            .push((TimerKind::TeardownTimeout, TEARDOWN_TIMEOUT));
+        fx.cancel_timers
+            .extend([TimerKind::Reconcile, TimerKind::StatsPoll]);
+        fx
+    }
+
+    fn owned_node(&self, pred: impl Fn(&crate::graph::OwnedRole) -> bool) -> Option<u32> {
+        self.mirror
+            .nodes
+            .values()
+            .find(|n| matches!(&n.kind, crate::graph::NodeKind::Owned(r) if pred(r)))
+            .map(|n| n.id)
+    }
+
+    fn owned_cell_id(&self, key: &crate::model::CellKey) -> Option<u32> {
+        let hash = crate::setup::cell_hash(key);
+        self.owned_node(|r| matches!(r, crate::graph::OwnedRole::Cell(h) if *h == hash))
+    }
+
+    fn owned_cell_exists(&self, key: &crate::model::CellKey) -> bool {
+        self.owned_cell_id(key).is_some()
+    }
+
+    fn any_owned_cell(&self) -> bool {
+        self.owned_node(|r| matches!(r, crate::graph::OwnedRole::Cell(_)))
+            .is_some()
     }
 
     /// Meter streams exist only while Ready (C9).
@@ -451,6 +796,10 @@ impl EngineCore {
         self.mirror.clear();
         self.meters.reset();
         self.routing.reset();
+        self.reconciler.reset();
+        self.reconcile_due = None;
+        self.stats_armed = false;
+        self.xruns.clear();
         self.pending_syncs.clear();
         self.snapshot_dirty = false;
         let since = Instant::now();
@@ -461,7 +810,12 @@ impl EngineCore {
                 attempt: 0,
             })],
             timers: vec![(TimerKind::Reconnect, self.backoff.delay(0))],
-            cancel_timers: vec![TimerKind::WpWait, TimerKind::SnapshotFlush],
+            cancel_timers: vec![
+                TimerKind::WpWait,
+                TimerKind::SnapshotFlush,
+                TimerKind::Reconcile,
+                TimerKind::StatsPoll,
+            ],
             reset_connection: true,
             ..Default::default()
         }
@@ -484,7 +838,18 @@ impl EngineCore {
         Event::Snapshot(Arc::new(snapshot::build_snapshot(
             &self.mirror,
             self.setup.as_ref(),
+            &self.reconciler,
         )))
+    }
+}
+
+/// Engine-internal mapping used by warning emitters (WarnedNode per C3).
+pub(crate) fn warned_node(key: &OwnedKey) -> Option<WarnedNode> {
+    match key {
+        OwnedKey::Channel(id) => Some(WarnedNode::Channel(*id)),
+        OwnedKey::Vmic(id) => Some(WarnedNode::VirtualMic(*id)),
+        OwnedKey::Cell(c) => Some(WarnedNode::Cell(c.clone())),
+        _ => None,
     }
 }
 
@@ -695,7 +1060,19 @@ mod tests {
         let fx = core.on_graph(&GraphChange::SyncDone { seq: 11 });
         let ev = events_of(&fx);
         assert!(ev[0].starts_with("conn:Connected"));
-        assert_eq!(ev.last().map(String::as_str), Some("Restored"));
+        assert!(
+            !ev.contains(&"Restored".to_owned()),
+            "Restored waits for the rebuild pass"
+        );
+        assert!(fx.timers.iter().any(|(k, _)| *k == TimerKind::Reconcile));
+        // Nothing to build (empty setup): the first pass settles and reports Restored once.
+        let fx = core.on_timer(TimerKind::Reconcile);
+        assert!(events_of(&fx).contains(&"Restored".to_owned()));
+        let fx = core.on_timer(TimerKind::Reconcile);
+        assert!(
+            !events_of(&fx).contains(&"Restored".to_owned()),
+            "exactly once"
+        );
     }
 
     #[test]

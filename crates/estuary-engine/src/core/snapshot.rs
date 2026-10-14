@@ -10,7 +10,11 @@ use crate::model::{
 };
 use crate::setup::{DeviceKind, Setup};
 
-pub(crate) fn build_snapshot(m: &GraphMirror, setup: Option<&Setup>) -> GraphSnapshot {
+pub(crate) fn build_snapshot(
+    m: &GraphMirror,
+    setup: Option<&Setup>,
+    reconciler: &super::reconcile::Reconciler,
+) -> GraphSnapshot {
     let empty = Setup::default();
     let setup = setup.unwrap_or(&empty);
 
@@ -91,8 +95,10 @@ pub(crate) fn build_snapshot(m: &GraphMirror, setup: Option<&Setup>) -> GraphSna
                 key: c.key(),
                 gain_db: c.gain_db,
                 enabled: c.enabled,
-                // Nothing is built before the reconciler exists (M8).
-                status: CellStatus::Pending,
+                status: reconciler
+                    .status(&c.key())
+                    .cloned()
+                    .unwrap_or(CellStatus::Pending),
             })
             .collect(),
         default_output: m.default_node_name("default.audio.sink").map(DeviceKey),

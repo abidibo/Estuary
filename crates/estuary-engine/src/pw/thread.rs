@@ -19,8 +19,6 @@ pub(crate) enum Control {
     Cmd(Command),
     Shutdown,
     Timer(TimerKind),
-    /// Drop connections retired inside a callback, now that no callback is running.
-    DropGraveyard,
 }
 
 thread_local! {
@@ -59,7 +57,8 @@ pub(crate) fn run(
     let pw_err = |e: pipewire::Error| EngineError::PipeWire(e.to_string());
     let ml = MainLoopRc::new(None).map_err(pw_err)?;
     let ctx = ContextRc::new(&ml, None).map_err(pw_err)?;
-    let timers = Timers::spawn(ctl_tx.clone()).map_err(|e| EngineError::Spawn(e.to_string()))?;
+    let timers = Timers::spawn(ctl_tx).map_err(|e| EngineError::Spawn(e.to_string()))?;
+    let (graveyard_tx, graveyard_rx) = pipewire::channel::channel::<()>();
     let instance = uuid::Uuid::new_v4().simple().to_string();
 
     let shell = Shell::new(
@@ -69,13 +68,18 @@ pub(crate) fn run(
         instance,
         ev_tx,
         timers,
-        ctl_tx,
+        graveyard_tx,
         meters,
     );
     let _ctl = ctl_rx.attach(ml.loop_(), {
         let shell = shell.clone();
         let ml = ml.clone();
         move |c| guarded(&ml, || shell.on_control(c))
+    });
+    let _graveyard = graveyard_rx.attach(ml.loop_(), {
+        let shell = shell.clone();
+        let ml = ml.clone();
+        move |()| guarded(&ml, || shell.drop_graveyard())
     });
     guarded(&ml, || shell.start());
     // A panic in `start` called `quit()` before `run()`, which would not stop the loop.

@@ -148,6 +148,25 @@ pub(crate) enum GraphChange {
         slot: MeterSlotId,
         message: String,
     },
+    /// A synchronous creation failure (e.g. `FilterNode::new` returned an error).
+    CreateFailed {
+        key: OwnedKey,
+        message: String,
+    },
+    /// A cell's `pw_filter` entered the error state.
+    FilterError {
+        key: crate::model::CellKey,
+        message: String,
+    },
+    /// A cell's processor panicked (stats poll, M8.12).
+    FilterPoisoned {
+        key: crate::model::CellKey,
+    },
+    /// Cumulative xrun count of a cell (stats poll, M8.12).
+    FilterXruns {
+        key: crate::model::CellKey,
+        total: u64,
+    },
     DeviceRoute {
         device_id: u32,
         index: i32,
@@ -390,6 +409,10 @@ impl GraphMirror {
                 ChangeImpact::default()
             }
             GraphChange::ProxyError { .. }
+            | GraphChange::CreateFailed { .. }
+            | GraphChange::FilterError { .. }
+            | GraphChange::FilterPoisoned { .. }
+            | GraphChange::FilterXruns { .. }
             | GraphChange::VolumeWriteFailed { .. }
             | GraphChange::MeterStreamFailed { .. }
             | GraphChange::SyncDone { .. } => ChangeImpact::default(),

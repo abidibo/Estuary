@@ -577,3 +577,653 @@ fn rule_changed_twice() {
     destroy_node_named(B);
     result.unwrap();
 }
+
+// ---------------------------------------------------------------------------------------------
+// M8: reconciler against the live graph. Every sound goes into null sinks; nothing is audible.
+
+/// `node.name`s starting with `estuary.` that are channels, virtual mics or DSP nodes.
+fn estuary_nodes() -> std::collections::BTreeSet<String> {
+    let out = std::process::Command::new("pw-cli")
+        .args(["ls", "Node"])
+        .output()
+        .expect("pw-cli");
+    String::from_utf8_lossy(&out.stdout)
+        .lines()
+        .filter_map(|l| l.trim().strip_prefix("node.name = \""))
+        .map(|n| n.trim_end_matches('"').to_owned())
+        .filter(|n| {
+            [
+                "estuary.channel.",
+                "estuary.vmic.",
+                "estuary.cell.",
+                "estuary.denoise.",
+            ]
+            .iter()
+            .any(|p| n.starts_with(p))
+        })
+        .collect()
+}
+
+/// `pw-link -l` lines "<out node>:<port> -> <in node>:<port>".
+fn links() -> Vec<(String, String)> {
+    let out = std::process::Command::new("pw-link")
+        .arg("-l")
+        .output()
+        .expect("pw-link");
+    let text = String::from_utf8_lossy(&out.stdout);
+    let mut v = Vec::new();
+    let mut current = String::new();
+    for line in text.lines() {
+        if let Some(to) = line.trim().strip_prefix("|->") {
+            v.push((current.clone(), to.trim().to_owned()));
+        } else if !line.trim().starts_with("|<-") {
+            current = line.trim().to_owned();
+        }
+    }
+    v
+}
+
+fn wait_for(within: Duration, mut f: impl FnMut() -> bool) -> bool {
+    let deadline = Instant::now() + within;
+    while Instant::now() < deadline {
+        if f() {
+            return true;
+        }
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    f()
+}
+
+/// s16 stereo 48 kHz: a 1 kHz sine at `amp` (0 for silence).
+fn write_tone(path: &std::path::Path, secs: usize, amp: f32) {
+    let mut pcm = Vec::with_capacity(48_000 * secs * 4);
+    for i in 0..48_000 * secs {
+        #[allow(clippy::cast_possible_truncation, clippy::cast_precision_loss)]
+        let v = (amp * (2.0 * std::f32::consts::PI * 1000.0 * i as f32 / 48_000.0).sin() * 32767.0)
+            as i16;
+        pcm.extend_from_slice(&v.to_le_bytes());
+        pcm.extend_from_slice(&v.to_le_bytes());
+    }
+    std::fs::write(path, pcm).unwrap();
+}
+
+fn play_into(target: &str, path: &std::path::Path, app: &str) -> std::process::Child {
+    std::process::Command::new("pw-cat")
+        .args([
+            "--playback",
+            "--raw",
+            "--format",
+            "s16",
+            "--rate",
+            "48000",
+            "--channels",
+            "2",
+        ])
+        .args(["--target", target])
+        // WirePlumber would otherwise restore a volume saved for an earlier pw-cat stream.
+        .args(["--volume", "1.0"])
+        .args([
+            "-P",
+            &format!("{{ application.name = \"{app}\" state.restore-props = false }}"),
+        ])
+        .arg(path)
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .expect("pw-cat")
+}
+
+fn connected_engine() -> (Engine, async_channel::Receiver<Event>) {
+    let (engine, rx) = Engine::start(EngineConfig::default()).unwrap();
+    recv_until(&rx, Duration::from_secs(3), |ev| {
+        matches!(ev, Event::Connection(ConnectionState::Connected { .. })).then_some(())
+    })
+    .expect("Connected");
+    (engine, rx)
+}
+
+/// Waits for a snapshot in which every listed cell is Active.
+fn wait_cells_active(
+    rx: &async_channel::Receiver<Event>,
+    cells: &[estuary_engine::CellKey],
+    within: Duration,
+) -> Result<(), String> {
+    let mut last = Vec::new();
+    recv_until(rx, within, |ev| match ev {
+        Event::Snapshot(s) => {
+            last = s.cells.iter().map(|c| c.status.clone()).collect();
+            cells
+                .iter()
+                .all(|k| {
+                    s.cells
+                        .iter()
+                        .any(|c| &c.key == k && c.status == estuary_engine::CellStatus::Active)
+                })
+                .then_some(())
+        }
+        _ => None,
+    })
+    .ok_or_else(|| format!("cells not active; last statuses {last:?}"))
+}
+
+/// Max peak per target over `window`, plus the fraction of reads below `floor` (stalls).
+fn sample_peaks(
+    engine: &Engine,
+    assignments: &[(
+        estuary_engine::MeterTarget,
+        Vec<estuary_engine::MeterSlotId>,
+    )],
+    window: Duration,
+    floor: f32,
+) -> Vec<(f32, f32)> {
+    let bank = engine.meters();
+    let mut best = vec![0.0f32; assignments.len()];
+    let mut low = vec![0u32; assignments.len()];
+    let mut reads = 0u32;
+    let deadline = Instant::now() + window;
+    while Instant::now() < deadline {
+        std::thread::sleep(Duration::from_millis(50));
+        reads += 1;
+        for (i, (_, slots)) in assignments.iter().enumerate() {
+            let p = slots
+                .iter()
+                .map(|s| {
+                    let r = bank.read(*s);
+                    r.peak[0].max(r.peak[1])
+                })
+                .fold(0.0f32, f32::max);
+            best[i] = best[i].max(p);
+            if p < floor {
+                low[i] += 1;
+            }
+        }
+    }
+    #[allow(clippy::cast_precision_loss)]
+    best.into_iter()
+        .zip(low)
+        .map(|(b, l)| (b, l as f32 / reads.max(1) as f32))
+        .collect()
+}
+
+fn meter(
+    engine: &Engine,
+    rx: &async_channel::Receiver<Event>,
+    targets: Vec<estuary_engine::MeterTarget>,
+) -> Vec<(
+    estuary_engine::MeterTarget,
+    Vec<estuary_engine::MeterSlotId>,
+)> {
+    let n = targets.len();
+    engine
+        .send(estuary_engine::Command::SetMeterTargets(targets))
+        .unwrap();
+    let mut last = None;
+    recv_until(rx, Duration::from_secs(2), |ev| match ev {
+        Event::MeterAssignments(a) if a.len() == n && a.iter().all(|(_, s)| !s.is_empty()) => {
+            Some(a.clone())
+        }
+        Event::MeterAssignments(a) => {
+            last = Some(a.clone());
+            None
+        }
+        _ => None,
+    })
+    .unwrap_or_else(|| panic!("meter assignments; last {last:?}"))
+}
+
+/// M8.14 `preset_builds` + `cell_gain_audible` + `teardown_leaves_nothing`, on null sinks.
+/// Also UNVERIFIED-4 (part one): a virtual mic fed only by cells delivers steady audio.
+#[test]
+#[ignore = "live-pw: needs a running PipeWire + WirePlumber session"]
+fn preset_builds_gain_is_audible_and_teardown_is_clean() {
+    use estuary_engine::setup::{CellDef, ChannelDef, VirtualMicDef};
+    use estuary_engine::{
+        ChannelId, Command, DeviceKey, MatrixDest, MatrixSource, MeterTarget, Setup, VirtualMicId,
+        Volume,
+    };
+    const OUT: &str = "estuary-test-out";
+    init_logs();
+    create_null_sink(OUT);
+    let before = estuary_nodes();
+    let path = std::env::temp_dir().join("estuary-preset-test.raw");
+    write_tone(&path, 20, 0.5);
+
+    let music = ChannelId::new_random();
+    let vmic = VirtualMicId::new_random();
+    let to_out = CellDef {
+        source: MatrixSource::Channel { id: music },
+        dest: MatrixDest::Output {
+            key: DeviceKey(OUT.into()),
+        },
+        gain_db: 0.0,
+        enabled: true,
+    };
+    let to_vmic = CellDef {
+        source: MatrixSource::Channel { id: music },
+        dest: MatrixDest::VirtualMic { id: vmic },
+        gain_db: -6.0,
+        enabled: true,
+    };
+    let setup = Setup {
+        channels: vec![ChannelDef {
+            id: music,
+            name: "Test Music".into(),
+            volume: Volume::unity(2),
+            position: None,
+        }],
+        virtual_mics: vec![VirtualMicDef {
+            id: vmic,
+            name: "Test Mic".into(),
+            volume: Volume::unity(2),
+            position: None,
+        }],
+        cells: vec![to_out.clone(), to_vmic.clone()],
+        ..Default::default()
+    };
+    let channel_node = format!("estuary.channel.{}", music.0.simple());
+    let (engine, rx) = connected_engine();
+    let mut player = None;
+
+    let result = (|| -> Result<(), String> {
+        let t0 = Instant::now();
+        engine
+            .send(Command::SetSetup(setup.clone()))
+            .map_err(|e| e.to_string())?;
+        if let Err(e) =
+            wait_cells_active(&rx, &[to_out.key(), to_vmic.key()], Duration::from_secs(3))
+        {
+            eprintln!("nodes: {:?}", estuary_nodes());
+            let l: Vec<_> = links()
+                .into_iter()
+                .filter(|(a, b)| a.starts_with("estuary") || b.starts_with("estuary"))
+                .collect();
+            eprintln!("links: {l:#?}");
+            let _ = std::process::Command::new("sh").args(["-c", "pw-cli ls Port | grep -B2 -A12 'estuary\\.'| grep -E 'id |port.name|node.id|audio.channel|port.direction|port.monitor'"]).status();
+            return Err(e);
+        }
+        eprintln!("preset active in {:?}", t0.elapsed());
+        let created: Vec<String> = estuary_nodes().difference(&before).cloned().collect();
+        eprintln!("created nodes: {created:?}");
+        if created.len() != 4 {
+            return Err(format!(
+                "expected channel + vmic + 2 cells, got {created:?}"
+            ));
+        }
+        let ours: Vec<_> = links()
+            .into_iter()
+            .filter(|(a, b)| a.starts_with("estuary.") || b.starts_with("estuary."))
+            .filter(|(a, b)| !a.contains("meter") && !b.contains("meter"))
+            .collect();
+        eprintln!("links: {ours:#?}");
+        if ours.len() != 8 {
+            return Err(format!(
+                "expected 8 links (2 cells × 4), got {}",
+                ours.len()
+            ));
+        }
+
+        player = Some(play_into(&channel_node, &path, "Estuary Preset Test"));
+        let a = meter(
+            &engine,
+            &rx,
+            vec![
+                MeterTarget::Device(DeviceKey(OUT.into())),
+                MeterTarget::VirtualMic(vmic),
+            ],
+        );
+        std::thread::sleep(Duration::from_millis(500));
+        let p = sample_peaks(&engine, &a, Duration::from_secs(3), 0.1);
+        eprintln!(
+            "0 dB: out peak {:.3} (low {:.0}%), vmic peak {:.3} (low {:.0}%)",
+            p[0].0,
+            p[0].1 * 100.0,
+            p[1].0,
+            p[1].1 * 100.0
+        );
+        if !(0.4..0.6).contains(&p[0].0) {
+            return Err(format!("out peak {:.3}, expected ≈0.5", p[0].0));
+        }
+        if !(0.18..0.32).contains(&p[1].0) {
+            return Err(format!("vmic peak {:.3}, expected ≈0.25 (−6 dB)", p[1].0));
+        }
+        if p[1].1 > 0.05 {
+            return Err(format!("vmic stalled {:.0}% of the time", p[1].1 * 100.0));
+        }
+
+        // Cell gain: −60 dB is effectively silent, then back.
+        engine
+            .send(Command::SetCellGain {
+                cell: to_out.key(),
+                gain_db: -60.0,
+            })
+            .map_err(|e| e.to_string())?;
+        std::thread::sleep(Duration::from_millis(300));
+        let p = sample_peaks(&engine, &a, Duration::from_millis(600), 0.1);
+        eprintln!("−60 dB: out peak {:.4}", p[0].0);
+        if p[0].0 > 0.01 {
+            return Err(format!("out peak {:.4} at −60 dB", p[0].0));
+        }
+        engine
+            .send(Command::SetCellGain {
+                cell: to_out.key(),
+                gain_db: 0.0,
+            })
+            .map_err(|e| e.to_string())?;
+        std::thread::sleep(Duration::from_millis(300));
+        let p = sample_peaks(&engine, &a, Duration::from_millis(600), 0.1);
+        if p[0].0 < 0.4 {
+            return Err(format!("out peak {:.3} back at 0 dB", p[0].0));
+        }
+
+        // Teardown removes all of it.
+        engine.send(Command::Teardown).map_err(|e| e.to_string())?;
+        recv_until(&rx, Duration::from_secs(3), |ev| {
+            matches!(ev, Event::TeardownComplete).then_some(())
+        })
+        .ok_or("no TeardownComplete")?;
+        if !wait_for(Duration::from_secs(1), || estuary_nodes() == before) {
+            return Err(format!(
+                "left behind: {:?}",
+                estuary_nodes().difference(&before).collect::<Vec<_>>()
+            ));
+        }
+        Ok(())
+    })();
+
+    if let Some(mut p) = player {
+        let _ = p.kill();
+        let _ = p.wait();
+    }
+    let _ = engine.shutdown(Duration::from_secs(1));
+    let _ = std::fs::remove_file(&path);
+    destroy_node_named(OUT);
+    result.unwrap();
+}
+
+/// Child half of `sigkill_leaves_nothing`: builds a channel and a cell, then waits to be killed.
+#[test]
+#[ignore = "live-pw: helper process for sigkill_leaves_nothing"]
+fn sigkill_helper() {
+    use estuary_engine::setup::{CellDef, ChannelDef};
+    use estuary_engine::{ChannelId, Command, DeviceKey, MatrixDest, MatrixSource, Setup, Volume};
+    let Ok(out) = std::env::var("ESTUARY_SIGKILL_OUT") else {
+        return;
+    };
+    let id = ChannelId::new_random();
+    let cell = CellDef {
+        source: MatrixSource::Channel { id },
+        dest: MatrixDest::Output {
+            key: DeviceKey(out),
+        },
+        gain_db: 0.0,
+        enabled: true,
+    };
+    let (engine, rx) = connected_engine();
+    engine
+        .send(Command::SetSetup(Setup {
+            channels: vec![ChannelDef {
+                id,
+                name: "Kill Me".into(),
+                volume: Volume::unity(2),
+                position: None,
+            }],
+            cells: vec![cell.clone()],
+            ..Default::default()
+        }))
+        .unwrap();
+    wait_cells_active(&rx, &[cell.key()], Duration::from_secs(3)).unwrap();
+    #[allow(clippy::print_stdout)] // the parent test reads this line
+    {
+        println!("ESTUARY-READY");
+    }
+    std::thread::sleep(Duration::from_secs(30));
+}
+
+/// M8.14 `sigkill_leaves_nothing`: our nodes are client-owned and vanish with the process.
+#[test]
+#[ignore = "live-pw: needs a running PipeWire + WirePlumber session"]
+fn sigkill_leaves_nothing() {
+    use std::io::BufRead;
+    const OUT: &str = "estuary-test-kill-out";
+    init_logs();
+    create_null_sink(OUT);
+    let before = estuary_nodes();
+    let mut child = std::process::Command::new(std::env::current_exe().unwrap())
+        .args([
+            "sigkill_helper",
+            "--exact",
+            "--ignored",
+            "--nocapture",
+            "--test-threads=1",
+        ])
+        .env("ESTUARY_SIGKILL_OUT", OUT)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .unwrap();
+    let stdout = child.stdout.take().unwrap();
+    let ready = std::io::BufReader::new(stdout)
+        .lines()
+        .map_while(Result::ok)
+        .any(|l| l.contains("ESTUARY-READY"));
+    let result = (|| -> Result<(), String> {
+        if !ready {
+            return Err("helper never got ready".into());
+        }
+        let created: Vec<String> = estuary_nodes().difference(&before).cloned().collect();
+        eprintln!("helper created {created:?}");
+        if created.len() != 2 {
+            return Err(format!("expected channel + cell, got {created:?}"));
+        }
+        let t0 = Instant::now();
+        let _ = child.kill(); // SIGKILL
+        let _ = child.wait();
+        if !wait_for(Duration::from_secs(3), || estuary_nodes() == before) {
+            return Err(format!(
+                "left behind: {:?}",
+                estuary_nodes().difference(&before).collect::<Vec<_>>()
+            ));
+        }
+        eprintln!("gone {:?} after SIGKILL", t0.elapsed());
+        Ok(())
+    })();
+    let _ = child.kill();
+    let _ = child.wait();
+    destroy_node_named(OUT);
+    result.unwrap();
+}
+
+/// Node state from `pw-cli info` ("suspended", "idle", "running", …).
+fn node_state(name: &str) -> Option<String> {
+    let id = node_id(name)?;
+    let out = std::process::Command::new("pw-cli")
+        .args(["info", &id])
+        .output()
+        .ok()?;
+    String::from_utf8_lossy(&out.stdout)
+        .lines()
+        .find_map(|l| {
+            l.trim_start_matches(['*', ' ', '\t'])
+                .strip_prefix("state: ")
+        })
+        .map(|s| s.trim_matches('"').to_owned())
+}
+
+/// UNVERIFIED-1 (engine M8.1): with passive cells, the real default output still suspends when
+/// idle and wakes when an app plays into a channel. Plays silence only. Needs real hardware, so
+/// it runs only with `ESTUARY_LIVE_HW=1`.
+#[test]
+#[ignore = "live-pw: real hardware; set ESTUARY_LIVE_HW=1"]
+fn passive_cells_let_the_output_suspend() {
+    use estuary_engine::setup::{CellDef, ChannelDef};
+    use estuary_engine::{ChannelId, Command, MatrixDest, MatrixSource, Setup, Volume};
+    if std::env::var("ESTUARY_LIVE_HW").is_err() {
+        eprintln!("skipped: set ESTUARY_LIVE_HW=1");
+        return;
+    }
+    init_logs();
+    let (engine, rx) = connected_engine();
+    let out = recv_until(&rx, Duration::from_secs(2), |ev| match ev {
+        Event::Snapshot(s) => s.default_output.clone(),
+        _ => None,
+    })
+    .expect("default output");
+    let path = std::env::temp_dir().join("estuary-suspend-test.raw");
+    write_tone(&path, 4, 0.0);
+    let id = ChannelId::new_random();
+    let cell = CellDef {
+        source: MatrixSource::Channel { id },
+        dest: MatrixDest::Output { key: out.clone() },
+        gain_db: 0.0,
+        enabled: true,
+    };
+    let result = (|| -> Result<(), String> {
+        let state = || node_state(&out.0).unwrap_or_default();
+        eprintln!("default output {} is {}", out.0, state());
+        engine
+            .send(Command::SetSetup(Setup {
+                channels: vec![ChannelDef {
+                    id,
+                    name: "Suspend Test".into(),
+                    volume: Volume::unity(2),
+                    position: None,
+                }],
+                cells: vec![cell.clone()],
+                ..Default::default()
+            }))
+            .map_err(|e| e.to_string())?;
+        wait_cells_active(&rx, &[cell.key()], Duration::from_secs(3))?;
+        let idle = wait_for(Duration::from_secs(9), || state() == "suspended");
+        eprintln!(
+            "with the cell and no app: {} (suspended within 9 s: {idle})",
+            state()
+        );
+        let mut p = play_into(
+            &format!("estuary.channel.{}", id.0.simple()),
+            &path,
+            "Estuary Suspend Test",
+        );
+        let woke = wait_for(Duration::from_secs(2), || state() == "running");
+        eprintln!(
+            "app playing into the channel: {} (running: {woke})",
+            state()
+        );
+        let _ = p.wait();
+        let back = wait_for(Duration::from_secs(9), || state() == "suspended");
+        eprintln!(
+            "after the app stopped: {} (suspended again: {back})",
+            state()
+        );
+        if !(idle && woke && back) {
+            return Err(format!("idle={idle} woke={woke} back={back}"));
+        }
+        Ok(())
+    })();
+    let _ = engine.send(Command::Teardown);
+    let _ = recv_until(&rx, Duration::from_secs(3), |ev| {
+        matches!(ev, Event::TeardownComplete).then_some(())
+    });
+    let _ = engine.shutdown(Duration::from_secs(1));
+    let _ = std::fs::remove_file(&path);
+    result.unwrap();
+}
+
+/// UNVERIFIED-4 (engine M8): a virtual mic fed by the hardware mic (its ALSA clock) and by a
+/// channel, read by a recorder (our meter stream), delivers steady audio. Opens the mic for a
+/// few seconds; nothing is stored or played. Runs only with `ESTUARY_LIVE_HW=1`.
+#[test]
+#[ignore = "live-pw: real hardware; set ESTUARY_LIVE_HW=1"]
+fn virtual_mic_mixes_two_clocks() {
+    use estuary_engine::setup::{CellDef, ChannelDef, VirtualMicDef};
+    use estuary_engine::{
+        ChannelId, Command, MatrixDest, MatrixSource, MeterTarget, Setup, VirtualMicId, Volume,
+    };
+    if std::env::var("ESTUARY_LIVE_HW").is_err() {
+        eprintln!("skipped: set ESTUARY_LIVE_HW=1");
+        return;
+    }
+    init_logs();
+    let (engine, rx) = connected_engine();
+    let mic = recv_until(&rx, Duration::from_secs(2), |ev| match ev {
+        Event::Snapshot(s) => s.default_input.clone(),
+        _ => None,
+    })
+    .expect("default input");
+    let path = std::env::temp_dir().join("estuary-vmic-test.raw");
+    write_tone(&path, 8, 0.5);
+    let ch = ChannelId::new_random();
+    let vm = VirtualMicId::new_random();
+    let cells = vec![
+        CellDef {
+            source: MatrixSource::Input { key: mic.clone() },
+            dest: MatrixDest::VirtualMic { id: vm },
+            gain_db: 0.0,
+            enabled: true,
+        },
+        CellDef {
+            source: MatrixSource::Channel { id: ch },
+            dest: MatrixDest::VirtualMic { id: vm },
+            gain_db: -6.0,
+            enabled: true,
+        },
+    ];
+    let mut player = None;
+    let result = (|| -> Result<(), String> {
+        eprintln!("mic {}", mic.0);
+        engine
+            .send(Command::SetSetup(Setup {
+                channels: vec![ChannelDef {
+                    id: ch,
+                    name: "Clock Test".into(),
+                    volume: Volume::unity(2),
+                    position: None,
+                }],
+                virtual_mics: vec![VirtualMicDef {
+                    id: vm,
+                    name: "Clock Test Mic".into(),
+                    volume: Volume::unity(2),
+                    position: None,
+                }],
+                cells: cells.clone(),
+                ..Default::default()
+            }))
+            .map_err(|e| e.to_string())?;
+        wait_cells_active(
+            &rx,
+            &cells.iter().map(CellDef::key).collect::<Vec<_>>(),
+            Duration::from_secs(3),
+        )?;
+        player = Some(play_into(
+            &format!("estuary.channel.{}", ch.0.simple()),
+            &path,
+            "Estuary Clock Test",
+        ));
+        let a = meter(&engine, &rx, vec![MeterTarget::VirtualMic(vm)]);
+        std::thread::sleep(Duration::from_millis(500));
+        let p = sample_peaks(&engine, &a, Duration::from_secs(5), 0.15);
+        eprintln!(
+            "vmic peak {:.3}, below 0.15 in {:.1}% of 50 ms reads",
+            p[0].0,
+            p[0].1 * 100.0
+        );
+        let warned = std::iter::from_fn(|| rx.try_recv().ok())
+            .filter(|e| matches!(e, Event::Warning(_)))
+            .count();
+        eprintln!("engine warnings: {warned}");
+        if p[0].1 > 0.02 || p[0].0 < 0.2 {
+            return Err("virtual mic stalled or too quiet".into());
+        }
+        Ok(())
+    })();
+    if let Some(mut p) = player {
+        let _ = p.kill();
+        let _ = p.wait();
+    }
+    let _ = engine.send(Command::Teardown);
+    let _ = recv_until(&rx, Duration::from_secs(3), |ev| {
+        matches!(ev, Event::TeardownComplete).then_some(())
+    });
+    let _ = engine.shutdown(Duration::from_secs(1));
+    let _ = std::fs::remove_file(&path);
+    result.unwrap();
+}

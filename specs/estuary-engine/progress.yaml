@@ -723,352 +723,342 @@ steps:
     completed_at: '2026-10-14T17:28:08+02:00'
 - id: M8.1
   title: 'Live experiment: passive cell links and device suspend (UNVERIFIED-1)'
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T18:08:30+02:00'
+  completed_at: '2026-10-14T18:08:30+02:00'
   tasks:
   - id: M8.1.1
-    description: Write examples/passive_probe.rs (channel null sink + new_gain_node cell + links, --passive variants)
-    status: pending
-    started_at: null
-    completed_at: null
+    description: 'Write examples/passive_probe.rs (channel null sink + new_gain_node cell + links, --passive variants) (superseded: the engine itself served as the probe, see docs/experiments.md)'
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.1.2
     description: 'Live experiment UNVERIFIED-1: run variants both/cell-only/links-only/none and record sink state idle/playing/idle'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.1.3
     description: Record outcome A/B/C in docs/experiments.md and amend C5 passivity in the master
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
 - id: M8.2
   title: 'Live experiment: virtual mic clocking (UNVERIFIED-4)'
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T18:08:30+02:00'
+  completed_at: '2026-10-14T18:08:30+02:00'
   tasks:
   - id: M8.2.1
     description: Write examples/vmic_clock_probe.rs (channel + mic cells into one vmic, gap detection on recording)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.2.2
     description: 'Live experiment UNVERIFIED-4: 60 s pw-record of the vmic plus pw-top capture; check gaps and ERR'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.2.3
     description: If failing, test node.group / priority.driver mitigations; record outcome and amend C5 or escalate
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
 - id: M8.3
   title: Desired graph builder (pure)
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T18:08:30+02:00'
+  completed_at: '2026-10-14T18:08:30+02:00'
   tasks:
   - id: M8.3.1
     description: Define DesiredGraph, DesiredNodeKey, DesiredNode, DesiredLink, Endpoint in src/core/desired.rs
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.3.2
     description: 'Implement build_desired: channels/vmics always, denoisers iff input present, enabled cells iff endpoints available'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.3.3
     description: Implement hash_to_key map and denoised meter links
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.3.4
     description: Implement disable fade (SetGain -60 + CellFade 50 ms) and enable fade-in (initial_db -60) handling
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
 - id: M8.4
   title: Port matching (pure, per C5)
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T18:08:30+02:00'
+  completed_at: '2026-10-14T18:08:30+02:00'
   tasks:
   - id: M8.4.1
     description: Implement PortRole selection and source_ports in src/core/ports.rs
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.4.2
     description: Implement match_ports (AUX0/AUX1 fallback, mono fan-out, front pair only)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.4.3
     description: 'Unit tests: stereo↔stereo, mono→stereo, 6-channel, AUX-only, monitor vs playback selection'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
 - id: M8.5
   title: Diff and ownership (pure, per C8)
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T18:08:30+02:00'
+  completed_at: '2026-10-14T18:08:30+02:00'
   tasks:
   - id: M8.5.1
     description: Implement diff steps 1–3 (node create/destroy/rename-recreate) in src/core/diff.rs
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.5.2
     description: Implement diff step 4 (link creation with Unresolved reasons)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.5.3
     description: Implement diff step 5 (C8 ownership-rule link destruction, never touching app/WP links)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.5.4
     description: Implement diff step 6 (SetGain/SetDenoise handle updates) and op ordering
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.5.5
     description: 'Unit test: diff idempotency (second pass yields zero ops)'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
 - id: M8.6
   title: Pending operations, retries and debounce
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T18:08:30+02:00'
+  completed_at: '2026-10-14T18:08:30+02:00'
   tasks:
   - id: M8.6.1
     description: Implement PendingOps with on_node_appeared, on_link_appeared, on_error, expire, failed_permanently, reset_failures_for
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.6.2
     description: Implement 30 ms Reconcile debounce timer and 500 ms PendingTimeout timer
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.6.3
     description: Emit CellStatus::Error and SetupIssues(CellFailed) after 3 consecutive failures
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
 - id: M8.7
   title: 'Executor: creating and destroying owned objects'
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T18:08:30+02:00'
+  completed_at: '2026-10-14T18:08:30+02:00'
   tasks:
   - id: M8.7.1
     description: Implement CreateAdapter execution with proxy retention and proxy_keys mapping in src/pw/objects.rs
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.7.2
     description: Implement CreateCell via new_gain_node + set_state_listener in src/pw/dsp_nodes.rs
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.7.3
     description: Implement CreateDenoiser via new_denoiser_node + initial set_enabled/set_vad_gate
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.7.4
     description: Implement CreateLink via link-factory with C5 props (+ estuary.instance, passive per M8.1)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.7.5
     description: Implement Destroy (destroy_global then drop proxy/FilterNode) and SetGain/SetDenoise handle execution
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.7.6
     description: Handle FilterState::Error and DspError → failure accounting + Warning(NodeCreateFailed)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.7.7
     description: 'warned_node(&OwnedKey) -> Option<WarnedNode> (moved from M2.2.6: needs owned cell/denoiser keys)'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
 - id: M8.8
   title: Volumes, gains and enable/disable
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T18:08:30+02:00'
+  completed_at: '2026-10-14T18:08:30+02:00'
   tasks:
   - id: M8.8.1
     description: Apply initial Setup volume once when owned channel/vmic node info arrives (initial_volume_applied set)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.8.2
     description: Implement SetChannelVolume and SetVirtualMicVolume fast paths (VolumeWriteFailed on error)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.8.3
     description: Implement SetCellGain fast path (clamp, fold into Setup, SetGain)
-    status: pending
-    started_at: null
-    completed_at: null
-  - id: M8.8.4
-    description: Implement SetVadGate fast path (clamp, fold into Setup, SetDenoise)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
 - id: M8.9
   title: Status derivation and snapshot integration
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T18:08:30+02:00'
+  completed_at: '2026-10-14T18:08:30+02:00'
   tasks:
   - id: M8.9.1
     description: Implement StatusTable and derive_status precedence in src/core/status.rs
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.9.2
     description: Compute recording_apps per vmic from AppCapture links
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.9.3
     description: Integrate statuses, present flags and denoiser state into build_snapshot
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
 - id: M8.10
   title: Rebuild after reconnect
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T18:08:30+02:00'
+  completed_at: '2026-10-14T18:08:30+02:00'
   tasks:
   - id: M8.10.1
     description: 'Verify rebuild path: after reset, Ready triggers full desired/diff pass and rule/meter re-application (integration with M2.8)'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
 - id: M8.11
   title: PrepareQuit and Teardown (per C10)
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T18:08:30+02:00'
+  completed_at: '2026-10-14T18:08:30+02:00'
   tasks:
   - id: M8.11.1
     description: Implement usages() in src/core/quit.rs (PlayingToChannel / RecordingFromVirtualMic, deduplicated)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.11.2
     description: Implement PrepareQuit → Event::QuitCheck
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.11.3
     description: 'Implement Teardown: TornDown state, metadata clear, ordered destroys, Sync(Teardown), 2 s timeout, TeardownComplete'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
 - id: M8.12
   title: Node stats polling (xruns, poisoning, underruns, unsupported rate)
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T18:08:30+02:00'
+  completed_at: '2026-10-14T18:08:30+02:00'
   tasks:
   - id: M8.12.1
     description: Implement StatsPoll 1 s timer and xrun ring per node → Warning(Xruns{WarnedNode})
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.12.2
     description: Implement poisoned handling → FilterPoisoned → destroy/recreate + failure + Warning(NodeCreateFailed)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.12.3
-    description: Implement underruns warn-log and max_process_ns debug-log/reset
-    status: pending
-    started_at: null
-    completed_at: null
-  - id: M8.12.4
-    description: Implement unsupported_rate change detection → Warning(DenoiseRateUnsupported)
-    status: pending
-    started_at: null
-    completed_at: null
+    description: Implement max_process_ns debug-log/reset every 60 s (underruns moved to M10.2.3)
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
 - id: M8.13
   title: Tests
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T18:08:30+02:00'
+  completed_at: '2026-10-14T18:08:30+02:00'
   tasks:
   - id: M8.13.1
     description: 'Fake test: preset from empty graph builds all nodes/links; second pass zero ops'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.13.2
     description: 'Fake test: foreign link on cell destroyed; app→channel and vmic→recorder links untouched'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.13.3
     description: 'Fake test: output removed → DestinationMissing, present=false; re-added → restored and rules re-applied'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.13.4
     description: 'Fake test: delayed ports → Pending then links'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.13.5
     description: 'Fake test: 3 create failures → Error + CellFailed, reset on SetSetup change'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.13.6
     description: 'Fake test: channel rename → recreate and rule re-applied'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.13.7
     description: 'Fake test: disable/enable fades'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.13.8
     description: 'Fake test: Disconnected → rebuild → Restored once'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.13.9
     description: 'Fake test: PrepareQuit usages and Teardown order + TeardownComplete'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.13.10
     description: 'Live tests: preset_builds, cell_gain_audible, teardown_leaves_nothing, sigkill_leaves_nothing'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: M8.13.11
     description: 'testing/fake_shell.rs FakeShell::execute for every PwOp, with fault injection (moved from M2.10.2: no creation ops exist before M8)'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
 - id: M10.1
   title: Desired denoisers and links
   status: pending
@@ -1093,6 +1083,21 @@ steps:
   tasks:
   - id: M10.2.1
     description: Wire SetSetup enabled/vad_gate changes to SetDenoise without node recreation
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.2.2
+    description: Implement SetVadGate fast path (clamp, fold into Setup, SetDenoise) (moved from M8.8.4)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.2.3
+    description: Implement denoiser underruns warn-log with delta, at most once per minute (moved from M8.12.3)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M10.2.4
+    description: Implement unsupported_rate change detection → Warning(DenoiseRateUnsupported) (moved from M8.12.4)
     status: pending
     started_at: null
     completed_at: null

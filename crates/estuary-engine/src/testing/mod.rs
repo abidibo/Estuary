@@ -223,3 +223,155 @@ impl FakeGraph {
         })
     }
 }
+
+/// Simulates PipeWire answering the engine's ops (engine M8.13): created objects appear in
+/// the registry with C5 ports, destroyed ones disappear. Optional fault injection.
+#[derive(Debug, Default)]
+pub(crate) struct FakeShell {
+    next_id: u32,
+    nodes: std::collections::BTreeSet<u32>,
+    links: std::collections::BTreeMap<crate::core::effects::LinkKey, u32>,
+    pub gains: std::collections::HashMap<crate::model::CellKey, f32>,
+    pub created_cells: usize,
+    pub created_adapters: usize,
+    pub destroyed: usize,
+    /// Fail this many upcoming cell creations.
+    pub fail_cell_creates: usize,
+    /// While set, new nodes' ports are held back here instead of announced.
+    pub held_ports: Option<Vec<GraphChange>>,
+}
+
+impl FakeShell {
+    pub fn new() -> Self {
+        Self {
+            next_id: 5000,
+            ..Self::default()
+        }
+    }
+
+    fn id(&mut self) -> u32 {
+        self.next_id += 1;
+        self.next_id
+    }
+
+    fn node_with_ports(
+        &mut self,
+        props: Props,
+        ports: &[(&str, PortDir, bool)],
+    ) -> Vec<GraphChange> {
+        let id = self.id();
+        self.nodes.insert(id);
+        let mut p = props;
+        p.insert(
+            "object.serial".into(),
+            (u64::from(id) + 100_000).to_string(),
+        );
+        let mut out = vec![
+            GraphChange::NodeAdded {
+                id,
+                global_props: p.clone(),
+            },
+            GraphChange::NodeInfo { id, props: p },
+        ];
+        for (name, dir, monitor) in ports {
+            let pid = self.id();
+            let channel = name.rsplit('_').next().unwrap_or("").to_owned();
+            let out = self.held_ports.as_mut().unwrap_or(&mut out);
+            out.push(GraphChange::PortAdded(PortEntry {
+                id: pid,
+                node_id: id,
+                dir: *dir,
+                name: (*name).to_owned(),
+                channel,
+                monitor: *monitor,
+            }));
+        }
+        out
+    }
+
+    pub fn execute(&mut self, op: &crate::core::effects::PwOp) -> Vec<GraphChange> {
+        use crate::core::effects::{OwnedKey, PwOp};
+        match op {
+            PwOp::CreateAdapter { props, .. } => {
+                self.created_adapters += 1;
+                let sink = props.get("media.class").map(String::as_str) == Some("Audio/Sink");
+                let ports: &[(&str, PortDir, bool)] = if sink {
+                    &[
+                        ("playback_FL", PortDir::In, false),
+                        ("playback_FR", PortDir::In, false),
+                        ("monitor_FL", PortDir::Out, true),
+                        ("monitor_FR", PortDir::Out, true),
+                    ]
+                } else {
+                    &[
+                        ("input_FL", PortDir::In, false),
+                        ("input_FR", PortDir::In, false),
+                        ("capture_FL", PortDir::Out, false),
+                        ("capture_FR", PortDir::Out, false),
+                    ]
+                };
+                self.node_with_ports(props.clone(), ports)
+            }
+            PwOp::CreateCell {
+                key,
+                props,
+                initial_db,
+                ..
+            } => {
+                if self.fail_cell_creates > 0 {
+                    self.fail_cell_creates -= 1;
+                    return vec![GraphChange::CreateFailed {
+                        key: OwnedKey::Cell(key.clone()),
+                        message: "injected".into(),
+                    }];
+                }
+                self.created_cells += 1;
+                self.gains.insert(key.clone(), *initial_db);
+                self.node_with_ports(
+                    props.clone(),
+                    &[
+                        ("input_FL", PortDir::In, false),
+                        ("input_FR", PortDir::In, false),
+                        ("output_FL", PortDir::Out, false),
+                        ("output_FR", PortDir::Out, false),
+                    ],
+                )
+            }
+            PwOp::CreateLink {
+                key,
+                out_node,
+                out_port,
+                in_node,
+                in_port,
+                ..
+            } => {
+                let id = self.id();
+                self.links.insert(*key, id);
+                vec![GraphChange::LinkAdded(LinkEntry {
+                    id,
+                    out_node: *out_node,
+                    out_port: *out_port,
+                    in_node: *in_node,
+                    in_port: *in_port,
+                    client_id: None,
+                })]
+            }
+            PwOp::Destroy { key, global_id } => {
+                self.destroyed += 1;
+                if let OwnedKey::Link(l) = key {
+                    self.links.remove(l);
+                }
+                match global_id {
+                    Some(id) if self.nodes.remove(id) => vec![GraphChange::NodeRemoved(*id)],
+                    Some(id) => vec![GraphChange::LinkRemoved(*id)],
+                    None => Vec::new(),
+                }
+            }
+            PwOp::SetGain { key, db } => {
+                self.gains.insert(key.clone(), *db);
+                Vec::new()
+            }
+            _ => Vec::new(),
+        }
+    }
+}

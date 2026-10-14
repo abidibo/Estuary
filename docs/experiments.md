@@ -40,3 +40,29 @@ Method: `pw-record --target <default sink>` with `stream.capture.sink=true strea
 `pw-cli set-param <sink> Props '{ channelVolumes: [0.125, 0.125] }'` on the built-in ALSA sink changed only the node's own Props. `wpctl get-volume` still reported 0.73, and the device's `Route` (`analog-output-speaker`) kept `channelVolumes [0.3868, 0.3868]`. Restored afterwards with `wpctl set-volume <sink> 0.73`.
 
 → **Outcome B.** Device volume is written through the card's `Route` param: `Device::set_param(Route, Object{ObjectParamRoute: index, device, props: {channelVolumes, mute}, save: true})`. The node props `device.id` (the card) and `card.profile.device` (matches the route's `device` field) select the route. The route `index` comes from the card's enumerated `Route` params. Nodes without `device.id` (virtual sinks, Estuary channels) keep using node `Props`. Same mechanism for inputs (the mic route showed the same layout).
+
+## M8.1 (UNVERIFIED-1: passive cells and device suspend), 2026-10-14
+
+`ESTUARY_LIVE_HW=1 cargo test -p estuary-engine --features live-pw --test live_pw passive_cells_let_the_output_suspend -- --ignored --nocapture`. The engine builds one channel and one cell (`node.passive=true`, `link.passive=true` on both cell links) into the real default output (`alsa_output.pci-0000_00_1f.3.analog-stereo`). Then `pw-cat` plays 4 s of **silence** into the channel. The output node's state comes from `pw-cli info`.
+
+- With the cell and no app: the output stays **suspended**.
+- App playing into the channel: **running** within 2 s.
+- After the app stops: **suspended** again (WirePlumber's suspend timeout).
+
+→ **Outcome A.** Passivity on cell nodes and on both cell links keeps devices suspendable and still drives the chain when an app plays. C5 is kept as written (`CELL_LINKS_PASSIVE = true`). The planned `examples/passive_probe.rs` wasn't needed: the engine itself served as the probe.
+
+## M8 (UNVERIFIED-4: a virtual mic across two clocks), 2026-10-14
+
+`ESTUARY_LIVE_HW=1 cargo test -p estuary-engine --features live-pw --test live_pw virtual_mic_mixes_two_clocks -- --ignored --nocapture`. One virtual mic is fed by two cells: the hardware mic (ALSA capture clock) at 0 dB, and a channel carrying a 0.5-amplitude 1 kHz tone from `pw-cat` at −6 dB. A recorder (the engine's meter stream on the virtual mic) reads it for 5 s.
+
+Result: peak **0.251** (the tone at −6 dB plus room noise). **0 %** of 50 ms reads fell below 0.15, so there were no stalls or gaps, and the engine raised no xrun warnings. Null-sink only variant (`preset_builds_gain_is_audible_and_teardown_is_clean`): vmic 0.251, output 0.500, 0 % low reads.
+
+→ No change needed. PipeWire puts the virtual mic, the cells and both sources in one driver group and resamples the follower adaptively.
+
+## M8 live findings (engine bugs fixed), 2026-10-14
+
+1. **Control-channel deadlock.** pipewire-rs 0.10 runs `channel::Receiver::attach` callbacks with the channel mutex held (`queue.drain(..).for_each(callback)` under the lock). Sending to the same channel from inside a control callback self-deadlocks the loop thread, and then `Engine::drop`/`shutdown` block on that mutex too. The shell did exactly that with `Control::DropGraveyard` when a command or timer destroyed a cell or a meter stream (meter retarget, Teardown). Fix: the graveyard has its own `pipewire::channel<()>`. Rule: **never send to a channel from inside its own callback.**
+2. **Reconcile retry swallowed the debounce.** After a creating pass, the 2 s pending-timeout retry was armed, and `schedule_reconcile` ignored the 30 ms debounce asked for by our links appearing. Statuses stayed `Pending` for 2 s, and foreign-link cleanup would have waited as long. Fix: track the due instant and re-arm when an earlier one is requested. Preset to `Active` now takes about **120 ms**.
+3. **Spurious "volume write failed".** A fresh adapter answers our initial `subscribe_params(Props)` enumeration with ENOENT before it is configured. The subscription stays and later changes still arrive. Enumeration errors are now logged at debug and no longer reported as volume-write failures.
+4. **"unknown resource N" on teardown.** Destroying our own adapters and links both through `registry.destroy_global` and by dropping their proxies made the proxy drop talk to a removed resource. Our objects (`object.linger=false`) are now destroyed by dropping their proxy alone. `destroy_global` is kept for objects we hold no proxy for, such as leftovers from an earlier connection.
+5. **Test pitfall.** WirePlumber's restore-stream applied a saved volume of 0.532 (−5.5 dB) to every `pw-cat` stream. Test players now pass `--volume 1.0` and `state.restore-props=false`.

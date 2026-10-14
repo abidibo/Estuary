@@ -33,12 +33,15 @@ use self::meter_stream::{MeterSpec, MeterStream, create_meter};
 use self::thread::{Control, guarded};
 use self::timers::Timers;
 use crate::core::EngineCore;
-use crate::core::effects::{Effects, OwnedKey, PwOp, TimerKind};
+use crate::core::effects::{Effects, LinkKey, OwnedKey, PwOp, TimerKind};
 use crate::graph::{
     ClientEntry, CoreInfo, GraphChange, LinkEntry, PortDir, PortEntry, Props, parse_u32,
 };
 use crate::meter::{MeterBank, MeterSlotId};
+use crate::model::CellKey;
 use crate::{Command, EngineConfig, Event};
+use estuary_dsp::{FilterNode, GainHandle};
+use pipewire::link::Link;
 
 /// Linux `EPIPE`: the core reports a lost connection as `error(PW_ID_CORE, .., -EPIPE, ..)`.
 const EPIPE: i32 = 32;
@@ -53,6 +56,13 @@ enum Input {
 /// Everything tied to one connection. Field order is drop order: proxies and their listeners
 /// first, then the registry, then the core.
 struct Conn {
+    /// Matrix sends (`FilterNode`s) and their gain handles.
+    cells: HashMap<CellKey, (FilterNode, GainHandle)>,
+    /// Channel / virtual-mic adapter proxies, kept for the objects' lifetime.
+    owned_nodes: HashMap<OwnedKey, Node>,
+    owned_links: HashMap<LinkKey, Link>,
+    /// Proxy id → what it creates, to attribute creation errors.
+    owned_proxies: HashMap<u32, OwnedKey>,
     meters: HashMap<u16, MeterStream>,
     nodes: HashMap<u32, (Node, NodeListener)>,
     /// Bound `Audio/Device` cards, for route volume writes (M5.1).
@@ -80,10 +90,14 @@ struct DefaultMeta {
 struct State {
     core: EngineCore,
     conn: Option<Conn>,
-    /// Connections retired inside a callback; dropped from the control channel (`DropGraveyard`).
+    /// Connections retired inside a callback; dropped from the graveyard channel.
     graveyard: Vec<Conn>,
     /// Same for meter streams destroyed while one of their own callbacks may be running.
     meter_graveyard: Vec<MeterStream>,
+    /// Same for cells (a filter's error callback can lead to its own destruction).
+    cell_graveyard: Vec<FilterNode>,
+    /// Last time the cells' `max_process_ns` was logged and reset (every 60 s, M8.12).
+    process_logged: std::time::Instant,
 }
 
 struct Inner {
@@ -92,7 +106,10 @@ struct Inner {
     cfg: EngineConfig,
     ev_tx: async_channel::Sender<Event>,
     timers: Timers,
-    ctl_tx: pipewire::channel::Sender<Control>,
+    /// Wakes the loop to empty the graveyards. A channel of its own: pipewire-rs runs channel
+    /// callbacks with the channel's lock held, so sending to the control channel from inside a
+    /// control callback deadlocks.
+    graveyard_tx: pipewire::channel::Sender<()>,
     meters: Arc<MeterBank>,
     state: RefCell<State>,
     queue: RefCell<VecDeque<Input>>,
@@ -111,7 +128,7 @@ impl Shell {
         instance: String,
         ev_tx: async_channel::Sender<Event>,
         timers: Timers,
-        ctl_tx: pipewire::channel::Sender<Control>,
+        graveyard_tx: pipewire::channel::Sender<()>,
         meters: Arc<MeterBank>,
     ) -> Self {
         let core = EngineCore::new(instance, cfg.reconnect_backoff);
@@ -121,13 +138,15 @@ impl Shell {
             cfg,
             ev_tx,
             timers,
-            ctl_tx,
+            graveyard_tx,
             meters,
             state: RefCell::new(State {
                 core,
                 conn: None,
                 graveyard: Vec::new(),
                 meter_graveyard: Vec::new(),
+                cell_graveyard: Vec::new(),
+                process_logged: std::time::Instant::now(),
             }),
             queue: RefCell::new(VecDeque::new()),
             draining: Cell::new(false),
@@ -143,18 +162,31 @@ impl Shell {
         match c {
             Control::Cmd(cmd) => self.push(Input::Cmd(cmd)),
             Control::Timer(kind) => self.push(Input::Timer(kind)),
-            Control::DropGraveyard => {
-                let mut st = self.0.state.borrow_mut();
-                st.graveyard.clear();
-                st.meter_graveyard.clear();
-            }
             Control::Shutdown => self.0.ml.quit(),
         }
+    }
+
+    /// Drops connections, meter streams and cells retired inside callbacks.
+    pub fn drop_graveyard(&self) {
+        let (conns, meters, cells) = {
+            let mut st = self.0.state.borrow_mut();
+            (
+                std::mem::take(&mut st.graveyard),
+                std::mem::take(&mut st.meter_graveyard),
+                std::mem::take(&mut st.cell_graveyard),
+            )
+        };
+        drop((cells, meters, conns));
+    }
+
+    fn bury(&self) {
+        let _ = self.0.graveyard_tx.send(());
     }
 
     /// Drops every PipeWire object. Called after the loop stopped.
     pub fn finish(&self) {
         let mut st = self.0.state.borrow_mut();
+        st.cell_graveyard.clear();
         st.meter_graveyard.clear();
         st.graveyard.clear();
         st.conn = None;
@@ -195,11 +227,11 @@ impl Shell {
             let mut st = self.0.state.borrow_mut();
             if let Some(conn) = st.conn.take() {
                 st.graveyard.push(conn);
-                let _ = self.0.ctl_tx.send(Control::DropGraveyard);
+                self.bury();
             }
         }
         for op in fx.ops {
-            if let Some(change) = self.run_op(op) {
+            for change in self.run_op(op) {
                 self.0.queue.borrow_mut().push_back(Input::Graph(change));
             }
         }
@@ -217,13 +249,14 @@ impl Shell {
         }
     }
 
-    /// Executes one op. A synchronous failure is returned as a change for the core.
-    fn run_op(&self, op: PwOp) -> Option<GraphChange> {
+    /// Executes one op. Synchronous failures and stats findings come back as changes.
+    #[allow(clippy::too_many_lines)]
+    fn run_op(&self, op: PwOp) -> Vec<GraphChange> {
         let mut st = self.0.state.borrow_mut();
         let st = &mut *st;
         let Some(conn) = st.conn.as_mut() else {
             tracing::debug!(?op, "no connection; op dropped");
-            return None;
+            return Vec::new();
         };
         match op {
             PwOp::MetaWrite {
@@ -266,10 +299,10 @@ impl Shell {
                         conn.meters.insert(slot.0, meter);
                     }
                     Err(e) => {
-                        return Some(GraphChange::MeterStreamFailed {
+                        return vec![GraphChange::MeterStreamFailed {
                             slot,
                             message: e.to_string(),
-                        });
+                        }];
                     }
                 }
             }
@@ -295,12 +328,165 @@ impl Shell {
             PwOp::DestroyMeter { slot } => {
                 if let Some(meter) = conn.meters.remove(&slot.0) {
                     st.meter_graveyard.push(meter);
-                    let _ = self.0.ctl_tx.send(Control::DropGraveyard);
+                    self.bury();
                 }
                 self.0.meters.reset(slot);
             }
+            PwOp::CreateAdapter { key, props } => {
+                match conn
+                    .core
+                    .create_object::<Node>("adapter", &to_properties(&props))
+                {
+                    Ok(proxy) => {
+                        conn.owned_proxies
+                            .insert(proxy.upcast_ref().id(), key.clone());
+                        conn.owned_nodes.insert(key, proxy);
+                    }
+                    Err(e) => {
+                        return vec![GraphChange::CreateFailed {
+                            key,
+                            message: e.to_string(),
+                        }];
+                    }
+                }
+            }
+            PwOp::CreateCell {
+                key,
+                name,
+                props,
+                initial_db,
+            } => {
+                match estuary_dsp::new_gain_node(
+                    &conn.core,
+                    &name,
+                    to_properties(&props),
+                    initial_db,
+                ) {
+                    Ok((node, handle)) => {
+                        let weak = Rc::downgrade(&self.0);
+                        let cell = key.clone();
+                        node.set_state_listener(move |state, _id| {
+                            if let estuary_dsp::FilterState::Error(message) = state {
+                                let change = GraphChange::FilterError {
+                                    key: cell.clone(),
+                                    message: message.clone(),
+                                };
+                                Self::callback(&weak, |s| s.push(Input::Graph(change)));
+                            }
+                        });
+                        conn.cells.insert(key, (node, handle));
+                    }
+                    Err(e) => {
+                        return vec![GraphChange::CreateFailed {
+                            key: OwnedKey::Cell(key),
+                            message: e.to_string(),
+                        }];
+                    }
+                }
+            }
+            PwOp::CreateLink {
+                key,
+                out_node,
+                out_port,
+                in_node,
+                in_port,
+                passive,
+            } => {
+                let props = properties! {
+                    "link.output.node" => out_node.to_string(),
+                    "link.output.port" => out_port.to_string(),
+                    "link.input.node" => in_node.to_string(),
+                    "link.input.port" => in_port.to_string(),
+                    "link.passive" => passive.to_string(),
+                    "object.linger" => "false",
+                    "estuary.role" => "link",
+                    "estuary.instance" => st.core.instance(),
+                };
+                match conn.core.create_object::<Link>("link-factory", &props) {
+                    Ok(proxy) => {
+                        conn.owned_proxies
+                            .insert(proxy.upcast_ref().id(), OwnedKey::Link(key));
+                        conn.owned_links.insert(key, proxy);
+                    }
+                    Err(e) => {
+                        return vec![GraphChange::CreateFailed {
+                            key: OwnedKey::Link(key),
+                            message: e.to_string(),
+                        }];
+                    }
+                }
+            }
+            PwOp::Destroy { key, global_id } => {
+                // Cells are our own client's nodes: dropping the FilterNode removes them.
+                let cell = match &key {
+                    OwnedKey::Cell(c) => conn.cells.remove(c),
+                    OwnedKey::StaleNode(id) => {
+                        let found = conn
+                            .cells
+                            .iter()
+                            .find(|(_, (n, _))| n.node_id() == Some(*id))
+                            .map(|(k, _)| k.clone());
+                        found.and_then(|k| conn.cells.remove(&k))
+                    }
+                    _ => None,
+                };
+                // Objects we created go away with their proxy (object.linger=false); destroying
+                // the global as well leaves the dropped proxy talking to a removed resource.
+                let mut proxy = conn.owned_nodes.remove(&key).map(|p| p.upcast());
+                if let OwnedKey::Link(l) = &key
+                    && let Some(p) = conn.owned_links.remove(l)
+                {
+                    proxy = Some(p.upcast());
+                }
+                if let Some(p) = &proxy {
+                    conn.owned_proxies.remove(&p.id());
+                }
+                if let Some((node, _)) = cell {
+                    st.cell_graveyard.push(node);
+                    self.bury();
+                } else if proxy.is_none()
+                    && let Some(id) = global_id
+                {
+                    let _ = conn.registry.destroy_global(id);
+                }
+            }
+            PwOp::SetGain { key, db } => {
+                if let Some((_, handle)) = conn.cells.get(&key) {
+                    handle.set_db(db);
+                }
+            }
+            PwOp::PollStats => {
+                let log_process = st.process_logged.elapsed() >= std::time::Duration::from_secs(60);
+                if log_process {
+                    st.process_logged = std::time::Instant::now();
+                }
+                let Some(conn) = st.conn.as_mut() else {
+                    return Vec::new();
+                };
+                let mut changes = Vec::new();
+                for (key, (node, _)) in &conn.cells {
+                    let stats = node.stats();
+                    if stats.poisoned.load(std::sync::atomic::Ordering::Relaxed) {
+                        changes.push(GraphChange::FilterPoisoned { key: key.clone() });
+                    }
+                    if log_process {
+                        let ns = stats
+                            .max_process_ns
+                            .swap(0, std::sync::atomic::Ordering::Relaxed);
+                        tracing::debug!(cell = %crate::setup::canonical_cell_key(key), max_process_us = ns / 1000, "cell processing time");
+                    }
+                    let total = stats.xruns.load(std::sync::atomic::Ordering::Relaxed);
+                    if total > 0 {
+                        changes.push(GraphChange::FilterXruns {
+                            key: key.clone(),
+                            total,
+                        });
+                    }
+                }
+                return changes;
+            }
         }
-        None
+        Vec::new()
     }
 
     /// Wraps a callback: upgrade the weak handle, contain panics.
@@ -374,6 +560,10 @@ impl Shell {
             })
             .register();
         self.0.state.borrow_mut().conn = Some(Conn {
+            cells: HashMap::new(),
+            owned_nodes: HashMap::new(),
+            owned_links: HashMap::new(),
+            owned_proxies: HashMap::new(),
             meters: HashMap::new(),
             nodes: HashMap::new(),
             devices: HashMap::new(),
@@ -404,7 +594,24 @@ impl Shell {
             .conn
             .as_ref()
             .and_then(|c| c.node_proxies.get(&id).copied());
+        let owned = self
+            .0
+            .state
+            .borrow()
+            .conn
+            .as_ref()
+            .and_then(|c| c.owned_proxies.get(&id).cloned());
+        if let Some(key) = owned {
+            self.push(Input::Graph(GraphChange::ProxyError { key, res, message }));
+            return;
+        }
         if let Some(node_id) = failed_node {
+            // A fresh adapter refuses the initial Props enumeration of our subscription until it
+            // is configured; the subscription stays and later changes still arrive.
+            if message.starts_with("enum params") {
+                tracing::debug!(node_id, res, %message, "param enumeration failed");
+                return;
+            }
             tracing::warn!(node_id, res, %message, "node request failed");
             self.push(Input::Graph(GraphChange::VolumeWriteFailed { node_id }));
             return;
@@ -642,6 +849,14 @@ impl Shell {
             })
             .register()
     }
+}
+
+fn to_properties(p: &Props) -> pipewire::properties::PropertiesBox {
+    let mut out = pipewire::properties::PropertiesBox::new();
+    for (k, v) in p {
+        out.insert(k.as_str(), v.as_str());
+    }
+    out
 }
 
 fn dict_to_props(d: Option<&DictRef>) -> Props {

@@ -154,31 +154,30 @@ steps:
     completed_at: '2026-10-14T17:36:03+02:00'
 - id: 8
   title: M8 Channels, virtual mics, matrix engine
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-14T18:08:30+02:00'
+  completed_at: '2026-10-14T18:08:30+02:00'
   tasks:
   - id: '8.1'
     description: Complete estuary-engine steps M8.1-M8.13
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: '8.2'
     description: Record UNVERIFIED-1 (passive links / device suspend) and UNVERIFIED-4 (virtual mic scheduling across clocks) outcomes; amend master C5 if needed
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: '8.3'
-    description: 'Exit check: SetSetup with channels, a virtual mic and cells creates estuary.* nodes and links visible in pw-dump; deleting a link by hand is repaired; Bluetooth off/on restores routes
-      automatically'
-    status: pending
-    started_at: null
-    completed_at: null
+    description: 'Exit check: SetSetup with channels, a virtual mic and cells creates estuary.* nodes and links visible in pw-dump; deleting a link by hand is repaired; Bluetooth off/on restores routes automatically'
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
   - id: '8.4'
     description: 'Exit check: `systemctl --user restart pipewire wireplumber` rebuilds the setup within 5 s and emits Restored; SIGKILL leaves no estuary.* nodes'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-14T18:08:30+02:00'
+    completed_at: '2026-10-14T18:08:30+02:00'
 - id: 9
   title: M9 Matrix grid UI
   status: pending
@@ -238,8 +237,7 @@ steps:
     started_at: null
     completed_at: null
   - id: '11.3'
-    description: 'Exit check: first run shows the welcome dialog and the preset builds the expected nodes; X hides with one-time notice; Quit with a recording app shows the warning and removes all estuary.*
-      nodes; SIGTERM quits cleanly'
+    description: 'Exit check: first run shows the welcome dialog and the preset builds the expected nodes; X hides with one-time notice; Quit with a recording app shows the warning and removes all estuary.* nodes; SIGTERM quits cleanly'
     status: pending
     started_at: null
     completed_at: null

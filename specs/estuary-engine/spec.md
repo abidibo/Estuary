@@ -874,6 +874,18 @@ Kinds in the canonical form are `channel`, `input`, `denoised`, `output`, `virtu
 
 ### M8: Channels, virtual mics and the matrix engine
 
+**Implementation notes (M8 as built, 2026-10-14).** These deviate from or refine the text below. Where they conflict, the notes are authoritative.
+
+- **Layout.** `core/desired.rs` (DesiredGraph, `build_desired`), `core/ports.rs` (`ports`, `match_ports`), `core/reconcile.rs` (Reconciler: the pass, pending/failure bookkeeping, fades, statuses) and `core/quit.rs` (usages). There is no separate `core/status.rs`: statuses are computed at the end of each pass and read by `build_snapshot` through `Reconciler::status`. `FakeShell` lives in `testing/mod.rs` next to `FakeGraph`, with fault injection `fail_cell_creates` and `held_ports` (delayed ports). The scenario tests are in `core/scenarios.rs`.
+- **M8.1 (UNVERIFIED-1): outcome A**, measured with the engine itself instead of `examples/passive_probe.rs`, which wasn't written. See `docs/experiments.md`. `CELL_LINKS_PASSIVE = true`.
+- **Reconcile timer.** `reconcile_due: Option<Instant>` replaces an "armed" flag. A request re-arms the timer only when it is earlier than the armed deadline. Without this, the 2 s pending-timeout retry swallowed the 30 ms debounce, and statuses and C8 cleanup lagged by 2 s. Preset to `Active` now takes about 120 ms live.
+- **Graveyard channel.** pipewire-rs 0.10 runs channel callbacks under the channel's mutex, so sending to the control channel from a control callback deadlocks. Retired connections, meter streams and cells are dropped through a dedicated `pipewire::channel<()>`. `Control::DropGraveyard` is gone.
+- **Destroying our objects.** Adapters and links we created (`object.linger=false`) are destroyed by dropping their proxy. `registry.destroy_global` is used only when we hold no proxy, for example leftovers from an earlier connection. Cells are destroyed by dropping their `FilterNode`, via the graveyard. Doing both produced "unknown resource" errors.
+- **Props subscription errors.** A fresh adapter rejects the initial Props enumeration (ENOENT). This is logged at debug and is not a `VolumeWriteFailed`.
+- **Teardown** destroys cells by node id (`OwnedKey::StaleNode`), then virtual mics, then channels, then issues `Sync(Teardown)`.
+- **M8.12.** `max_process_ns` is logged at debug and reset every 60 s by the shell's stats poll. `underruns` and `unsupported_rate` are denoiser-only and move to M10, as do `SetVadGate` and `SetDenoise`.
+- **Live tests** (all on null sinks, silent): `preset_builds_gain_is_audible_and_teardown_is_clean` covers preset_builds, cell_gain_audible and teardown_leaves_nothing. Output 0.500 and vmic 0.251 for a 0.5 tone with −6 dB on the vmic cell; −60 dB brings the output to 0.0005. `sigkill_leaves_nothing` re-executes the test binary as a helper and SIGKILLs it; our nodes are gone 18 ms later. Hardware experiments are gated by `ESTUARY_LIVE_HW=1`: `passive_cells_let_the_output_suspend` (silence only) and `virtual_mic_mixes_two_clocks` (opens the mic briefly).
+
 #### M8.1 Live experiment: passive cell links and device suspend (UNVERIFIED-1)
 
 Requires M7 (dsp `new_gain_node`). `examples/passive_probe.rs` (feature `live-pw`) creates:
