@@ -23,6 +23,11 @@ pub fn i18n(msgid: &str) -> String {
     gettextrs::gettext(msgid)
 }
 
+/// Translates `msgid` in a disambiguating context (`pgettext`).
+pub fn pi18n(context: &str, msgid: &str) -> String {
+    gettextrs::pgettext(context, msgid)
+}
+
 /// Translates `msgid`, then replaces each `{}` in order with `args` (translators keep the `{}`).
 pub fn i18n_f(msgid: &str, args: &[&str]) -> String {
     fill(&gettextrs::gettext(msgid), args)

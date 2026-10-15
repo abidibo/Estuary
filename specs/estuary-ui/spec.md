@@ -660,6 +660,22 @@ Queued in `UiState.pending_notices` and shown on `AppMsg::WindowShown`, which fi
 
 ### M9: Matrix grid UI
 
+**Implementation notes (M9 as built, 2026-10-15).** These deviate from or refine the text below. Where they conflict, the notes are authoritative.
+
+- **Gain keys.** Arrow keys belong to grid navigation (M9.5, capture phase), so a cell never sees Up/Down. Gain keys are `+`/`=`/`KP_Add` and `−`/`KP_Subtract` (±1 dB), Page Up/Down (±6), Home (0 dB) and End (−60 dB). Fine values go through the popover's spin button. Shift+arrow modifiers aren't used.
+- **Click vs. double click.** Turning a send on is instant. Turning an *active* send off waits for the GTK double-click time, so a double click resets to 0 dB without toggling off and on (which would fade out, destroy and recreate the node, an audible dropout).
+- **`CellButton`** is a real `gtk::Widget` subclass (BinLayout, CSS name `cellbutton`, `AccessibleRole::Slider`). This works under `#![forbid(unsafe_code)]` once the wrapper lists `Accessible`, `Buildable` and `ConstraintTarget`. The look is CSS on an inner label pill (`cell::install_css`), with a spinner and badge overlay for Pending, Missing and Error. Snapshots don't overwrite a gain the user changed in the last 600 ms (same rule as `VolumeControl`), which also covers drags.
+- **Sizes.** Cells are 72×44. Row headers are 220 wide and exactly 44 tall; column headers exactly 72 wide and **108** tall (96 couldn't fit label, meter, scale and menu). Only the cell-aligned dimension must match, and the outer 2×2 grid aligns the rest. The left column sets `hexpand(false)` explicitly: the header labels' `hexpand` would otherwise propagate and split the spare width.
+- **Header volumes** are bare sliders (no mute button, no room); mute is kept as it is. Edits are throttled to 30 Hz with `commit=false`, then `commit=true` 400 ms after the last change, instead of detecting the scale's release. Inputs and outputs send `DeviceVolume` (not saved).
+- **`PeakMeter`** gained `horizontal(w, h)` and `vertical(w, h)` constructors. Vertical meters draw the horizontal picture rotated.
+- **Dialogs** are presented by the page itself (`dialogs/name.rs`, `dialogs/confirm.rs`); the page emits only `MatrixOutput::Edit` and `MetersMoved`. There is no `OpenNameDialog` output.
+- **Setup issues.** Cell failures already show through `CellStatus::Error` in the snapshot, so there is no `MatrixMsg::Issues`. `AppModel` toasts issues without a cell, once per `SetupIssue::key`. `EditOutcome.toasts` is `Vec<String>` (3 s each).
+- **Decimal separator** in `format_db` is a translatable string with context (`pi18n("decimal separator", ".")`), since the crate forbids the unsafe libc locale calls.
+- **Empty state**: the status page shows while there are no channels and no virtual mics; the grid (with hardware rows and columns) appears once one exists.
+- **Dev aids** in `app.rs`: `ESTUARY_PAGE=matrix` opens on that page, `ESTUARY_DEV_INERT=1` makes the content non-interactive (for measurements), and `ESTUARY_SNAPSHOT=out.png` renders the window to a PNG with GTK's renderer after 2.5 s, then quits. All layout checks used these with a scratch `XDG_CONFIG_HOME`.
+- **CPU (M4 deferred check):** 17 visible meters, 8 of them moving, release build, window untouched: **1.6–2.05 %** of one core (about 1.5 % is the PipeWire data loop running the meter streams; the GTK thread uses 0.2–0.5 %). Debug build: about 2.9 %. Runs where the window was being used read 3–9 %; that was the interaction, not the meters.
+- Engine test fixtures behind `test-util` (moved task) weren't needed: the layout and edit tests build snapshots directly.
+
 #### M9.1 Matrix layout (pure)
 
 `state/matrix_layout.rs`:

@@ -4,6 +4,7 @@
 mod app;
 mod config;
 mod config_build;
+mod dialogs;
 mod i18n;
 mod pages;
 mod state;

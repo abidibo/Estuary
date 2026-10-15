@@ -49,6 +49,8 @@ struct MeterState {
 struct Inner {
     area: gtk::DrawingArea,
     state: RefCell<MeterState>,
+    /// Bars grow upward (matrix row headers).
+    vertical: bool,
 }
 
 /// Cheap to clone; the hub keeps only weak references.
@@ -67,24 +69,51 @@ impl WeakPeakMeter {
 impl PeakMeter {
     /// A horizontal meter, 120×8 natural size. `label` names it for screen readers.
     pub fn new(label: &str) -> Self {
+        Self::build(label, false, (120, 8), (48, 6))
+    }
+
+    /// A horizontal meter of a fixed size (matrix column headers).
+    pub fn horizontal(label: &str, width: i32, height: i32) -> Self {
+        Self::build(label, false, (width, height), (width, height))
+    }
+
+    /// A vertical meter of a fixed size; bars grow upward (matrix row headers).
+    pub fn vertical(label: &str, width: i32, height: i32) -> Self {
+        Self::build(label, true, (width, height), (width, height))
+    }
+
+    fn build(label: &str, vertical: bool, natural: (i32, i32), min: (i32, i32)) -> Self {
         let area: gtk::DrawingArea = gtk::glib::Object::builder()
             .property("accessible-role", gtk::AccessibleRole::Meter)
             .build();
-        area.set_content_width(120);
-        area.set_content_height(8);
-        area.set_size_request(48, 6);
+        area.set_content_width(natural.0);
+        area.set_content_height(natural.1);
+        area.set_size_request(min.0, min.1);
         area.set_valign(gtk::Align::Center);
+        area.set_halign(if vertical {
+            gtk::Align::Center
+        } else {
+            gtk::Align::Fill
+        });
         area.add_css_class("estuary-meter");
         area.update_property(&[gtk::accessible::Property::Label(label)]);
         let inner = Rc::new(Inner {
             area,
             state: RefCell::new(MeterState::default()),
+            vertical,
         });
 
         let weak = Rc::downgrade(&inner);
         inner.area.set_draw_func(move |area, cr, w, h| {
             if let Some(inner) = weak.upgrade() {
-                draw(area, &inner.state.borrow(), cr, w, h);
+                if inner.vertical {
+                    // Draw the horizontal picture rotated: left becomes bottom.
+                    cr.translate(0.0, f64::from(h));
+                    cr.rotate(-std::f64::consts::FRAC_PI_2);
+                    draw(area, &inner.state.borrow(), cr, h, w);
+                } else {
+                    draw(area, &inner.state.borrow(), cr, w, h);
+                }
             }
         });
         // A hidden meter costs nothing: the tick only runs while mapped and bound.

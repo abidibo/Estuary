@@ -43,9 +43,61 @@ pub fn percent(linear: f32) -> u32 {
     }
 }
 
+/// Cell gain range (C6).
+pub const CELL_DB_MIN: f32 = -60.0;
+pub const CELL_DB_MAX: f32 = 6.0;
+
+/// NaN → 0 dB, clamped to the cell range, rounded to 0.1 dB.
+pub fn clamp_db(db: f32) -> f32 {
+    if db.is_nan() {
+        return 0.0;
+    }
+    let r = (db.clamp(CELL_DB_MIN, CELL_DB_MAX) * 10.0).round() / 10.0;
+    if r == 0.0 { 0.0 } else { r } // no "−0 dB"
+}
+
+/// "0 dB", "−18 dB", "+3.5 dB": U+2212 minus, the locale's decimal separator.
+pub fn format_db(db: f32) -> String {
+    // Translators: the decimal separator in gain values such as "−3.5 dB"; "," in many languages
+    format_db_with(db, &crate::i18n::pi18n("decimal separator", "."))
+}
+
+fn format_db_with(db: f32, separator: &str) -> String {
+    let db = clamp_db(db);
+    let sign = if db > 0.0 {
+        "+"
+    } else if db < 0.0 {
+        "\u{2212}"
+    } else {
+        ""
+    };
+    let abs = db.abs();
+    let number = if (abs - abs.round()).abs() < 0.05 {
+        format!("{abs:.0}")
+    } else {
+        format!("{abs:.1}").replace('.', separator)
+    };
+    format!("{sign}{number} dB")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn db_clamp_and_format() {
+        assert_eq!(clamp_db(f32::NAN), 0.0);
+        assert_eq!(clamp_db(-100.0), -60.0);
+        assert_eq!(clamp_db(12.0), 6.0);
+        assert_eq!(clamp_db(-3.04), -3.0);
+        assert_eq!(clamp_db(-0.04), 0.0);
+        assert_eq!(format_db_with(0.0, "."), "0 dB");
+        assert_eq!(format_db_with(-0.01, "."), "0 dB");
+        assert_eq!(format_db_with(-18.0, "."), "\u{2212}18 dB");
+        assert_eq!(format_db_with(3.5, "."), "+3.5 dB");
+        assert_eq!(format_db_with(-3.5, ","), "\u{2212}3,5 dB");
+        assert_eq!(format_db_with(f32::NAN, "."), "0 dB");
+    }
 
     #[test]
     fn cubic_percent() {

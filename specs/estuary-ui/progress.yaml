@@ -12,8 +12,7 @@ steps:
   completed_at: '2026-10-14T16:38:32+02:00'
   tasks:
   - id: M3.1.1
-    description: Write crates/estuary/Cargo.toml using only workspace deps (relm4, gtk, adw, estuary-engine, async-channel, serde, toml, thiserror, tracing, tracing-subscriber, uuid, gettext-rs) plus dev-dep
-      tempfile
+    description: Write crates/estuary/Cargo.toml using only workspace deps (relm4, gtk, adw, estuary-engine, async-channel, serde, toml, thiserror, tracing, tracing-subscriber, uuid, gettext-rs) plus dev-dep tempfile
     status: completed
     started_at: '2026-10-14T16:38:32+02:00'
     completed_at: '2026-10-14T16:38:32+02:00'
@@ -532,190 +531,184 @@ steps:
     completed_at: '2026-10-14T17:28:08+02:00'
 - id: M9.1
   title: Matrix layout (pure)
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-15T10:43:05+02:00'
+  completed_at: '2026-10-15T10:43:05+02:00'
   tasks:
   - id: M9.1.1
     description: Define RowKey, ColKey, RowSpec, ColSpec, CellView, DenoiseView, MatrixLayout in state/matrix_layout.rs
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.1.2
     description: 'Implement compute(): channel rows, sorted input rows, denoised row directly under its input, output then mic columns'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.1.3
     description: Fill CellView from Setup + snapshot statuses (Pending when absent from snapshot) and implement shape_key()
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.1.4
     description: Unit-test row order, denoised placement, offline inclusion and Pending status
-    status: pending
-    started_at: null
-    completed_at: null
-  - id: M9.1.5
-    description: Export estuary-engine test fixtures behind feature `test-util` (cfg(any(test, feature = "test-util"))) when UI tests first need them (moved from engine M2.10.3) (moved from M3.1.4) (moved
-      from M5.2.11)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
 - id: M9.2
   title: '`CellButton` widget'
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-15T10:43:05+02:00'
+  completed_at: '2026-10-15T10:43:05+02:00'
   tasks:
   - id: M9.2.1
     description: Create the CellButton glib subclass (pages/matrix/cell.rs, 72x44, focusable, CSS name cellbutton) with new(), set_view(), connect_edit()
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.2.2
     description: 'Draw the visual states: absent, disabled (status ignored), enabled pill, pending, missing overlay, error overlay'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.2.3
     description: Implement click-to-toggle with 4 px drag threshold and double-click reset to 0 dB
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.2.4
     description: Implement vertical drag gain (0.25 dB/px, Shift 0.05) with 30 Hz throttle and commit on release
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.2.5
     description: Implement scroll gain (±1 dB, Shift ±0.1) with commit 400 ms after the last scroll
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.2.6
     description: Implement keyboard bindings (Space/Return, Up/Down, Page_Up/Down, Home, End, Delete) with debounced commit
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.2.7
     description: Implement the context popover (toggle, set 0 dB, remove send, SpinButton exact entry) on secondary click/long press/Menu/Shift+F10
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.2.8
     description: Set AccessibleRole::Slider with label "{} to {}", ValueMin/Max/Now and ValueText updated in set_view
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.2.9
     description: Implement clamp_db (NaN → 0, clamp -60..+6, round 0.1) and format_db (U+2212 minus, localized decimal separator) (moved from M5.1.3)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
 - id: M9.3
   title: Headers
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-15T10:43:05+02:00'
+  completed_at: '2026-10-15T10:43:05+02:00'
   tasks:
   - id: M9.3.1
     description: 'Implement build_row_header (220x44: label, vertical PeakMeter, compact volume scale, menu button) and RowHeader::update'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.3.2
-    description: 'Implement row menus: channel Rename/Delete, input Noise suppression check + Forget device (offline only)'
-    status: pending
-    started_at: null
-    completed_at: null
+    description: 'Implement row menus: channel Rename/Delete, input Noise suppression check + Forget device (offline only) (the Noise suppression check arrives with M10.1)'
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.3.3
     description: 'Implement build_col_header (72x96: wrapped 2-line label with tooltip, horizontal meter, inverted vertical scale, menu) and ColHeader::update'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.3.4
     description: 'Implement column menus: virtual mic Rename/Delete, output Forget device (offline only)'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.3.5
     description: Apply dim-label + "Disconnected" subtitle for offline headers and register header meters with MeterVisibility
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.3.6
     description: Set AccessibleRole::RowHeader/ColumnHeader and labels on headers
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.3.7
     description: apply_edit for ChannelVolume and MicVolume (fast path while dragging, save on commit) (moved from M5.2.3)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
 - id: M9.4
   title: '`MatrixPage` grid'
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-15T10:43:05+02:00'
+  completed_at: '2026-10-15T10:43:05+02:00'
   tasks:
   - id: M9.4.1
     description: 'Implement the MatrixPage component (MatrixMsg, MatrixOutput) and the 2x2 layout: corner with Add buttons, col_scroller, row_scroller, body_scroller'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.4.2
     description: Share adjustments (col_scroller hadjustment, row_scroller vadjustment) with body_scroller for pinned headers
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.4.3
     description: Implement full rebuild on shape_key change with focus restore by CellKey and meter re-registration
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.4.4
     description: Implement in-place update (set_view / header update) when the shape is unchanged, respecting dragging cells
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.4.5
     description: Add the empty-state adw::StatusPage "Build your mix" with Add channel / Add virtual mic buttons
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.4.6
     description: Add a debug-level tracing counter for rebuilds (used by acceptance criteria)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.4.7
     description: Implement apply_edit for ToggleCell, SetCellGain (fast path vs commit) and RemoveCell (moved from M5.2.6)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
 - id: M9.5
   title: Keyboard navigation and accessibility
-  status: pending
-  started_at: null
+  status: in_progress
+  started_at: '2026-10-15T10:43:05+02:00'
   completed_at: null
   tasks:
   - id: M9.5.1
     description: Implement roving focus in pages/matrix/keyboard.rs (one focusable cell, Tab enters/leaves the grid once)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.5.2
     description: Implement arrow-key navigation with Control jumping to edges, focusing and scrolling the target cell into view
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.5.3
     description: Set AccessibleRole::Grid on the body and restore the current position by key after rebuilds
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.5.4
     description: Manually verify with Orca that a cell reads "Music to Headphones, slider, −18 dB, on"
     status: pending
@@ -723,88 +716,88 @@ steps:
     completed_at: null
 - id: M9.6
   title: Add/rename dialogs
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-15T10:43:05+02:00'
+  completed_at: '2026-10-15T10:43:05+02:00'
   tasks:
   - id: M9.6.1
     description: Implement dialogs/name.rs present(parent, kind, on_done) as adw::AlertDialog with adw::EntryRow
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.6.2
     description: Enable the default response only for trimmed non-empty names ≤ 64 chars, activate on Return, prefill "Channel N"/"Virtual mic N"
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.6.3
     description: Emit AddChannel/AddMic/RenameChannel/RenameMic edits from the dialog responses
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.6.4
     description: apply_edit for AddChannel/RenameChannel/DeleteChannel with F6 rule rewrite and plural toast (moved from M5.2.4)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.6.5
     description: Implement apply_edit for AddMic/RenameMic/DeleteMic with default names and trimming/length rules (moved from M5.2.5)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
 - id: M9.7
   title: Delete with F6
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-15T10:43:05+02:00'
+  completed_at: '2026-10-15T10:43:05+02:00'
   tasks:
   - id: M9.7.1
     description: Implement the destructive delete confirmation adw::AlertDialog listing removed sends and the plural count of apps moving to default output
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.7.2
     description: Emit Edit::DeleteChannel / Edit::DeleteMic on confirm
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
 - id: M9.8
   title: Offline devices
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-15T10:43:05+02:00'
+  completed_at: '2026-10-15T10:43:05+02:00'
   tasks:
   - id: M9.8.1
     description: Render offline rows/columns dimmed with missing overlays per CellStatus
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.8.2
     description: Implement the Forget device confirmation dialog emitting Edit::ForgetDevice, unavailable while the device is present
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.8.3
     description: Implement apply_edit for ForgetDevice (only when offline; removes cells, denoisers, denoised cells; rewrites rules) (moved from M5.2.7)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
 - id: M9.9
   title: Setup issues display
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-15T10:43:05+02:00'
+  completed_at: '2026-10-15T10:43:05+02:00'
   tasks:
   - id: M9.9.1
     description: Route Event::SetupIssues to MatrixMsg::Issues and mark SetupIssue::CellFailed cells with the error overlay
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: M9.9.2
     description: Forward issues with cell() == None to AppModel toast handling (M11.5)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
 - id: M10.1
   title: Per-input toggle
   status: pending
@@ -885,6 +878,11 @@ steps:
     completed_at: null
   - id: M11.1.6
     description: Implement apply_edit for ApplyPreset (setup replace + first_run_done) (moved from M5.2.9)
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M11.1.7
+    description: Export estuary-engine test fixtures behind feature `test-util` (cfg(any(test, feature = "test-util"))) when UI tests first need them (moved from engine M2.10.3) (moved from M3.1.4) (moved from M5.2.11) (not needed by M9 tests; moved to M11)
     status: pending
     started_at: null
     completed_at: null
@@ -976,8 +974,7 @@ steps:
     started_at: null
     completed_at: null
   - id: M11.3.7
-    description: Define AppInit and the AppModel struct in app.rs with the desktop-required fields (engine, config, quit, quit_timers, hold, tray, background, env, denied_notice_shown_this_session, notice_open)
-      and UI fields (moved from M3.3.1)
+    description: Define AppInit and the AppModel struct in app.rs with the desktop-required fields (engine, config, quit, quit_timers, hold, tray, background, env, denied_notice_shown_this_session, notice_open) and UI fields (moved from M3.3.1)
     status: pending
     started_at: null
     completed_at: null
@@ -987,8 +984,7 @@ steps:
     started_at: null
     completed_at: null
   - id: M11.3.9
-    description: 'Write main.rs: tracing-subscriber with ESTUARY_LOG filter, i18n::init(), desktop::app::build_application(), RelmApp::from_app(app).visible_on_activate(true).run::<AppModel>(AppInit) (moved
-      from M3.3.9)'
+    description: 'Write main.rs: tracing-subscriber with ESTUARY_LOG filter, i18n::init(), desktop::app::build_application(), RelmApp::from_app(app).visible_on_activate(true).run::<AppModel>(AppInit) (moved from M3.3.9)'
     status: pending
     started_at: null
     completed_at: null

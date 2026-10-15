@@ -180,19 +180,19 @@ steps:
     completed_at: '2026-10-14T18:08:30+02:00'
 - id: 9
   title: M9 Matrix grid UI
-  status: pending
-  started_at: null
+  status: in_progress
+  started_at: '2026-10-15T10:43:05+02:00'
   completed_at: null
   tasks:
   - id: '9.1'
-    description: Complete estuary-ui steps M9.1-M9.9
-    status: pending
-    started_at: null
-    completed_at: null
+    description: Complete estuary-ui steps M9.1-M9.9 (Orca check M9.5.4 pending the user)
+    status: completed
+    started_at: '2026-10-15T10:43:05+02:00'
+    completed_at: '2026-10-15T10:43:05+02:00'
   - id: '9.2'
-    description: 'Exit check: cells toggle and change gain by click/drag/scroll and keyboard; changes persist to config.toml within 1 s; offline devices dim and offer ''Forget device'''
-    status: pending
-    started_at: null
+    description: 'Exit check: cells toggle and change gain by click/drag/scroll and keyboard; changes persist to config.toml within 1 s; offline devices dim and offer ''Forget device''; CPU with 16+ visible meters 1.6-2.05% release (M4 deferred check done); hands-on pass by the user pending'
+    status: in_progress
+    started_at: '2026-10-15T10:43:05+02:00'
     completed_at: null
 - id: 10
   title: M10 Noise suppression

@@ -21,7 +21,7 @@ use crate::config::{ConfigError, ConfigStore, LoadOutcome};
 use crate::config_build::APP_ID;
 use crate::i18n::{i18n, i18n_f, ni18n_f};
 use crate::pages::apps::{AppsMsg, AppsOutput, AppsPage};
-use crate::pages::matrix::MatrixPage;
+use crate::pages::matrix::{MatrixMsg, MatrixOutput, MatrixPage};
 use crate::pages::status::{RootView, root_view, status_page};
 use crate::state::edit::{Edit, apply_edit};
 use crate::widgets::meter_hub::MeterHub;
@@ -45,7 +45,9 @@ pub struct AppModel {
     status_dirty: Cell<bool>,
     snapshot: Arc<GraphSnapshot>,
     apps_page: Controller<AppsPage>,
-    _matrix_page: Controller<MatrixPage>,
+    matrix_page: Controller<MatrixPage>,
+    /// Setup issues already toasted (by `SetupIssue::key`), so each shows once.
+    toasted_issues: std::collections::HashSet<String>,
     toasts: adw::ToastOverlay,
     main_view: adw::ViewStack,
     meters: MeterHub,
@@ -117,7 +119,13 @@ impl Component for AppModel {
                 AppsOutput::Edit(e) => AppMsg::Edit(e),
             },
         );
-        let matrix_page = MatrixPage::builder().launch(()).detach();
+        let matrix_page = MatrixPage::builder().launch(meters.clone()).forward(
+            sender.input_sender(),
+            |o| match o {
+                MatrixOutput::Edit(e) => AppMsg::Edit(e),
+                MatrixOutput::MetersMoved => AppMsg::ScheduleMeters,
+            },
+        );
 
         // Pages
         let main_view = adw::ViewStack::new();
@@ -201,6 +209,7 @@ impl Component for AppModel {
         });
 
         install_actions(&root, &main_view, &sender);
+        dev_snapshot(&root, &main_view);
         connect_meter_visibility(&root, &main_view, apps_page.widget(), &sender);
 
         let mut model = AppModel {
@@ -213,7 +222,8 @@ impl Component for AppModel {
             status_dirty: Cell::new(true),
             snapshot: Arc::default(),
             apps_page,
-            _matrix_page: matrix_page,
+            matrix_page,
+            toasted_issues: std::collections::HashSet::new(),
             toasts,
             main_view: main_view.clone(),
             meters,
@@ -318,15 +328,23 @@ impl AppModel {
         if out.save {
             self.config.schedule_save();
         }
+        for text in &out.toasts {
+            self.show_toast(text);
+        }
         if out.structure_changed {
             self.push_to_pages();
         }
     }
 
     fn push_to_pages(&self) {
+        let setup = Arc::new(self.config.file().setup.clone());
         self.apps_page.emit(AppsMsg::Update {
             snapshot: self.snapshot.clone(),
-            setup: Arc::new(self.config.file().setup.clone()),
+            setup: setup.clone(),
+        });
+        self.matrix_page.emit(MatrixMsg::Update {
+            snapshot: self.snapshot.clone(),
+            setup,
         });
     }
 
@@ -386,15 +404,17 @@ impl AppModel {
 
     /// Meter only what is on screen (UI M4.4); nothing while the window is hidden.
     fn recompute_meters(&mut self, root: &adw::ApplicationWindow) {
-        let on_apps = self.main_view.visible_child_name().as_deref() == Some("apps");
-        let targets = if root.is_visible() && on_apps {
-            self.meters.visible_targets(self.apps_page.widget())
-        } else {
-            Vec::new()
+        let page = self.main_view.visible_child_name();
+        let targets = match page.as_deref() {
+            _ if !root.is_visible() => Vec::new(),
+            Some("apps") => self.meters.visible_targets(self.apps_page.widget()),
+            Some("matrix") => self.matrix_page.model().visible_meter_targets(),
+            _ => Vec::new(),
         };
         if self.meter_targets_sent.as_ref() == Some(&targets) {
             return;
         }
+        tracing::debug!(targets = targets.len(), "meter targets");
         if let Some(engine) = &self.engine
             && engine
                 .send(Command::SetMeterTargets(targets.clone()))
@@ -443,6 +463,7 @@ impl AppModel {
                 self.connection = Some(state);
             }
             Event::Snapshot(snap) => {
+                tracing::trace!("snapshot");
                 self.snapshot = snap;
                 self.push_to_pages();
             }
@@ -452,6 +473,14 @@ impl AppModel {
             Event::Restored => self.show_toast(&i18n("Audio system restarted, setup restored")),
             Event::MeterAssignments(a) => self.meters.set_assignments(a),
             Event::Warning(EngineWarning::MeterFailed(target)) => self.meters.set_failed(target),
+            // Issues tied to a cell show on the cell through its status (UI M9.9).
+            Event::SetupIssues(issues) => {
+                for issue in issues.iter().filter(|i| i.cell().is_none()) {
+                    if self.toasted_issues.insert(issue.key()) {
+                        self.show_toast(&issue.message());
+                    }
+                }
+            }
             Event::Fatal(e) => {
                 // Only the first fatal error matters; the forwarder's ThreadGone may follow it.
                 if self.fatal.is_none() {
@@ -541,4 +570,43 @@ fn connect_meter_visibility(
         move |_| f()
     });
     root.connect_visible_notify(move |_| schedule());
+}
+
+/// Development aids: `ESTUARY_PAGE=matrix` opens on that page; `ESTUARY_DEV_INERT=1` makes the
+/// content non-interactive (measurements); `ESTUARY_SNAPSHOT=out.png` renders the window to a PNG
+/// after 2.5 s with GTK's own renderer (no screen capture), then quits.
+fn dev_snapshot(root: &adw::ApplicationWindow, main_view: &adw::ViewStack) {
+    if let Ok(page) = std::env::var("ESTUARY_PAGE") {
+        main_view.set_visible_child_name(&page);
+    }
+    if std::env::var("ESTUARY_DEV_INERT").is_ok() {
+        main_view.set_sensitive(false);
+    }
+    let Ok(path) = std::env::var("ESTUARY_SNAPSHOT") else {
+        return;
+    };
+    let root = root.clone();
+    gtk::glib::timeout_add_local_once(Duration::from_millis(2500), move || {
+        let (w, h) = (root.width(), root.height());
+        let paintable = gtk::WidgetPaintable::new(Some(&root));
+        let snapshot = gtk::Snapshot::new();
+        paintable.snapshot(
+            snapshot.upcast_ref::<gtk::gdk::Snapshot>(),
+            f64::from(w),
+            f64::from(h),
+        );
+        let rendered = snapshot
+            .to_node()
+            .zip(root.native().and_then(|n| n.renderer()));
+        if let Some((node, renderer)) = rendered {
+            #[allow(clippy::cast_precision_loss)] // window sizes
+            let bounds = gtk::graphene::Rect::new(0.0, 0.0, w as f32, h as f32);
+            let texture = renderer.render_texture(node, Some(&bounds));
+            match texture.save_to_png(&path) {
+                Ok(()) => tracing::info!(%path, "window snapshot saved"),
+                Err(e) => tracing::error!("window snapshot: {e}"),
+            }
+        }
+        relm4::main_application().quit();
+    });
 }
