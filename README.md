@@ -43,20 +43,37 @@ cargo test --workspace --features estuary-engine/live-pw -- --include-ignored
 ## Translations
 
 ```sh
-build-aux/update-pot.sh    # extract strings into po/estuary.pot
-build-aux/compile-mo.sh    # build .mo files into target/locale for cargo run
+build-aux/update-pot.sh           # extract strings into po/estuary.pot and merge po/*.po
+build-aux/compile-mo.sh target    # build .mo files into target/locale for cargo run
+LANGUAGE=it cargo run -p estuary  # try a translation
 ```
 
-(Scripts arrive with milestone M12.)
+`update-pot.sh` uses the GNOME 51 SDK's `xgettext` when the SDK is installed (Rust parser) and
+the host's otherwise. `build-aux/check-i18n.sh` flags user-visible strings not wrapped in
+`i18n()`.
+
+## Native install
+
+```sh
+ESTUARY_LOCALEDIR=/usr/local/share/locale cargo build --release -p estuary
+sudo install -Dm0755 target/release/estuary /usr/local/bin/estuary
+sudo build-aux/install-data.sh /usr/local
+```
+
+Start at login (Preferences) writes `~/.config/autostart/io.github.abidibo.Estuary.desktop`
+with `Exec=estuary --background`, so the binary must be on `PATH`.
 
 ## Flatpak
 
 ```sh
-flatpak run org.flatpak.Builder --user --install --force-clean build-dir \
+build-aux/update-cargo-sources.sh   # after every Cargo.lock change
+flatpak run org.flatpak.Builder --user --install --force-clean --repo=repo build-dir \
   build-aux/io.github.abidibo.Estuary.Devel.yml
+flatpak run io.github.abidibo.Estuary
 ```
 
-(Manifest arrives with milestone M12.)
+Needs the `org.gnome.Platform//51` / `org.gnome.Sdk//51` runtimes, the
+`org.freedesktop.Sdk.Extension.rust-stable` extension and `org.flatpak.Builder` from Flathub.
 
 ## License
 

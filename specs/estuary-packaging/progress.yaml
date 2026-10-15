@@ -250,264 +250,264 @@ steps:
     completed_at: '2026-10-14T14:52:00+02:00'
 - id: M12.1
   title: Icons
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-15T12:48:31+02:00'
+  completed_at: '2026-10-15T12:48:31+02:00'
   tasks:
   - id: M12.1.1
     description: Create data/icons/hicolor/scalable/apps/io.github.abidibo.Estuary.svg (full-colour 3x3 matrix design, 128x128 canvas)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
   - id: M12.1.2
     description: Create data/icons/hicolor/symbolic/apps/io.github.abidibo.Estuary-symbolic.svg (16x16 monochrome)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
   - id: M12.1.3
     description: Create data/icons/hicolor/scalable/apps/io.github.abidibo.Estuary.Devel.svg (striped devel variant)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
 - id: M12.2
   title: Desktop file
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-15T12:48:31+02:00'
+  completed_at: '2026-10-15T12:48:31+02:00'
   tasks:
   - id: M12.2.1
     description: Create data/io.github.abidibo.Estuary.desktop.in with the spec's keys (Exec=estuary, Icon, Categories, Keywords with translator comment, StartupNotify, SingleMainWindow)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
   - id: M12.2.2
     description: Validate the staged desktop file with desktop-file-validate
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
 - id: M12.3
   title: MetaInfo
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-15T12:48:31+02:00'
+  completed_at: '2026-10-15T12:48:31+02:00'
   tasks:
   - id: M12.3.1
     description: Create data/io.github.abidibo.Estuary.metainfo.xml.in with id, licenses, name, summary, developer, description, launchable, translation, URLs
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
   - id: M12.3.2
     description: Add branding colors, empty oars-1.1 content_rating, requires/supports blocks to the metainfo template
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
   - id: M12.3.3
     description: Add screenshots block with tag-pinned raw.githubusercontent.com URLs and captions
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
   - id: M12.3.4
     description: Add initial <release version="0.1.0"> entry with placeholder date to be set at release
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
   - id: M12.3.5
     description: Validate the staged metainfo with appstreamcli validate --pedantic --explain
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
 - id: M12.4
   title: Translations (gettext)
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-15T12:48:31+02:00'
+  completed_at: '2026-10-15T12:48:31+02:00'
   tasks:
   - id: M12.4.1
     description: Create po/LINGUAS containing `it`
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
   - id: M12.4.2
     description: Create po/POTFILES.in listing crates/estuary/src/main.rs, the desktop .in and the metainfo .in
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
   - id: M12.4.3
     description: Write build-aux/update-pot.sh (xgettext via org.gnome.Sdk//51, Rust parser with C fallback below 0.24, desktop + metainfo extraction, msgcat, msgmerge)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
   - id: M12.4.4
     description: Check inside the GNOME 51 SDK the xgettext version and presence of /usr/share/gettext/its/metainfo.its; adjust update-pot.sh if missing
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
   - id: M12.4.5
     description: Run build-aux/update-pot.sh to generate and commit po/estuary.pot
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
   - id: M12.4.6
     description: Create po/it.po with msginit and translate the initial strings
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
   - id: M12.4.7
     description: Write build-aux/compile-mo.sh <stagedir> producing .mo files and translated desktop/metainfo via msgfmt --desktop/--xml
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
   - id: M12.4.8
     description: Verify `build-aux/compile-mo.sh target` then `LANGUAGE=it cargo run -p estuary` shows Italian
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
   - id: M12.4.9
     description: Provide Italian translations for every UI msgid in it.po at the M12 hand-off (po/ build and install are owned by packaging; profile/devel styling is packaging M12.6) (moved from M3.2.6) (moved from UI M11.5)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
 - id: M12.5
   title: Data install script
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-15T12:48:31+02:00'
+  completed_at: '2026-10-15T12:48:31+02:00'
   tasks:
   - id: M12.5.1
     description: Write build-aux/install-data.sh <prefix> [destdir] installing desktop file, metainfo, both icons, .mo files and both licences under share/licenses/io.github.abidibo.Estuary
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
   - id: M12.5.2
     description: Test build-aux/install-data.sh into a temporary destdir and check the resulting file tree
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
   - id: M12.5.3
     description: Document the native install procedure (ESTUARY_LOCALEDIR=/usr/local/share/locale, install binary, run install-data.sh) in README.md
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
 - id: M12.6
   title: Build-time constants contract
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-15T12:48:31+02:00'
+  completed_at: '2026-10-15T12:48:31+02:00'
   tasks:
   - id: M12.6.1
     description: Read ESTUARY_PROFILE at build time in crates/estuary/src/config_build.rs (default/devel) without changing APP_ID
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
   - id: M12.6.2
     description: Add the `devel` CSS class to the main window when ESTUARY_PROFILE is devel
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
 - id: M12.7
   title: Cargo vendoring
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-15T12:48:31+02:00'
+  completed_at: '2026-10-15T12:48:31+02:00'
   tasks:
   - id: M12.7.1
     description: Write build-aux/update-cargo-sources.sh (clone flatpak-builder-tools to cache, venv with aiohttp+tomlkit, run flatpak-cargo-generator.py on Cargo.lock)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
   - id: M12.7.2
     description: Generate and commit build-aux/cargo-sources.json
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
   - id: M12.7.3
     description: Confirm Cargo.lock contains no git dependencies
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
 - id: M12.8
   title: Flatpak manifests
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-15T12:48:31+02:00'
+  completed_at: '2026-10-15T12:48:31+02:00'
   tasks:
   - id: M12.8.1
     description: Create build-aux/io.github.abidibo.Estuary.Devel.yml with runtime org.gnome.Platform 51, rust-stable extension, command estuary
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
   - id: M12.8.2
     description: 'Add finish-args to the Devel manifest exactly: ipc, wayland, fallback-x11, dri, xdg-run/pipewire-0, talk-name org.kde.StatusNotifierWatcher'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
   - id: M12.8.3
     description: Add build-options env (CARGO_HOME=/run/build/estuary/cargo, CARGO_NET_OFFLINE, ESTUARY_LOCALEDIR=/app/share/locale, ESTUARY_PROFILE=devel) to the Devel manifest
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
   - id: M12.8.4
     description: Add the estuary simple-buildsystem module (cargo fetch/build --offline --locked, install binary, run install-data.sh /app) with dir source and cargo-sources.json
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
   - id: M12.8.5
     description: Build and install locally with org.flatpak.Builder and run `flatpak run io.github.abidibo.Estuary`
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
   - id: M12.8.6
     description: Confirm the Flatpak reaches engine Connected (Manager write access) rather than PermissionDenied
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
 - id: M12.9
   title: CI additions
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-15T12:48:31+02:00'
+  completed_at: '2026-10-15T12:48:31+02:00'
   tasks:
   - id: M12.9.1
     description: Add `cargo-sources` job to .github/workflows/ci.yml running update-cargo-sources.sh and git diff --exit-code
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
   - id: M12.9.2
     description: Add `po` job to .github/workflows/ci.yml (msgfmt -c --check-format on po/*.po, compile-mo.sh, desktop-file-validate, appstreamcli validate --no-net)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
   - id: M12.9.3
     description: Add `flatpak` job to .github/workflows/ci.yml in ghcr.io/flathub-infra/flatpak-github-actions:gnome-51 using flatpak-builder@v6 with the Devel manifest
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
   - id: M12.9.4
     description: Add non-blocking flatpak-builder-lint manifest step to the flatpak job; drop upload-artifact input if v6 rejects it
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
 - id: M12.10
   title: Lint gate
-  status: pending
-  started_at: null
+  status: in_progress
+  started_at: '2026-10-15T12:48:31+02:00'
   completed_at: null
   tasks:
   - id: M12.10.1
-    description: Run flatpak-builder-lint manifest on the release manifest and fix all errors
-    status: pending
-    started_at: null
+    description: 'Run flatpak-builder-lint manifest on the release manifest and fix all errors (only publishing-dependent errors remain: public repo, tag, screenshot mirroring)'
+    status: in_progress
+    started_at: '2026-10-15T12:48:31+02:00'
     completed_at: null
   - id: M12.10.2
-    description: Build with --repo=repo and run flatpak-builder-lint repo repo; fix all errors
-    status: pending
-    started_at: null
+    description: 'Build with --repo=repo and run flatpak-builder-lint repo repo; fix all errors (only publishing-dependent errors remain: public repo, tag, screenshot mirroring)'
+    status: in_progress
+    started_at: '2026-10-15T12:48:31+02:00'
     completed_at: null
   - id: M12.10.3
     description: Run appstreamcli validate --pedantic and desktop-file-validate on the installed files
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:48:31+02:00'
+    completed_at: '2026-10-15T12:48:31+02:00'
 - id: M12.11
   title: Release procedure
   status: pending

@@ -158,6 +158,9 @@ impl Component for AppModel {
         window.set_default_size(960, 640);
         // Required with breakpoints; the GNOME HIG minimum for adaptive windows.
         window.set_size_request(360, 294);
+        if crate::config_build::DEVEL {
+            window.add_css_class("devel");
+        }
         window
     }
 
@@ -350,6 +353,11 @@ impl Component for AppModel {
         sender: ComponentSender<Self>,
         root: &adw::ApplicationWindow,
     ) {
+        if self.quit.state() == crate::desktop::quit::QuitState::Finished
+            && matches!(msg, AppMsg::Engine(_))
+        {
+            return; // quitting: the pages may already be gone
+        }
         match msg {
             AppMsg::Engine(Event::QuitCheck(u)) => {
                 self.feed_quit(QuitInput::QuitCheck(u), root, &sender);
@@ -523,11 +531,12 @@ impl AppModel {
 
     fn push_to_pages(&self) {
         let setup = Arc::new(self.config.file().setup.clone());
-        self.apps_page.emit(AppsMsg::Update {
+        // `send`, not `emit`: after quitting, a late engine event must not panic on a closed page.
+        let _ = self.apps_page.sender().send(AppsMsg::Update {
             snapshot: self.snapshot.clone(),
             setup: setup.clone(),
         });
-        self.matrix_page.emit(MatrixMsg::Update {
+        let _ = self.matrix_page.sender().send(MatrixMsg::Update {
             snapshot: self.snapshot.clone(),
             setup,
             warnings: Arc::new(self.warnings.clone()),
@@ -767,12 +776,26 @@ fn connect_meter_visibility(
     root.connect_visible_notify(move |_| schedule());
 }
 
-/// Development aids: `ESTUARY_PAGE=matrix` opens on that page; `ESTUARY_DEV_INERT=1` makes the
+/// Development aids: `ESTUARY_PAGE=matrix` opens on that page; `ESTUARY_DEV_SIZE=1000x700` sets
+/// the window size (store screenshots); `ESTUARY_DEV_INERT=1` makes the
 /// content non-interactive (measurements); `ESTUARY_SNAPSHOT=out.png` renders the window to a PNG
 /// after 2.5 s with GTK's own renderer (no screen capture), then quits.
 fn dev_snapshot(root: &adw::ApplicationWindow, main_view: &adw::ViewStack) {
     if let Ok(page) = std::env::var("ESTUARY_PAGE") {
         main_view.set_visible_child_name(&page);
+        // Also on first map: startup through the command line resets the stack's page.
+        let view = main_view.clone();
+        root.connect_map(move |_| view.set_visible_child_name(&page));
+    }
+    if let Some((w, h)) = std::env::var("ESTUARY_DEV_SIZE")
+        .ok()
+        .and_then(|v| {
+            v.split_once('x')
+                .map(|(w, h)| (w.parse().ok(), h.parse().ok()))
+        })
+        .and_then(|(w, h)| w.zip(h))
+    {
+        root.set_default_size(w, h);
     }
     if std::env::var("ESTUARY_DEV_INERT").is_ok() {
         main_view.set_sensitive(false);

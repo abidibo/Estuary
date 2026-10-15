@@ -928,6 +928,7 @@ Reconciliation pass after the five sub-specs were drafted (2026-10-14). Every am
 | C5 | Capture role: a source's non-monitor outputs, else all its outputs. Virtual sources flag every output `port.monitor` | M10 live test (engine M10 notes) |
 | C11 / M10 exit | RNNoise's attenuation of synthetic noise depends on the noise realization and start offset (1.4–59 dB), so automated tests pin a fixture offline and check the voice gate live; real-world suppression is a manual check | dsp M10 notes |
 | C1 | Adds `glib-unix` 0.22.8 (Unix signal sources moved out of glib in 0.22) | desktop M11 notes |
+| C7 | Link-based external detection fires only when a stream's linked node *changes* after it was first observed; where a stream already plays when first seen is never a move | M12 live finding (docs/experiments.md) |
 
 Conflict resolutions:
 

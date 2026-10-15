@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright 2026 abidibo -->
+<component type="desktop-application">
+  <id>io.github.abidibo.Estuary</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT OR Apache-2.0</project_license>
+
+  <name>estuary</name>
+  <summary>Route, mix and clean up your audio</summary>
+
+  <developer id="io.github.abidibo">
+    <name translate="no">abidibo</name>
+  </developer>
+
+  <description>
+    <p>estuary is an audio matrix for PipeWire. Send each application to the output or virtual channel you choose, mix channels to your headphones, speakers and virtual microphones with a volume on every crosspoint, and remove background noise from your microphone.</p>
+    <ul>
+      <li>Per-application routing that is remembered across restarts</li>
+      <li>Virtual channels and virtual microphones for calls and streaming</li>
+      <li>A routing matrix with an independent level on every crosspoint</li>
+      <li>Neural noise suppression for microphones</li>
+      <li>Live level meters for every application, channel and device</li>
+    </ul>
+    <p>Requires PipeWire 1.0 or newer with WirePlumber 0.5 or newer.</p>
+  </description>
+
+  <launchable type="desktop-id">io.github.abidibo.Estuary.desktop</launchable>
+  <translation type="gettext">estuary</translation>
+
+  <url type="homepage">https://github.com/abidibo/estuary</url>
+  <url type="bugtracker">https://github.com/abidibo/estuary/issues</url>
+  <url type="vcs-browser">https://github.com/abidibo/estuary</url>
+  <url type="translate">https://github.com/abidibo/estuary/tree/main/po</url>
+
+  <branding>
+    <color type="primary" scheme_preference="light">#c7d2fe</color>
+    <color type="primary" scheme_preference="dark">#312e81</color>
+  </branding>
+
+  <content_rating type="oars-1.1" />
+
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+  <supports>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/abidibo/estuary/v0.1.0/data/screenshots/matrix.png</image>
+      <caption>The routing matrix with per-crosspoint levels</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/abidibo/estuary/v0.1.0/data/screenshots/apps.png</image>
+      <caption>Choose where each application plays</caption>
+    </screenshot>
+  </screenshots>
+
+  <releases>
+    <release version="0.1.0" date="2026-10-15">
+      <description>
+        <p>First release.</p>
+      </description>
+    </release>
+  </releases>
+</component>

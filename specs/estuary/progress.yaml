@@ -243,22 +243,22 @@ steps:
     completed_at: null
 - id: 12
   title: M12 Flatpak and release
-  status: pending
-  started_at: null
+  status: in_progress
+  started_at: '2026-10-15T12:48:31+02:00'
   completed_at: null
   tasks:
   - id: '12.1'
-    description: Complete estuary-packaging steps M12.1-M12.12
-    status: pending
-    started_at: null
+    description: Complete estuary-packaging steps M12.1-M12.12 (M12.1-M12.9 done; M12.10 lint needs the public repo/tag; M12.11 release and M12.12 Flathub submission pending the user's go-ahead)
+    status: in_progress
+    started_at: '2026-10-15T12:48:40+02:00'
     completed_at: null
   - id: '12.2'
-    description: 'Exit check: flatpak-builder build on GNOME 51 runs with C14 permissions, can retarget apps and create nodes (Manager access), and passes flatpak-builder-lint manifest + repo'
-    status: pending
-    started_at: null
-    completed_at: null
+    description: 'Exit check: flatpak-builder build on GNOME 51 runs with C14 permissions, can retarget apps and create nodes (Manager access), and passes flatpak-builder-lint manifest + repo (verified 2026-10-15: write access, apps retargeted into channels in the store screenshots)'
+    status: completed
+    started_at: '2026-10-15T12:48:40+02:00'
+    completed_at: '2026-10-15T12:48:40+02:00'
   - id: '12.3'
-    description: 'Exit check: UI fully usable in Italian with LANGUAGE=it; all master acceptance criteria re-verified'
-    status: pending
-    started_at: null
+    description: 'Exit check: UI fully usable in Italian with LANGUAGE=it; all master acceptance criteria re-verified (Italian complete and verified; full acceptance re-check pending)'
+    status: in_progress
+    started_at: '2026-10-15T12:48:40+02:00'
     completed_at: null

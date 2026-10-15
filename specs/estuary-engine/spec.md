@@ -1150,6 +1150,8 @@ Fake-graph reconciler suite, driving `EngineCore` and `FakeShell` until quiescen
 
 ---
 
+**Routing fix (M12, 2026-10-15).** Link-based external detection (`RoutingState::on_links`) now reports a move only when a stream's linked node changes after it was first observed (`StreamTrack.last_linked`). Before this, a stream already playing elsewhere while its rule target didn't exist yet was reported as external, and the UI adopted that as the new rule (C7 amended; docs/experiments.md).
+
 ### M10 (engine side): Noise suppression
 
 **Implementation notes (M10 as built, 2026-10-15).**

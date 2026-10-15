@@ -92,7 +92,6 @@ fn teardown() -> Vec<QuitEffect> {
 }
 
 impl QuitController {
-    #[cfg_attr(not(test), allow(dead_code))] // the root asks `busy()`; tests read the state
     pub fn state(&self) -> QuitState {
         self.state
     }

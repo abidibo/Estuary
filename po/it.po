@@ -1,0 +1,787 @@
+# Italian translations for estuary package
+# Traduzioni italiane per il pacchetto estuary..
+# Copyright (C) 2026 THE estuary'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the estuary package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: estuary\n"
+"Report-Msgid-Bugs-To: https://github.com/abidibo/estuary/issues\n"
+"POT-Creation-Date: 2026-10-15 12:35+0200\n"
+"PO-Revision-Date: 2026-10-15 12:25+0200\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: Italian\n"
+"Language: it\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: crates/estuary/src/app/lifecycle.rs:32
+msgid "Routing audio"
+msgstr "Instradamento audio attivo"
+
+#: crates/estuary/src/app/lifecycle.rs:239
+msgid ""
+"No output device found. Connect channels to an output in the Matrix page."
+msgstr ""
+"Nessun dispositivo di uscita trovato. Collega i canali a un'uscita nella "
+"pagina Matrice."
+
+#: crates/estuary/src/app/lifecycle.rs:293
+msgid "Couldn't update start at login"
+msgstr "Impossibile aggiornare l'avvio all'accesso"
+
+#: crates/estuary/src/app/lifecycle.rs:323
+msgid "Show Estuary"
+msgstr "Mostra Estuary"
+
+#: crates/estuary/src/app/lifecycle.rs:324 crates/estuary/src/app/mod.rs:211
+#: crates/estuary/src/dialogs/notices.rs:66
+#: crates/estuary/src/dialogs/preferences.rs:38
+msgid "Quit"
+msgstr "Esci"
+
+#: crates/estuary/src/app/lifecycle.rs:351
+msgid "Retry"
+msgstr "Riprova"
+
+#: crates/estuary/src/app/lifecycle.rs:380
+#: crates/estuary/src/dialogs/notices.rs:82
+msgid "Some routes couldn't be created"
+msgstr "Alcuni collegamenti non sono stati creati"
+
+#: crates/estuary/src/app/lifecycle.rs:382
+msgid "Details"
+msgstr "Dettagli"
+
+#: crates/estuary/src/app/mod.rs:192
+msgid "Apps"
+msgstr "App"
+
+#: crates/estuary/src/app/mod.rs:198
+msgid "Matrix"
+msgstr "Matrice"
+
+#: crates/estuary/src/app/mod.rs:209
+msgid "Preferences"
+msgstr "Preferenze"
+
+#: crates/estuary/src/app/mod.rs:210
+msgid "About Estuary"
+msgstr "Informazioni su Estuary"
+
+#: crates/estuary/src/app/mod.rs:216
+msgid "Main Menu"
+msgstr "Menu principale"
+
+#: crates/estuary/src/app/mod.rs:219
+msgid "Reconnecting to the audio system…"
+msgstr "Riconnessione al sistema audio…"
+
+#: crates/estuary/src/app/mod.rs:550
+msgid "Couldn't save settings"
+msgstr "Impossibile salvare le impostazioni"
+
+#: crates/estuary/src/app/mod.rs:565
+msgid "Your saved setup couldn't be read"
+msgstr "Impossibile leggere la configurazione salvata"
+
+#. Translators: {} are a file name and a technical error message
+#: crates/estuary/src/app/mod.rs:567
+#, rust-format
+msgid ""
+"It was kept as {}.\n"
+"\n"
+"{}"
+msgstr ""
+"È stata conservata come {}.\n"
+"\n"
+"{}"
+
+#: crates/estuary/src/app/mod.rs:569 crates/estuary/src/dialogs/notices.rs:12
+msgid "OK"
+msgstr "OK"
+
+#: crates/estuary/src/app/mod.rs:575
+#, rust-format
+msgid "Removed {} invalid entry from the saved setup"
+msgid_plural "Removed {} invalid entries from the saved setup"
+msgstr[0] "Rimossa {} voce non valida dalla configurazione salvata"
+msgstr[1] "Rimosse {} voci non valide dalla configurazione salvata"
+
+#: crates/estuary/src/app/mod.rs:662
+msgid "Audio system restarted, setup restored"
+msgstr "Sistema audio riavviato, configurazione ripristinata"
+
+#: crates/estuary/src/app/mod.rs:736
+msgid "Route, mix and clean up your audio with PipeWire."
+msgstr "Instrada, mixa e ripulisci l'audio con PipeWire."
+
+#: crates/estuary/src/app/mod.rs:741
+msgid ""
+"Estuary is available under either the MIT or the Apache 2.0 license, at your "
+"option."
+msgstr "Estuary è disponibile con licenza MIT oppure Apache 2.0, a tua scelta."
+
+#: crates/estuary/src/desktop/app.rs:27
+msgid "Start without showing the window"
+msgstr "Avvia senza mostrare la finestra"
+
+#: crates/estuary/src/desktop/autostart/portal.rs:43
+msgid "Keep audio routing active when the window is closed"
+msgstr "Mantieni attivo l'instradamento audio quando la finestra è chiusa"
+
+#: crates/estuary/src/dialogs/confirm.rs:16
+msgid "Its sends will be removed."
+msgstr "I suoi invii verranno rimossi."
+
+#: crates/estuary/src/dialogs/confirm.rs:20
+#, rust-format
+msgid "{} app will move to the default output."
+msgid_plural "{} apps will move to the default output."
+msgstr[0] "{} app passerà all'uscita predefinita."
+msgstr[1] "{} app passeranno all'uscita predefinita."
+
+#. Translators: {} is a channel or virtual mic name
+#: crates/estuary/src/dialogs/confirm.rs:27
+#, rust-format
+msgid "Delete {}?"
+msgstr "Eliminare {}?"
+
+#: crates/estuary/src/dialogs/confirm.rs:28
+msgid "Delete"
+msgstr "Elimina"
+
+#. Translators: {} is a device name
+#: crates/estuary/src/dialogs/confirm.rs:34
+#, rust-format
+msgid "Forget {}?"
+msgstr "Dimenticare {}?"
+
+#: crates/estuary/src/dialogs/confirm.rs:35
+msgid "Its sends and noise suppression settings will be removed."
+msgstr ""
+"I suoi invii e le impostazioni di soppressione del rumore verranno rimossi."
+
+#: crates/estuary/src/dialogs/confirm.rs:36
+msgid "Forget"
+msgstr "Dimentica"
+
+#: crates/estuary/src/dialogs/confirm.rs:47
+#: crates/estuary/src/dialogs/name.rs:44
+#: crates/estuary/src/dialogs/notices.rs:65
+msgid "Cancel"
+msgstr "Annulla"
+
+#: crates/estuary/src/dialogs/name.rs:27
+msgid "New Channel"
+msgstr "Nuovo canale"
+
+#: crates/estuary/src/dialogs/name.rs:28 crates/estuary/src/dialogs/name.rs:33
+msgid "Add"
+msgstr "Aggiungi"
+
+#: crates/estuary/src/dialogs/name.rs:29 crates/estuary/src/state/edit.rs:211
+msgid "Channel"
+msgstr "Canale"
+
+#: crates/estuary/src/dialogs/name.rs:32
+msgid "New Virtual Mic"
+msgstr "Nuovo microfono virtuale"
+
+#: crates/estuary/src/dialogs/name.rs:34 crates/estuary/src/state/edit.rs:228
+#: crates/estuary/src/state/preset.rs:53
+msgid "Virtual mic"
+msgstr "Microfono virtuale"
+
+#: crates/estuary/src/dialogs/name.rs:37
+msgid "Rename Channel"
+msgstr "Rinomina canale"
+
+#: crates/estuary/src/dialogs/name.rs:37 crates/estuary/src/dialogs/name.rs:40
+msgid "Rename"
+msgstr "Rinomina"
+
+#: crates/estuary/src/dialogs/name.rs:40
+msgid "Rename Virtual Mic"
+msgstr "Rinomina microfono virtuale"
+
+#: crates/estuary/src/dialogs/name.rs:51
+msgid "Name"
+msgstr "Nome"
+
+#: crates/estuary/src/dialogs/notices.rs:22
+msgid "estuary keeps running"
+msgstr "estuary resta in esecuzione"
+
+#: crates/estuary/src/dialogs/notices.rs:23
+msgid ""
+"Your audio routing keeps working in the background. Use Quit in the menu to "
+"stop estuary."
+msgstr ""
+"L'instradamento audio continua a funzionare in background. Usa Esci nel menu "
+"per chiudere estuary."
+
+#: crates/estuary/src/dialogs/notices.rs:32
+msgid "estuary will quit"
+msgstr "estuary verrà chiuso"
+
+#: crates/estuary/src/dialogs/notices.rs:33
+msgid ""
+"Background activity is not allowed for estuary, so closing the window quits "
+"it. You can allow it in Settings → Apps → estuary."
+msgstr ""
+"L'attività in background non è consentita per estuary, quindi chiudere la "
+"finestra lo chiude. Puoi consentirla in Impostazioni → App → estuary."
+
+#: crates/estuary/src/dialogs/notices.rs:51
+#, rust-format
+msgid "{} is playing into “{}”."
+msgstr "{} sta riproducendo in “{}”."
+
+#: crates/estuary/src/dialogs/notices.rs:56
+#, rust-format
+msgid "{} is recording from “{}”."
+msgstr "{} sta registrando da “{}”."
+
+#: crates/estuary/src/dialogs/notices.rs:62
+msgid "Quitting will switch these apps back to your default devices."
+msgstr "Uscendo, queste app torneranno ai dispositivi predefiniti."
+
+#: crates/estuary/src/dialogs/notices.rs:64
+msgid "Quit estuary?"
+msgstr "Uscire da estuary?"
+
+#: crates/estuary/src/dialogs/preferences.rs:30
+msgid "General"
+msgstr "Generale"
+
+#: crates/estuary/src/dialogs/preferences.rs:33
+msgid "Background"
+msgstr "In background"
+
+#: crates/estuary/src/dialogs/preferences.rs:35
+msgid "When closing the window"
+msgstr "Alla chiusura della finestra"
+
+#: crates/estuary/src/dialogs/preferences.rs:37
+msgid "Keep running in the background"
+msgstr "Continua in background"
+
+#: crates/estuary/src/dialogs/preferences.rs:41
+msgid "Start at login"
+msgstr "Avvia all'accesso"
+
+#: crates/estuary/src/dialogs/welcome.rs:41
+msgid "Welcome to Estuary"
+msgstr "Benvenuto in Estuary"
+
+#: crates/estuary/src/dialogs/welcome.rs:42
+msgid "How would you like to start?"
+msgstr "Come vuoi iniziare?"
+
+#: crates/estuary/src/dialogs/welcome.rs:49
+msgid "Recommended setup"
+msgstr "Configurazione consigliata"
+
+#: crates/estuary/src/dialogs/welcome.rs:50
+msgid ""
+"Music, Games and Chat channels plus a virtual microphone with noise "
+"suppression"
+msgstr ""
+"Canali Musica, Giochi e Chat più un microfono virtuale con soppressione del "
+"rumore"
+
+#: crates/estuary/src/dialogs/welcome.rs:54
+msgid "Start empty"
+msgstr "Inizia da zero"
+
+#: crates/estuary/src/dialogs/welcome.rs:55
+msgid "Only your real devices; build your own mix"
+msgstr "Solo i tuoi dispositivi reali; crea il tuo mix"
+
+#: crates/estuary/src/pages/apps/controls.rs:39
+#: crates/estuary/src/pages/matrix/header.rs:105
+#, rust-format
+msgid "Volume of {}"
+msgstr "Volume di {}"
+
+#: crates/estuary/src/pages/apps/controls.rs:46
+#: crates/estuary/src/pages/apps/controls.rs:145
+msgid "Mute"
+msgstr "Silenzia"
+
+#: crates/estuary/src/pages/apps/controls.rs:143
+msgid "Unmute"
+msgstr "Riattiva audio"
+
+#: crates/estuary/src/pages/apps/mod.rs:66
+msgid "Nothing is playing"
+msgstr "Nessuna riproduzione in corso"
+
+#: crates/estuary/src/pages/apps/mod.rs:67
+msgid "Start playing audio in any app and it will show up here."
+msgstr "Avvia la riproduzione in qualsiasi app e comparirà qui."
+
+#: crates/estuary/src/pages/apps/mod.rs:70
+msgid "No outputs found"
+msgstr "Nessuna uscita trovata"
+
+#: crates/estuary/src/pages/apps/mod.rs:79
+msgid "Playing Now"
+msgstr "In riproduzione"
+
+#: crates/estuary/src/pages/apps/mod.rs:80
+msgid "Outputs"
+msgstr "Uscite"
+
+#: crates/estuary/src/pages/apps/mod.rs:81
+msgid "Remembered Apps"
+msgstr "App memorizzate"
+
+#: crates/estuary/src/pages/apps/mod.rs:83
+msgid "Apps that will play on their chosen output next time they start."
+msgstr "App che verranno riprodotte sull'uscita scelta al prossimo avvio."
+
+#. Translators: {} is the name of the default output device
+#: crates/estuary/src/pages/apps/row.rs:32
+#, rust-format
+msgid "Default output ({})"
+msgstr "Uscita predefinita ({})"
+
+#: crates/estuary/src/pages/apps/row.rs:33
+#: crates/estuary/src/pages/apps/row.rs:379
+msgid "Default output"
+msgstr "Uscita predefinita"
+
+#: crates/estuary/src/pages/apps/row.rs:45
+msgid "Unknown channel"
+msgstr "Canale sconosciuto"
+
+#. Translators: an entry in the output list; {} is a channel name
+#: crates/estuary/src/pages/apps/row.rs:67
+#, rust-format
+msgid "Channel: {}"
+msgstr "Canale: {}"
+
+#. Translators: {} is a device or channel name that is currently unavailable
+#. Translators: tooltip of an unplugged device; {} is its name
+#: crates/estuary/src/pages/apps/row.rs:81
+#: crates/estuary/src/pages/matrix/header.rs:548
+#, rust-format
+msgid "{} (disconnected)"
+msgstr "{} (disconnesso)"
+
+#: crates/estuary/src/pages/apps/row.rs:135
+#, rust-format
+msgid "{} stream"
+msgid_plural "{} streams"
+msgstr[0] "{} flusso"
+msgstr[1] "{} flussi"
+
+#. Translators: accessible name of a level meter; {} is an app name
+#. Translators: accessible name of a level meter; {} is a device name
+#: crates/estuary/src/pages/apps/row.rs:174
+#: crates/estuary/src/pages/apps/row.rs:350
+#, rust-format
+msgid "Level of {}"
+msgstr "Livello di {}"
+
+#: crates/estuary/src/pages/apps/row.rs:198
+#, rust-format
+msgid "Output of {}"
+msgstr "Uscita di {}"
+
+#: crates/estuary/src/pages/apps/row.rs:278
+msgid "This app does not allow moving its audio"
+msgstr "Questa app non consente di spostare il suo audio"
+
+#. Translators: button to delete a remembered app rule; {} is an app name
+#: crates/estuary/src/pages/apps/row.rs:454
+#, rust-format
+msgid "Forget {}"
+msgstr "Dimentica {}"
+
+#: crates/estuary/src/pages/apps/row.rs:474
+#, rust-format
+msgid "Plays on {}"
+msgstr "Riproduce su {}"
+
+#: crates/estuary/src/pages/matrix/cell.rs:189
+msgid "no send"
+msgstr "nessun invio"
+
+#. Translators: accessible value of a send, e.g. "−18 dB, on"
+#: crates/estuary/src/pages/matrix/cell.rs:193
+#, rust-format
+msgid "{}, on"
+msgstr "{}, attivo"
+
+#: crates/estuary/src/pages/matrix/cell.rs:196
+msgid "off"
+msgstr "disattivato"
+
+#: crates/estuary/src/pages/matrix/cell.rs:219
+msgid "Disconnected, will reconnect automatically"
+msgstr "Disconnesso, si riconnetterà automaticamente"
+
+#: crates/estuary/src/pages/matrix/cell.rs:516
+msgid "Set to 0 dB"
+msgstr "Imposta a 0 dB"
+
+#: crates/estuary/src/pages/matrix/cell.rs:519
+msgid "Remove send"
+msgstr "Rimuovi invio"
+
+#: crates/estuary/src/pages/matrix/cell.rs:526
+msgid "Gain in dB"
+msgstr "Guadagno in dB"
+
+#: crates/estuary/src/pages/matrix/cell.rs:593
+msgid "Add send"
+msgstr "Aggiungi invio"
+
+#: crates/estuary/src/pages/matrix/cell.rs:595
+msgid "Turn off"
+msgstr "Disattiva"
+
+#: crates/estuary/src/pages/matrix/cell.rs:597
+msgid "Turn on"
+msgstr "Attiva"
+
+#. Translators: tooltip of a header's menu button; {} is a channel or device name
+#: crates/estuary/src/pages/matrix/header.rs:168
+#, rust-format
+msgid "Options for {}"
+msgstr "Opzioni per {}"
+
+#: crates/estuary/src/pages/matrix/header.rs:176
+msgid "Noise Suppression"
+msgstr "Soppressione del rumore"
+
+#: crates/estuary/src/pages/matrix/header.rs:204
+#: crates/estuary/src/pages/matrix/header.rs:215
+msgid "Rename…"
+msgstr "Rinomina…"
+
+#: crates/estuary/src/pages/matrix/header.rs:205
+#: crates/estuary/src/pages/matrix/header.rs:216
+msgid "Delete…"
+msgstr "Elimina…"
+
+#: crates/estuary/src/pages/matrix/header.rs:207
+#: crates/estuary/src/pages/matrix/header.rs:218
+msgid "Forget Device…"
+msgstr "Dimentica dispositivo…"
+
+#: crates/estuary/src/pages/matrix/header.rs:254
+#, rust-format
+msgid "Noise suppression for {}"
+msgstr "Soppressione del rumore per {}"
+
+#: crates/estuary/src/pages/matrix/header.rs:270
+msgid "Mutes sound that is unlikely to be speech. Off by default."
+msgstr ""
+"Silenzia i suoni che difficilmente sono parlato. Disattivato per "
+"impostazione predefinita."
+
+#: crates/estuary/src/pages/matrix/header.rs:272
+msgid "Voice gate"
+msgstr "Gate vocale"
+
+#: crates/estuary/src/pages/matrix/header.rs:360
+#: crates/estuary/src/pages/matrix/header.rs:429
+msgid "Disconnected"
+msgstr "Disconnesso"
+
+#: crates/estuary/src/pages/matrix/header.rs:419
+msgid "↳ Noise-suppressed"
+msgstr "↳ Senza rumore"
+
+#. Translators: a noise-suppressed row while suppression is off (the mic passes through)
+#: crates/estuary/src/pages/matrix/header.rs:432
+msgid "Off"
+msgstr "Disattivato"
+
+#: crates/estuary/src/pages/matrix/mod.rs:106
+msgid "Add Channel"
+msgstr "Aggiungi canale"
+
+#: crates/estuary/src/pages/matrix/mod.rs:111
+msgid "Add Virtual Mic"
+msgstr "Aggiungi microfono virtuale"
+
+#: crates/estuary/src/pages/matrix/mod.rs:124
+msgid "Build your mix"
+msgstr "Crea il tuo mix"
+
+#: crates/estuary/src/pages/matrix/mod.rs:126
+msgid "Add channels for groups of apps and virtual microphones for calls."
+msgstr ""
+"Aggiungi canali per gruppi di app e microfoni virtuali per le chiamate."
+
+#: crates/estuary/src/pages/matrix/mod.rs:163
+msgid "Sends"
+msgstr "Invii"
+
+#: crates/estuary/src/pages/matrix/mod.rs:377
+#, rust-format
+msgid "{} to {}"
+msgstr "{} verso {}"
+
+#: crates/estuary/src/pages/status.rs:37
+msgid "The audio engine stopped"
+msgstr "Il motore audio si è arrestato"
+
+#: crates/estuary/src/pages/status.rs:39
+msgid "Restart Engine"
+msgstr "Riavvia motore"
+
+#: crates/estuary/src/pages/status.rs:46
+msgid "Waiting for PipeWire…"
+msgstr "In attesa di PipeWire…"
+
+#: crates/estuary/src/pages/status.rs:48
+msgid "Estuary will connect as soon as the audio system is available."
+msgstr "Estuary si connetterà non appena il sistema audio sarà disponibile."
+
+#: crates/estuary/src/pages/status.rs:57
+msgid "Unsupported audio setup"
+msgstr "Configurazione audio non supportata"
+
+#: crates/estuary/src/pages/status.rs:63
+msgid "Estuary can't change audio routing"
+msgstr "Estuary non può modificare l'instradamento audio"
+
+#: crates/estuary/src/pages/status.rs:65
+msgid ""
+"The audio system only granted read access. If you run Estuary as a Flatpak, "
+"make sure it is up to date."
+msgstr ""
+"Il sistema audio ha concesso solo l'accesso in lettura. Se usi Estuary come "
+"Flatpak, assicurati che sia aggiornato."
+
+#: crates/estuary/src/pages/status.rs:76
+msgid "unknown version"
+msgstr "versione sconosciuta"
+
+#. Translators: {} is a version number, e.g. 0.3.65
+#: crates/estuary/src/pages/status.rs:80
+#, rust-format
+msgid "PipeWire 1.0 or newer is required (found {})."
+msgstr "È richiesto PipeWire 1.0 o successivo (trovato {})."
+
+#: crates/estuary/src/pages/status.rs:85
+#, rust-format
+msgid "WirePlumber 0.5 or newer is required (found {})."
+msgstr "È richiesto WirePlumber 0.5 o successivo (trovato {})."
+
+#: crates/estuary/src/pages/status.rs:89
+msgid "WirePlumber is not running."
+msgstr "WirePlumber non è in esecuzione."
+
+#: crates/estuary/src/pages/status.rs:102
+msgid "Learn More"
+msgstr "Ulteriori informazioni"
+
+#: crates/estuary/src/state/edit.rs:364
+msgid ""
+"Noise suppression on. Send the noise-suppressed row to a virtual mic in the "
+"matrix."
+msgstr ""
+"Soppressione del rumore attiva. Invia la riga senza rumore a un microfono "
+"virtuale nella matrice."
+
+#: crates/estuary/src/state/edit.rs:435
+#, rust-format
+msgid "{} app moved to the default output"
+msgid_plural "{} apps moved to the default output"
+msgstr[0] "{} app spostata all'uscita predefinita"
+msgstr[1] "{} app spostate all'uscita predefinita"
+
+#. Translators: {} is a microphone name
+#: crates/estuary/src/state/matrix_layout.rs:136
+#, rust-format
+msgid "{} (noise-suppressed)"
+msgstr "{} (senza rumore)"
+
+#: crates/estuary/src/state/preset.rs:33
+msgid "Music"
+msgstr "Musica"
+
+#: crates/estuary/src/state/preset.rs:33
+msgid "Games"
+msgstr "Giochi"
+
+#: crates/estuary/src/state/preset.rs:33
+msgid "Chat"
+msgstr "Chat"
+
+#: crates/estuary/src/state/surfaces.rs:34
+#, rust-format
+msgid "Couldn't update start at login: {}"
+msgstr "Impossibile aggiornare l'avvio all'accesso: {}"
+
+#: crates/estuary/src/state/surfaces.rs:39
+msgid "Your desktop didn't allow starting at login."
+msgstr "Il desktop non ha consentito l'avvio all'accesso."
+
+#: crates/estuary/src/state/surfaces.rs:45
+msgid ""
+"Background activity isn't allowed for estuary. You can allow it in Settings "
+"→ Apps → estuary."
+msgstr ""
+"L'attività in background non è consentita per estuary. Puoi consentirla in "
+"Impostazioni → App → estuary."
+
+#: crates/estuary/src/state/surfaces.rs:51
+#, rust-format
+msgid "Another autostart entry exists at {}. estuary won't change it."
+msgstr ""
+"Esiste un'altra voce di avvio automatico in {}. estuary non la modificherà."
+
+#: crates/estuary/src/state/surfaces.rs:58
+msgid ""
+"Not available on this desktop: it has no background portal. Estuary still "
+"keeps running while its window is closed."
+msgstr ""
+"Non disponibile su questo desktop: manca il portale per le attività in "
+"background. Estuary resta comunque in esecuzione quando la finestra è chiusa."
+
+#: crates/estuary/src/state/surfaces.rs:91
+msgid ""
+"This configuration was saved by a newer version of Estuary. Changes won't be "
+"saved."
+msgstr ""
+"Questa configurazione è stata salvata da una versione più recente di "
+"Estuary. Le modifiche non verranno salvate."
+
+#: crates/estuary/src/state/surfaces.rs:98
+msgid "Can't reach the audio system. Retrying…"
+msgstr "Impossibile raggiungere il sistema audio. Nuovo tentativo…"
+
+#: crates/estuary/src/state/surfaces.rs:108
+#, rust-format
+msgid "Duplicate entry “{}” was ignored"
+msgstr "La voce duplicata “{}” è stata ignorata"
+
+#: crates/estuary/src/state/surfaces.rs:110
+#, rust-format
+msgid "{} refers to a missing item ({})"
+msgstr "{} fa riferimento a un elemento mancante ({})"
+
+#: crates/estuary/src/state/surfaces.rs:112
+#, rust-format
+msgid "Duplicate send {} was ignored"
+msgstr "L'invio duplicato {} è stato ignorato"
+
+#: crates/estuary/src/state/surfaces.rs:114
+#, rust-format
+msgid "Invalid gain {} for {} was corrected"
+msgstr "Il guadagno non valido {} per {} è stato corretto"
+
+#: crates/estuary/src/state/surfaces.rs:118
+#, rust-format
+msgid "Device {} was added to the known devices"
+msgstr "Il dispositivo {} è stato aggiunto ai dispositivi noti"
+
+#: crates/estuary/src/state/surfaces.rs:121
+#, rust-format
+msgid "Noise-suppressed source for {} has no noise suppressor"
+msgstr "La sorgente senza rumore per {} non ha un soppressore di rumore"
+
+#. Translators: the decimal separator in gain values such as "−3.5 dB"; "," in many languages
+#: crates/estuary/src/state/volume.rs:62
+msgctxt "decimal separator"
+msgid "."
+msgstr ","
+
+#: crates/estuary/src/state/warnings.rs:36
+#, rust-format
+msgid "Audio processing is overloaded ({} dropout per minute)"
+msgid_plural "Audio processing is overloaded ({} dropouts per minute)"
+msgstr[0] "Elaborazione audio sovraccarica ({} interruzione al minuto)"
+msgstr[1] "Elaborazione audio sovraccarica ({} interruzioni al minuto)"
+
+#: crates/estuary/src/state/warnings.rs:54
+#, rust-format
+msgid "Noise suppression doesn't support {} Hz"
+msgstr "La soppressione del rumore non supporta {} Hz"
+
+#: crates/estuary/src/widgets/peak_meter/mod.rs:178
+msgid "Level unavailable"
+msgstr "Livello non disponibile"
+
+#: data/io.github.abidibo.Estuary.desktop.in:3
+msgid "estuary"
+msgstr "estuary"
+
+#: data/io.github.abidibo.Estuary.desktop.in:4
+msgid "Audio Matrix"
+msgstr "Matrice audio"
+
+#: data/io.github.abidibo.Estuary.desktop.in:5
+msgid "Route, mix and clean up your PipeWire audio"
+msgstr "Instrada, mixa e ripulisci l'audio di PipeWire"
+
+#. Translators: search keywords, semicolon separated, keep the trailing semicolon
+#: data/io.github.abidibo.Estuary.desktop.in:11
+msgid "audio;sound;mixer;routing;matrix;pipewire;microphone;noise;virtual;"
+msgstr "audio;suono;mixer;instradamento;routing;matrice;pipewire;microfono;rumore;virtuale;"
+
+#: data/io.github.abidibo.Estuary.metainfo.xml.in:9
+msgid "Route, mix and clean up your audio"
+msgstr "Instrada, mixa e ripulisci l'audio"
+
+#: data/io.github.abidibo.Estuary.metainfo.xml.in:16
+msgid ""
+"estuary is an audio matrix for PipeWire. Send each application to the output "
+"or virtual channel you choose, mix channels to your headphones, speakers and "
+"virtual microphones with a volume on every crosspoint, and remove background "
+"noise from your microphone."
+msgstr ""
+"estuary è una matrice audio per PipeWire. Invia ogni applicazione all'uscita "
+"o al canale virtuale che preferisci, mixa i canali verso cuffie, "
+"altoparlanti e microfoni virtuali con un volume su ogni incrocio e rimuovi "
+"il rumore di fondo dal microfono."
+
+#: data/io.github.abidibo.Estuary.metainfo.xml.in:18
+msgid "Per-application routing that is remembered across restarts"
+msgstr "Instradamento per applicazione, ricordato tra un riavvio e l'altro"
+
+#: data/io.github.abidibo.Estuary.metainfo.xml.in:19
+msgid "Virtual channels and virtual microphones for calls and streaming"
+msgstr "Canali virtuali e microfoni virtuali per chiamate e streaming"
+
+#: data/io.github.abidibo.Estuary.metainfo.xml.in:20
+msgid "A routing matrix with an independent level on every crosspoint"
+msgstr ""
+"Una matrice di instradamento con un livello indipendente su ogni incrocio"
+
+#: data/io.github.abidibo.Estuary.metainfo.xml.in:21
+msgid "Neural noise suppression for microphones"
+msgstr "Soppressione neurale del rumore per i microfoni"
+
+#: data/io.github.abidibo.Estuary.metainfo.xml.in:22
+msgid "Live level meters for every application, channel and device"
+msgstr ""
+"Indicatori di livello in tempo reale per ogni applicazione, canale e "
+"dispositivo"
+
+#: data/io.github.abidibo.Estuary.metainfo.xml.in:24
+msgid "Requires PipeWire 1.0 or newer with WirePlumber 0.5 or newer."
+msgstr "Richiede PipeWire 1.0 o successivo con WirePlumber 0.5 o successivo."
+
+#: data/io.github.abidibo.Estuary.metainfo.xml.in:53
+msgid "The routing matrix with per-crosspoint levels"
+msgstr "La matrice di instradamento con i livelli per ogni incrocio"
+
+#: data/io.github.abidibo.Estuary.metainfo.xml.in:57
+msgid "Choose where each application plays"
+msgstr "Scegli dove riprodurre ogni applicazione"
+
+#: data/io.github.abidibo.Estuary.metainfo.xml.in:64
+msgid "First release."
+msgstr "Prima versione."

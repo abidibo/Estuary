@@ -6,3 +6,4 @@
 *.flatpak
 /po/*.mo
 /po/*~
+/build-aux/.screenshots.yml

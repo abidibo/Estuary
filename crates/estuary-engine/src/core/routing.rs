@@ -22,6 +22,9 @@ struct StreamTrack {
     awaiting_ack: Option<Option<String>>,
     /// Moved elsewhere: don't re-apply the old rule until the UI sends an updated setup.
     external_pending: bool,
+    /// The node it was last seen linked to. Only a change of it can be an external move: where
+    /// a stream already plays when first seen (e.g. before our channels exist) is not a move.
+    last_linked: Option<u32>,
 }
 
 #[derive(Debug, Default)]
@@ -66,6 +69,7 @@ impl RoutingState {
                     settled: false,
                     awaiting_ack: None,
                     external_pending: false,
+                    last_linked: None,
                 });
                 out.settle_timers.push(n.id);
             }
@@ -180,6 +184,14 @@ impl RoutingState {
         let Some(setup) = setup else { return out };
         let default_sink = m.default_node_name("default.audio.sink");
         for (id, track) in &mut self.tracks {
+            let Some(linked) = linked_node(m, *id) else {
+                continue;
+            };
+            // First sighting or same node: no move happened.
+            let previous = track.last_linked.replace(linked.id);
+            if previous.is_none_or(|p| p == linked.id) {
+                continue;
+            }
             if !track.settled
                 || track.external_pending
                 || track.awaiting_ack.is_some()
@@ -193,9 +205,6 @@ impl RoutingState {
             if rule.target == RouteTarget::Default {
                 continue;
             }
-            let Some(linked) = linked_node(m, *id) else {
-                continue;
-            };
             let is_rule_target = target_node(m, &rule.target).is_some_and(|n| n.id == linked.id);
             let is_default = linked.props.get("node.name") == default_sink.as_ref();
             if !is_rule_target && !is_default {
@@ -555,6 +564,71 @@ mod tests {
             current_target(&m, id),
             RouteTarget::Default,
             "unknown serial → Default"
+        );
+    }
+
+    #[test]
+    fn where_a_stream_already_plays_is_not_an_external_move() {
+        // Live M12 finding: an app already on the speakers when the engine starts, its rule
+        // pointing at headphones that aren't there yet. That must not rewrite the rule.
+        let hp = "bluez_output.headphones";
+        let g = graph().app_playing("mpv", "mpv", SPK);
+        let m = mirror(&g);
+        let setup = rule("bin:mpv", device(hp));
+        let mut r = RoutingState::default();
+        assert!(
+            r.sync(&m, Some(&setup)).ops.is_empty(),
+            "target absent: wait"
+        );
+        assert!(
+            r.on_links(&m, Some(&setup)).external.is_empty(),
+            "initial placement"
+        );
+        // The headphones appear: the rule is applied.
+        let m = mirror(&graph().app_playing("mpv", "mpv", SPK).device(
+            hp,
+            "Headphones",
+            "Audio/Sink",
+        ));
+        let out = r.evaluate_all(&m, Some(&setup));
+        assert_eq!(out.ops.len(), 1);
+        assert!(r.on_links(&m, Some(&setup)).external.is_empty());
+    }
+
+    #[test]
+    fn a_later_move_by_links_is_external() {
+        let other = "alsa_output.hdmi";
+        let g = graph()
+            .device(other, "HDMI", "Audio/Sink")
+            .app_playing("mpv", "mpv", SPK);
+        let mut m = mirror(&g);
+        let setup = rule("bin:mpv", device("bluez_output.headphones"));
+        let mut r = RoutingState::default();
+        r.sync(&m, Some(&setup));
+        assert!(
+            r.on_links(&m, Some(&setup)).external.is_empty(),
+            "first sighting"
+        );
+        // Something else relinks it to the HDMI output (not the default, not its rule target).
+        let hdmi = m
+            .nodes
+            .values()
+            .find(|n| n.props.get("node.name").map(String::as_str) == Some(other))
+            .unwrap()
+            .id;
+        let mpv = m
+            .nodes
+            .values()
+            .find(|n| n.kind == NodeKind::AppPlayback && appkey::derive(&n.props).0 == "bin:mpv")
+            .unwrap()
+            .id;
+        for l in m.links.values_mut().filter(|l| l.out_node == mpv) {
+            l.in_node = hdmi;
+        }
+        let out = r.on_links(&m, Some(&setup));
+        assert_eq!(
+            out.external,
+            vec![(AppKey("bin:mpv".into()), device(other))]
         );
     }
 }

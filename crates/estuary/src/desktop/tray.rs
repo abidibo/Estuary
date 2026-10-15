@@ -124,66 +124,52 @@ pub fn spawn_tray(
     });
 }
 
-/// A neutral light-grey 3×3 matrix glyph as ARGB32 pixmaps (22, 32, 48 px). Packaging (M12)
-/// may replace it with the rendered app symbol; hosts that resolve `icon_name` use that.
+/// The bundled symbolic icon, recoloured light grey (tray backgrounds are usually dark), as
+/// ARGB32 pixmaps at 22, 32 and 48 px. Hosts that resolve `icon_name` use that instead.
 pub fn render_tray_pixmaps() -> Vec<ksni::Icon> {
+    const SVG: &str = include_str!(
+        "../../../../data/icons/hicolor/symbolic/apps/io.github.abidibo.Estuary-symbolic.svg"
+    );
+    let svg = SVG.replace("#2e3436", "#dedede");
     [22, 32, 48]
         .into_iter()
-        .filter_map(|size| {
-            glyph(size)
-                .map_err(|e| tracing::warn!("tray icon: {e}"))
-                .ok()
+        .filter_map(|size| match pixmap(&svg, size) {
+            Ok(icon) => Some(icon),
+            Err(e) => {
+                tracing::warn!("tray icon: {e}");
+                None
+            }
         })
         .collect()
 }
 
-fn glyph(size: i32) -> Result<ksni::Icon, relm4::gtk::cairo::Error> {
-    use relm4::gtk::cairo::{Context, Format, ImageSurface};
-    let mut surface = ImageSurface::create(Format::ARgb32, size, size)?;
-    {
-        let cr = Context::new(&surface)?;
-        cr.set_source_rgba(
-            0xde as f64 / 255.0,
-            0xde as f64 / 255.0,
-            0xde as f64 / 255.0,
-            1.0,
-        );
-        let s = f64::from(size);
-        let cell = s / 4.0;
-        let r = cell * 0.36;
-        for row in 0..3 {
-            for col in 0..3 {
-                // A diagonal of "on" sends, the rest small.
-                let on = row == col;
-                let (x, y) = (cell * (f64::from(col) + 1.0), cell * (f64::from(row) + 1.0));
-                cr.arc(
-                    x,
-                    y,
-                    if on { r * 1.35 } else { r * 0.7 },
-                    0.0,
-                    std::f64::consts::TAU,
-                );
-                cr.fill()?;
-            }
-        }
-    }
-    surface.flush();
-    let stride = usize::try_from(surface.stride()).unwrap_or(0);
-    let side = usize::try_from(size).unwrap_or(0);
-    let data = surface
-        .data()
-        .map_err(|_| relm4::gtk::cairo::Error::SurfaceFinished)?;
-    let mut argb = Vec::with_capacity(side * side * 4);
-    for y in 0..side {
-        for x in 0..side {
-            // cairo ARGB32 is native-endian u32 (premultiplied): little-endian bytes B, G, R, A.
-            let i = y * stride + x * 4;
-            argb.extend_from_slice(&[data[i + 3], data[i + 2], data[i + 1], data[i]]);
+fn pixmap(svg: &str, size: i32) -> Result<ksni::Icon, relm4::gtk::glib::Error> {
+    use relm4::gtk::{gdk_pixbuf::Pixbuf, gio, glib};
+    let stream = gio::MemoryInputStream::from_bytes(&glib::Bytes::from(svg.as_bytes()));
+    let pb = Pixbuf::from_stream_at_scale(&stream, size, size, true, gio::Cancellable::NONE)?;
+    let pb = if pb.has_alpha() {
+        pb
+    } else {
+        pb.add_alpha(false, 0, 0, 0)
+            .map_err(|e| glib::Error::new(glib::FileError::Failed, &e.to_string()))?
+    };
+    let (w, h) = (pb.width(), pb.height());
+    let stride = usize::try_from(pb.rowstride()).unwrap_or(0);
+    let bytes = pb.read_pixel_bytes();
+    let (wu, hu) = (
+        usize::try_from(w).unwrap_or(0),
+        usize::try_from(h).unwrap_or(0),
+    );
+    let mut argb = Vec::with_capacity(wu * hu * 4);
+    for y in 0..hu {
+        for x in 0..wu {
+            let i = y * stride + x * 4; // RGBA, not premultiplied
+            argb.extend_from_slice(&[bytes[i + 3], bytes[i], bytes[i + 1], bytes[i + 2]]);
         }
     }
     Ok(ksni::Icon {
-        width: size,
-        height: size,
+        width: w,
+        height: h,
         data: argb,
     })
 }

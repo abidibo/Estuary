@@ -80,3 +80,18 @@ While writing the live attenuation test, the denoiser cut −30 dBFS white noise
 ## M10 (virtual sources' capture ports), 2026-10-15
 
 A `support.null-audio-sink` with `media.class=Audio/Source/Virtual` exposes `capture_FL/FR` with **`port.monitor = "true"`** (checked with `pw-cli ls Port`). The engine's Capture role took only non-monitor outputs, so such sources (made by tools like Easy Effects) could never be routed. Fixed (C5 amended): a source's capture ports are its non-monitor outputs, else all of them.
+
+## M12 (Flatpak build and live findings), 2026-10-15
+
+**Routing bug (engine, fixed).** Store screenshots showed demo apps on their initial sink instead of their channels. The streams were already playing when the engine connected, while their rule targets (channels) didn't exist yet. Link-based external detection (C7) then saw "settled, not on the rule target, not on the default sink", reported an `ExternalRetarget`, and the UI adopted it as the rule, overwriting Music with Headphones. At login this would rewrite rules whenever apps start before Estuary has built its channels. Fix: each stream remembers the node it was last linked to; only a *change* of it can be an external move (C7 amended). Regression tests `where_a_stream_already_plays_is_not_an_external_move`, `a_later_move_by_links_is_external`. Verified live: all three apps land in their channels and the rules survive.
+
+**Quit panic (UI, fixed).** A late engine event after `Finish` pushed to an already dropped page through relm4's `Controller::emit`, which unwraps. Page updates now use `sender().send()`, and engine events are ignored once quitting finished.
+
+**Flatpak build notes.**
+- `pipewire-sys` runs bindgen, which needs libclang: the manifest adds `org.freedesktop.Sdk.Extension.llvm22` (the only LLVM extension on the 26.08 base) with `LIBCLANG_PATH`.
+- This dev shell exports `SSL_CERT_FILE`/`SSL_CERT_DIR` with Ubuntu paths. Flatpak passes them into the Builder sandbox, where they don't exist, so source downloads failed TLS verification. Build with `env -u SSL_CERT_FILE -u SSL_CERT_DIR flatpak run org.flatpak.Builder …` on such hosts.
+- Flatpak always sets `XDG_CONFIG_HOME` to `~/.var/app/<id>/config` (`--env` can't override it). Test configs go there.
+
+**Flatpak runtime checks.** The sandboxed app connects with write access (it creates its nodes; no PermissionDenied), detects the sandbox, spawns the tray, and quits cleanly on SIGTERM. The GNOME Background portal granted background activity without a dialog and, because `start_at_login` defaults to true (C6), created `~/.config/autostart/io.github.abidibo.Estuary.desktop` with `Exec=flatpak run --command=estuary io.github.abidibo.Estuary --background` and `X-Flatpak=io.github.abidibo.Estuary` (**UNVERIFIED-D2 resolved**: the portal's file name and keys are exactly what the native build treats as foreign). The test entry and permission were removed afterwards.
+
+**GNOME 51 SDK:** xgettext 1.0 (Rust parser) and `/usr/share/gettext/its/metainfo.its` are present. The Rust parser and the host's C-parser fallback extract the same 159 messages.

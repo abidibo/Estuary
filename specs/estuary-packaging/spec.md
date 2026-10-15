@@ -501,6 +501,18 @@ jobs:
 
 ### M12: Flatpak and release
 
+**Implementation notes (M12 as built, 2026-10-15).** These deviate from or refine the text below. Where they conflict, the notes are authoritative.
+
+- **Icons** are hand-written SVGs: an indigo rounded square with a 3×3 matrix (two lit crosspoints) and a waveform through the middle row, a 16 px symbolic, and a striped Devel variant. `install-data.sh` installs the Devel icon under the regular name when `ESTUARY_PROFILE=devel` (the app ID never changes). The tray renders the symbolic, recoloured `#dedede`, via GdkPixbuf.
+- **Extraction keywords** are our wrappers, not raw gettext: `i18n`, `i18n_f`, `ni18n_f:1,2`, `pi18n:1c,2` (plus the gettext-rs names). Assumption S1 is amended accordingly. `update-pot.sh` uses the GNOME 51 SDK's xgettext 1.0 (Rust parser) when the SDK is installed, else the host's (C fallback below 0.24); its temp dir sits under `po/` so the SDK sandbox can see it. `POTFILES.in` lists every `.rs` with translatable strings (23 files) plus the two data templates. 159 messages; **`it.po` fully translated** (158 + header).
+- **`format_db`'s decimal separator** is the `pgettext("decimal separator", ".")` entry; Italian sets ",".
+- **Manifest** adds `org.freedesktop.Sdk.Extension.llvm22` with `LIBCLANG_PATH=/usr/lib/sdk/llvm22/lib`: `pipewire-sys` runs bindgen. The release manifest needs the same.
+- **Local build:** succeeds (9.2 MB). On hosts that export `SSL_CERT_FILE`/`SSL_CERT_DIR`, unset them for flatpak-builder (see docs/experiments.md). The sandboxed app connects with write access, creates its nodes and quits cleanly.
+- **Screenshots** `data/screenshots/{matrix,apps}.png`: 1000×700, light theme, English, taken from a default-profile Flatpak build with the dev aids (`ESTUARY_SNAPSHOT`, `ESTUARY_DEV_SIZE`, `ESTUARY_PAGE`, `ADW_DEBUG_COLOR_SCHEME=prefer-light`). The demo apps play silent tones into a temporary null sink called "Headphones".
+- **Lint gate (M12.10):** `appstreamcli validate --pedantic` passes (one pedantic note, the uppercase in the C14 app ID); `desktop-file-validate` passes; `msgfmt -c --check-format` passes. `flatpak-builder-lint` reports only publishing-dependent errors: `appid-url-not-reachable` (repo not public yet), `appid-filename-mismatch` (Devel manifest name only), and `appstream-missing-screenshots` / `appstream-screenshots-not-mirrored-in-ostree` (URLs point at the unpublished `v0.1.0` tag; Flathub mirrors them at build). No permission findings.
+- **CI** gains `cargo-sources`, `po` (now also running `check-i18n.sh`) and `flatpak` jobs; `upload-artifact` is omitted, since bundles are uploaded by default.
+- MetaInfo release date set to 2026-10-15 (to be confirmed at tagging, M12.11).
+
 #### M12.1 Icons
 
 | File | Purpose |

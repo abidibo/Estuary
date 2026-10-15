@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=estuary
+GenericName=Audio Matrix
+Comment=Route, mix and clean up your PipeWire audio
+Exec=estuary
+Icon=io.github.abidibo.Estuary
+Terminal=false
+Categories=AudioVideo;Audio;Mixer;GTK;
+# Translators: search keywords, semicolon separated, keep the trailing semicolon
+Keywords=audio;sound;mixer;routing;matrix;pipewire;microphone;noise;virtual;
+StartupNotify=true
+SingleMainWindow=true
+X-GNOME-UsesNotifications=true

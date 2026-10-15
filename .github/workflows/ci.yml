@@ -54,6 +54,41 @@ jobs:
         env:
           RUSTFLAGS: ""   # do not fail MSRV on lints added in newer compilers
 
-  # Added in M12.9:
-  # cargo-sources: (drift check)
-  # flatpak:       (GNOME 51 container build + lint)
+  cargo-sources:
+    name: cargo-sources.json up to date
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+      - run: build-aux/update-cargo-sources.sh
+      - run: git diff --exit-code build-aux/cargo-sources.json
+
+  po:
+    name: translations compile
+    runs-on: ubuntu-26.04
+    steps:
+      - uses: actions/checkout@v7
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends gettext appstream desktop-file-utils
+      - run: for f in po/*.po; do msgfmt -c --check-format -o /dev/null "$f"; done
+      - run: build-aux/check-i18n.sh
+      - run: build-aux/compile-mo.sh "$RUNNER_TEMP/stage"
+      - run: desktop-file-validate "$RUNNER_TEMP/stage/share/applications/io.github.abidibo.Estuary.desktop"
+      - run: appstreamcli validate --pedantic --no-net "$RUNNER_TEMP/stage/share/metainfo/io.github.abidibo.Estuary.metainfo.xml"
+
+  flatpak:
+    name: Flatpak (GNOME 51)
+    runs-on: ubuntu-26.04
+    needs: [native, cargo-sources]
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-51
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v7
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          manifest-path: build-aux/io.github.abidibo.Estuary.Devel.yml
+          bundle: estuary-devel.flatpak
+          cache-key: flatpak-builder-${{ hashFiles('Cargo.lock') }}
+      - name: Lint manifest
+        # The Devel manifest uses a dir source (expected lint noise); the release manifest is
+        # linted strictly before each release (M12.10).
+        run: flatpak run --command=flatpak-builder-lint org.flatpak.Builder manifest build-aux/io.github.abidibo.Estuary.Devel.yml || true

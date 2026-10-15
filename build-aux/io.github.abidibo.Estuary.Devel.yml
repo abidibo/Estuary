@@ -1,0 +1,52 @@
+# Local and CI builds (packaging M12.8). The Flathub release manifest differs only in
+# ESTUARY_PROFILE=default and a tagged git source.
+id: io.github.abidibo.Estuary
+runtime: org.gnome.Platform
+runtime-version: '51'
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+  - org.freedesktop.Sdk.Extension.llvm22   # libclang for bindgen (pipewire-sys)
+command: estuary
+
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  - --filesystem=xdg-run/pipewire-0
+  - --talk-name=org.kde.StatusNotifierWatcher
+  # Not requested: --filesystem=xdg-config/autostart:create (start at login uses the portal),
+  # --socket=pulseaudio (no PulseAudio API use, C14).
+
+build-options:
+  append-path: /usr/lib/sdk/rust-stable/bin:/usr/lib/sdk/llvm22/bin
+  prepend-ld-library-path: /usr/lib/sdk/llvm22/lib
+  env:
+    LIBCLANG_PATH: /usr/lib/sdk/llvm22/lib
+    CARGO_HOME: /run/build/estuary/cargo
+    CARGO_NET_OFFLINE: 'true'
+    RUSTFLAGS: --remap-path-prefix =../
+    ESTUARY_LOCALEDIR: /app/share/locale
+    ESTUARY_PROFILE: devel
+
+cleanup:
+  - /share/doc
+
+modules:
+  - name: estuary
+    buildsystem: simple
+    build-commands:
+      - cargo --offline fetch --manifest-path Cargo.toml --verbose
+      - cargo --offline build --release --locked -p estuary
+      - install -Dm0755 target/release/estuary /app/bin/estuary
+      - build-aux/install-data.sh /app
+    sources:
+      - type: dir
+        path: ..
+        skip:
+          - target
+          - .flatpak-builder
+          - build-dir
+          - repo
+      - cargo-sources.json
