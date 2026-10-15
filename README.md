@@ -7,7 +7,7 @@ mix channels and microphones into your headphones, speakers and virtual micropho
 on every crosspoint, and remove background noise from your microphone before it reaches Teams,
 Discord or OBS.
 
-![The routing matrix](data/screenshots/matrix.png)
+![The routing matrix](data/screenshots/matrix-dark.png)
 
 - **Per-app routing.** Music to your headphones, a game to the speakers, a call to your headset.
   Estuary remembers each app's choice.
@@ -104,6 +104,9 @@ If you turned on *Start at login*, turn it off in Preferences before uninstallin
 2. **Apps page.** Every app that is playing sound is listed with a live meter. Choose where each
    one plays: a real output (your headphones or speakers) or one of your channels. Estuary
    remembers the choice and applies it every time the app plays.
+
+   ![The Apps page](data/screenshots/apps-dark.png)
+
 3. **Matrix page.** Rows are sources, columns are destinations.
    - **CHANNELS** and **MICROPHONES** are the rows. Under each microphone, **↳ Noise-free** is the
      same microphone with background noise removed.

@@ -235,14 +235,18 @@ mod tests {
     #[test]
     fn send_fails_once_the_thread_is_gone() {
         let (engine, rx) = Engine::start(EngineConfig::default()).unwrap();
-        // Any connection report proves the thread runs; which one depends on the host (CI
-        // runners have no PipeWire daemon and may lack XDG_RUNTIME_DIR).
-        let first = rx.recv_blocking().unwrap();
-        assert!(matches!(first, Event::Connection(_)), "{first:?}");
-        assert!(engine.send(Command::SetMeterTargets(Vec::new())).is_ok());
-        // Stop the loop without consuming the handle, as a crashed thread would.
-        engine.ctl_tx.send(Control::Shutdown).unwrap();
-        engine.done_rx.recv_timeout(Duration::from_secs(1)).unwrap();
+        match rx.recv_blocking().unwrap() {
+            // Running (which connection report depends on the host): stop the loop without
+            // consuming the handle, as a crashed thread would.
+            Event::Connection(_) => {
+                assert!(engine.send(Command::SetMeterTargets(Vec::new())).is_ok());
+                engine.ctl_tx.send(Control::Shutdown).unwrap();
+                engine.done_rx.recv_timeout(Duration::from_secs(1)).unwrap();
+            }
+            // No PipeWire configuration on the host (CI runners): the thread already ended.
+            Event::Fatal(_) => {}
+            other => panic!("unexpected first event {other:?}"),
+        }
         let deadline = Instant::now() + Duration::from_secs(1);
         while !engine.join.as_ref().unwrap().is_finished() && Instant::now() < deadline {
             std::thread::yield_now();
