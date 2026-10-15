@@ -112,8 +112,10 @@ fn nn_delay_is_pinned() {
         .collect();
     let mut output = vec![0.0; input.len()];
     for (i, o) in input
-        .chunks_exact(DENOISE_BLOCK)
-        .zip(output.chunks_exact_mut(DENOISE_BLOCK))
+        .as_chunks::<DENOISE_BLOCK>()
+        .0
+        .iter()
+        .zip(output.as_chunks_mut::<DENOISE_BLOCK>().0)
     {
         st.process_frame(o, i);
     }

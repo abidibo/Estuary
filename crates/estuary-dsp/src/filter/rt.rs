@@ -146,7 +146,7 @@ impl RtState {
                 for ((dst, p), sc) in outs_s
                     .iter_mut()
                     .zip(&out_ptr[..n_out])
-                    .zip(scratch.chunks_exact_mut(MAX_QUANTUM))
+                    .zip(scratch.as_chunks_mut::<MAX_QUANTUM>().0)
                 {
                     *dst = if p.is_null() {
                         &mut sc[..len]

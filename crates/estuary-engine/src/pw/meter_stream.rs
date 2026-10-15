@@ -167,8 +167,8 @@ fn process(stream: &Stream, ud: &mut MeterUd) {
 /// Max |sample| per channel of interleaved stereo F32LE (even = FL, odd = FR).
 fn peaks(frames: &[u8]) -> [f32; 2] {
     let mut peak = [0.0f32; 2];
-    for (i, chunk) in frames.chunks_exact(4).enumerate() {
-        let v = f32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]).abs();
+    for (i, chunk) in frames.as_chunks::<4>().0.iter().enumerate() {
+        let v = f32::from_le_bytes(*chunk).abs();
         let ch = &mut peak[i % 2];
         if v > *ch {
             *ch = v;
