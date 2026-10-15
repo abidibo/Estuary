@@ -235,11 +235,10 @@ mod tests {
     #[test]
     fn send_fails_once_the_thread_is_gone() {
         let (engine, rx) = Engine::start(EngineConfig::default()).unwrap();
+        // Any connection report proves the thread runs; which one depends on the host (CI
+        // runners have no PipeWire daemon and may lack XDG_RUNTIME_DIR).
         let first = rx.recv_blocking().unwrap();
-        assert!(matches!(
-            first,
-            Event::Connection(ConnectionState::Connecting { attempt: 0 })
-        ));
+        assert!(matches!(first, Event::Connection(_)), "{first:?}");
         assert!(engine.send(Command::SetMeterTargets(Vec::new())).is_ok());
         // Stop the loop without consuming the handle, as a crashed thread would.
         engine.ctl_tx.send(Control::Shutdown).unwrap();
