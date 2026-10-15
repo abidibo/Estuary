@@ -1,6 +1,6 @@
 //! Edit model (UI M5.2): every user action becomes an `Edit`; `apply_edit` is the only place
 //! the desired state (`ConfigFile`) changes, and it returns the engine commands to send.
-//! Pure: unit-tested without GTK. Preset edits join in M11.
+//! Pure: unit-tested without GTK.
 
 use estuary_engine::setup::{
     AppRule, CellDef, ChannelDef, ConfigFile, DenoiserDef, DeviceKind, KnownDevice, VirtualMicDef,
@@ -106,6 +106,8 @@ pub enum Edit {
         gate: f32,
         commit: bool,
     },
+    /// First run (C10): replaces the setup and marks the first run done.
+    ApplyPreset(super::preset::PresetKind),
 }
 
 #[derive(Debug, Default)]
@@ -363,6 +365,15 @@ pub fn apply_edit(cfg: &mut ConfigFile, snap: &GraphSnapshot, edit: Edit) -> Edi
                     ));
                 }
             }
+            setup_changed(cfg, &mut out);
+        }
+        Edit::ApplyPreset(kind) => {
+            let known = std::mem::take(&mut cfg.setup.known_devices);
+            cfg.setup = super::preset::build_preset(snap, kind);
+            if kind == super::preset::PresetKind::Empty {
+                cfg.setup.known_devices = known;
+            }
+            cfg.settings.first_run_done = true;
             setup_changed(cfg, &mut out);
         }
         Edit::SetVadGate {
@@ -998,5 +1009,24 @@ mod tests {
         );
         assert!(out.save && matches!(&out.commands[..], [Command::SetSetup(_)]));
         assert_eq!(cfg.setup.denoisers[0].vad_gate, 0.5);
+    }
+
+    #[test]
+    fn preset_replaces_the_setup_and_ends_the_first_run() {
+        let mut cfg = ConfigFile::default();
+        let out = apply_edit(
+            &mut cfg,
+            &snap(),
+            Edit::ApplyPreset(super::super::preset::PresetKind::Recommended),
+        );
+        assert!(cfg.settings.first_run_done && out.save && out.structure_changed);
+        assert_eq!(cfg.setup.channels.len(), 3);
+        let mut cfg = ConfigFile::default();
+        apply_edit(
+            &mut cfg,
+            &snap(),
+            Edit::ApplyPreset(super::super::preset::PresetKind::Empty),
+        );
+        assert!(cfg.settings.first_run_done && cfg.setup.channels.is_empty());
     }
 }

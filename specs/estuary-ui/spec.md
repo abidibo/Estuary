@@ -870,6 +870,16 @@ The row meter uses `MeterTarget::Denoised(key)`.
 
 ### M11: Lifecycle UI
 
+**Implementation notes (M11 as built, 2026-10-15).**
+
+- **Root split:** `app/mod.rs` (window, pages, engine, edits) and `app/lifecycle.rs` (close, quit executor, welcome, preferences, autostart, tray, signals, banner, issues).
+- **Welcome:** `adw::Dialog` with `can_close = false`. ✕ *and* Escape both emit `close-attempt`, which AdwDialog doesn't distinguish, so both count as "Start empty". It's shown once the window is visible, the engine is `Connected` and a snapshot arrived. After the choice: `ApplyPreset`, an immediate save, then the deferred start-at-login sync.
+- **Pure rules** in `state/surfaces.rs`: `autostart_row`/`autostart_tooltip`, `banner_state` (one `adw::Banner` for read-only and reconnect; Retry → `RestartEngine`; 1 s poll only while reconnecting) and `issue_text`. `state/preset.rs` holds `build_preset`; the Recommended setup validates against C6.
+- **Setup issues** without a cell: one toast "Some routes couldn't be created" (5 s) per new set, with a Details button opening the localized list.
+- **PeakMeter:** tracks get an outline in high contrast (`adw::StyleManager::is_high_contrast`).
+- **i18n check:** `build-aux/check-i18n.sh` flags string literals passed to user-visible setters, constructors and `add_response` labels without `i18n*` (heuristic; `// i18n-ok` marks deliberate ones, such as the app name). Clean today.
+- Italian translations move to the M12 hand-off with the `po/` build (packaging). The engine `test-util` fixtures were never needed by UI tests and are dropped.
+
 #### M11.1 Welcome dialog and preset
 
 `dialogs/welcome.rs`: an `adw::Dialog` (`content_width` 480, not closable by Escape; closing with ✕ counts as "Start empty"). Content: an `adw::StatusPage` (app icon, title "Welcome to Estuary", description "How would you like to start?") with two `adw::ActionRow`s in a boxed list:

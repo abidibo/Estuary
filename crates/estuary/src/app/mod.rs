@@ -1,10 +1,11 @@
-//! Root component (UI M3.3–M3.5): owns the engine, forwards its events, and switches between
-//! the blocking status page and the main Apps/Matrix view.
-//!
-//! Desktop integration fields (quit controller, hold, tray, background permission) arrive with
-//! estuary-desktop in M11.
+//! Root component (UI M3.3–M3.5, M11): owns the engine, forwards its events, switches between
+//! the blocking status page and the main Apps/Matrix view, and runs the desktop lifecycle
+//! (`lifecycle.rs`).
+
+mod lifecycle;
 
 use std::cell::Cell;
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -19,12 +20,21 @@ use relm4::{
 
 use crate::config::{ConfigError, ConfigStore, LoadOutcome};
 use crate::config_build::APP_ID;
+use crate::desktop::autostart::AutostartOutcome;
+use crate::desktop::close::BackgroundPermission;
+use crate::desktop::env::DesktopEnv;
+use crate::desktop::quit::{QuitController, QuitInput, QuitTimer, QuitTrigger};
+use crate::desktop::tray::TrayHandle;
+use crate::dialogs::preferences::PreferencesHandle;
 use crate::i18n::{i18n, i18n_f, ni18n_f};
 use crate::pages::apps::{AppsMsg, AppsOutput, AppsPage};
 use crate::pages::matrix::{MatrixMsg, MatrixOutput, MatrixPage};
 use crate::pages::status::{RootView, root_view, status_page};
 use crate::state::edit::{Edit, apply_edit};
+use crate::state::preset::PresetKind;
 use crate::widgets::meter_hub::MeterHub;
+use estuary_engine::SetupIssue;
+use estuary_engine::setup::CloseAction;
 
 /// Debounce for recomputing which meters are visible (UI M4.4).
 const METER_RECOMPUTE: Duration = Duration::from_millis(100);
@@ -56,6 +66,27 @@ pub struct AppModel {
     meter_recompute_pending: bool,
     /// Last subscription sent to the engine; `None` forces a resend (new engine).
     meter_targets_sent: Option<Vec<MeterTarget>>,
+    // Desktop lifecycle (M11).
+    env: DesktopEnv,
+    quit: QuitController,
+    quit_timers: HashMap<QuitTimer, gtk::glib::SourceId>,
+    quit_dialog: Option<adw::AlertDialog>,
+    /// Keeps the process alive while hidden; dropped by the quit `Finish`.
+    hold: Option<gtk::gio::ApplicationHoldGuard>,
+    tray: Option<TrayHandle>,
+    tray_retried: bool,
+    background: BackgroundPermission,
+    /// Not persisted: the "closing quits" explanation shows once per session.
+    denied_notice_shown: bool,
+    /// A close notice is open: further ✕ are ignored.
+    notice_open: bool,
+    welcome_open: bool,
+    snapshot_received: bool,
+    prefs: Option<PreferencesHandle>,
+    autostart: Option<Result<AutostartOutcome, String>>,
+    /// The one banner: read-only (F16) or a long reconnect (F4).
+    banner: adw::Banner,
+    reconnect_tick: bool,
 }
 
 impl std::fmt::Debug for AppModel {
@@ -92,6 +123,25 @@ pub enum AppMsg {
     WindowShown,
     /// Periodic: drop warning badges older than a minute.
     ExpireWarnings,
+    // Desktop lifecycle (M11).
+    ShowWindow,
+    WindowCloseRequested,
+    RequestQuit(QuitTrigger),
+    /// Timers and forced finishes.
+    Quit(QuitInput),
+    QuitConfirmed,
+    QuitCancelled,
+    BackgroundNoticeDismissed,
+    BackgroundDeniedNoticeDismissed,
+    TrayReady(Option<TrayHandle>),
+    RetryTray,
+    OpenPreferences,
+    SetCloseAction(CloseAction),
+    SetStartAtLogin(bool),
+    AutostartApplied(Result<AutostartOutcome, String>),
+    WelcomeChosen(PresetKind),
+    ReconnectTick,
+    ShowIssueDetails(Vec<SetupIssue>),
 }
 
 impl Component for AppModel {
@@ -104,7 +154,7 @@ impl Component for AppModel {
 
     fn init_root() -> adw::ApplicationWindow {
         let window = adw::ApplicationWindow::new(&relm4::main_adw_application());
-        window.set_title(Some("Estuary"));
+        window.set_title(Some("Estuary")); // i18n-ok: the app name
         window.set_default_size(960, 640);
         // Required with breakpoints; the GNOME HIG minimum for adaptive windows.
         window.set_size_request(360, 294);
@@ -153,6 +203,7 @@ impl Component for AppModel {
         let header = adw::HeaderBar::new();
         header.set_title_widget(Some(&switcher));
         let menu = gtk::gio::Menu::new();
+        menu.append(Some(&i18n("Preferences")), Some("app.preferences"));
         menu.append(Some(&i18n("About Estuary")), Some("app.about"));
         menu.append(Some(&i18n("Quit")), Some("app.quit"));
         let menu_button = gtk::MenuButton::new();
@@ -199,14 +250,20 @@ impl Component for AppModel {
             let s = sender.input_sender().clone();
             move || s.emit(AppMsg::SaveTick)
         });
-        if matches!(outcome, LoadOutcome::NewerSchema { .. }) {
-            // F16: permanent; no window needed.
-            let banner = adw::Banner::new(&i18n(
-                "This configuration was saved by a newer version of Estuary. Changes won't be saved.",
-            ));
-            banner.set_revealed(true);
-            toolbar.add_top_bar(&banner);
-        }
+        let banner = adw::Banner::new("");
+        banner.connect_button_clicked({
+            let s = sender.input_sender().clone();
+            move |_| s.emit(AppMsg::RestartEngine)
+        });
+        toolbar.add_top_bar(&banner);
+        // Never close silently: the root decides (desktop M11.D3).
+        root.connect_close_request({
+            let s = sender.input_sender().clone();
+            move |_| {
+                s.emit(AppMsg::WindowCloseRequested);
+                gtk::glib::Propagation::Stop
+            }
+        });
         root.connect_map({
             let s = sender.input_sender().clone();
             move |_| s.emit(AppMsg::WindowShown)
@@ -241,8 +298,42 @@ impl Component for AppModel {
             meters,
             meter_recompute_pending: false,
             meter_targets_sent: None,
+            env: DesktopEnv::detect(),
+            quit: QuitController::default(),
+            quit_timers: HashMap::new(),
+            quit_dialog: None,
+            hold: Some(crate::desktop::window::acquire_hold(
+                &relm4::main_adw_application(),
+            )),
+            tray: None,
+            tray_retried: false,
+            background: BackgroundPermission::NotApplicable,
+            denied_notice_shown: false,
+            notice_open: false,
+            welcome_open: false,
+            snapshot_received: false,
+            prefs: None,
+            autostart: None,
+            banner,
+            reconnect_tick: false,
         };
+        if model.env.sandboxed {
+            model.background = BackgroundPermission::Unknown;
+        }
+        tracing::debug!(
+            sandboxed = model.env.sandboxed,
+            flatpak_id = ?model.env.flatpak_id,
+            autostart_dir = ?model.env.autostart_dir,
+            "desktop"
+        );
         model.start_engine(&sender);
+        model.refresh_banner(&sender);
+        model.start_tray(&sender);
+        AppModel::install_signals(&sender);
+        // Start at login: synced now, unless the welcome is pending (it syncs after the choice).
+        if model.config.settings().first_run_done {
+            model.spawn_autostart(model.config.settings().start_at_login, &sender);
+        }
         let mut widgets = AppWidgets {
             root_stack,
             status_bin,
@@ -260,12 +351,84 @@ impl Component for AppModel {
         root: &adw::ApplicationWindow,
     ) {
         match msg {
+            AppMsg::Engine(Event::QuitCheck(u)) => {
+                self.feed_quit(QuitInput::QuitCheck(u), root, &sender);
+            }
+            AppMsg::Engine(Event::TeardownComplete) => {
+                self.feed_quit(QuitInput::TeardownComplete, root, &sender);
+            }
+            AppMsg::Engine(Event::SetupIssues(issues)) => self.on_setup_issues(issues, &sender),
             AppMsg::Engine(ev) => {
                 let rows_may_change = matches!(ev, Event::Snapshot(_));
+                let connection = matches!(ev, Event::Connection(_));
                 self.on_engine_event(ev);
                 if rows_may_change {
+                    self.snapshot_received = true;
                     self.schedule_meters(&sender);
                 }
+                if connection {
+                    self.refresh_banner(&sender);
+                }
+                if rows_may_change || connection {
+                    self.maybe_welcome(root, &sender);
+                }
+            }
+            AppMsg::ShowWindow => self.show_window(root),
+            AppMsg::WindowCloseRequested => self.on_close_requested(root, &sender),
+            AppMsg::RequestQuit(trigger) => self.request_quit(trigger, root, &sender),
+            AppMsg::Quit(input) => self.feed_quit(input, root, &sender),
+            AppMsg::QuitConfirmed => {
+                self.quit_dialog = None;
+                self.feed_quit(QuitInput::UserConfirmed, root, &sender);
+            }
+            AppMsg::QuitCancelled => {
+                self.quit_dialog = None;
+                self.feed_quit(QuitInput::UserCancelled, root, &sender);
+            }
+            AppMsg::BackgroundNoticeDismissed => {
+                self.notice_open = false;
+                self.config
+                    .update_settings(|s| s.background_notice_shown = true);
+                self.hide_window(root);
+            }
+            AppMsg::BackgroundDeniedNoticeDismissed => {
+                self.notice_open = false;
+                self.request_quit(QuitTrigger::CloseButton, root, &sender);
+            }
+            AppMsg::TrayReady(h) => {
+                tracing::debug!(present = h.is_some(), "tray");
+                if h.is_none() && !self.tray_retried {
+                    // The shell's tray host may start after us at login (D-F10): retry once.
+                    self.tray_retried = true;
+                    let s = sender.input_sender().clone();
+                    gtk::glib::timeout_add_local_once(Duration::from_secs(10), move || {
+                        s.emit(AppMsg::RetryTray);
+                    });
+                }
+                self.tray = h;
+            }
+            AppMsg::RetryTray => {
+                if self.tray.is_none() {
+                    self.start_tray(&sender);
+                }
+            }
+            AppMsg::OpenPreferences => {
+                self.show_window(root);
+                self.open_preferences(root, &sender);
+            }
+            AppMsg::SetCloseAction(a) => self.config.update_settings(|s| s.close_action = a),
+            AppMsg::SetStartAtLogin(v) => {
+                self.config.update_settings(|s| s.start_at_login = v);
+                self.spawn_autostart(v, &sender);
+            }
+            AppMsg::AutostartApplied(r) => self.on_autostart_applied(r),
+            AppMsg::WelcomeChosen(kind) => self.on_welcome_chosen(kind, &sender),
+            AppMsg::ReconnectTick => {
+                self.reconnect_tick = false;
+                self.refresh_banner(&sender);
+            }
+            AppMsg::ShowIssueDetails(issues) => {
+                crate::dialogs::notices::issue_details(root, &issues);
             }
             AppMsg::RestartEngine => {
                 if let Some(engine) = self.engine.take()
@@ -274,6 +437,7 @@ impl Component for AppModel {
                     tracing::warn!("engine shutdown before restart: {e}");
                 }
                 self.start_engine(&sender);
+                self.schedule_meters(&sender);
             }
             AppMsg::ShowAbout => show_about(root),
             AppMsg::ScheduleMeters => self.schedule_meters(&sender),
@@ -285,9 +449,11 @@ impl Component for AppModel {
                 }
             }
             AppMsg::WindowShown => {
+                tracing::debug!("window shown");
                 if let Some(outcome) = self.pending_notice.take() {
                     self.show_load_notice(outcome, root);
                 }
+                self.maybe_welcome(root, &sender);
             }
             AppMsg::RecomputeMeters => {
                 self.meter_recompute_pending = false;
@@ -319,9 +485,11 @@ impl Component for AppModel {
             RootView::Main => "main",
         });
         let reconnecting = matches!(self.connection, Some(ConnectionState::Reconnecting { .. }));
+        let quitting = self.quit.busy();
         widgets.main_view.set_sensitive(!reconnecting);
-        widgets.busy.set_visible(reconnecting);
-        widgets.busy.set_spinning(reconnecting);
+        widgets.root_stack.set_sensitive(!quitting);
+        widgets.busy.set_visible(reconnecting || quitting);
+        widgets.busy.set_spinning(reconnecting || quitting);
     }
 }
 
@@ -497,14 +665,6 @@ impl AppModel {
                 }
                 self.push_to_pages();
             }
-            // Issues tied to a cell show on the cell through its status (UI M9.9).
-            Event::SetupIssues(issues) => {
-                for issue in issues.iter().filter(|i| i.cell().is_none()) {
-                    if self.toasted_issues.insert(issue.key()) {
-                        self.show_toast(&issue.message());
-                    }
-                }
-            }
             Event::Fatal(e) => {
                 // Only the first fatal error matters; the forwarder's ThreadGone may follow it.
                 if self.fatal.is_none() {
@@ -514,8 +674,7 @@ impl AppModel {
                 }
                 self.engine = None;
             }
-            // Routed to their features in later milestones (setup issues M9, quit M11).
-            other => tracing::debug!(?other, "engine event not handled yet"),
+            other => tracing::debug!(?other, "engine event not handled here"),
         }
     }
 }
@@ -535,11 +694,23 @@ fn install_actions(
     });
     app.add_action(&about);
 
-    // Temporary: estuary-desktop (M11.D4) replaces this with the Quit flow (teardown + warning).
-    let quit = SimpleAction::new("quit", None);
-    quit.connect_activate(|_, _| relm4::main_application().quit());
-    app.add_action(&quit);
+    // Desktop M11.D4: exported on the session bus too (GNOME's Background Apps may use quit).
+    for (name, msg) in [
+        (
+            "quit",
+            (|| AppMsg::RequestQuit(QuitTrigger::Action)) as fn() -> AppMsg,
+        ),
+        ("preferences", || AppMsg::OpenPreferences),
+        ("show", || AppMsg::ShowWindow),
+    ] {
+        let action = SimpleAction::new(name, None);
+        let s = sender.input_sender().clone();
+        action.connect_activate(move |_, _| s.emit(msg()));
+        app.add_action(&action);
+    }
     app.set_accels_for_action("app.quit", &["<Control>q"]);
+    app.set_accels_for_action("app.preferences", &["<Control>comma"]);
+    app.set_accels_for_action("window.close", &["<Control>w"]);
 
     for (name, page, accel) in [
         ("show-apps", "apps", "<Alt>1"),

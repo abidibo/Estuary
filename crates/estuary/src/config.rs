@@ -95,6 +95,16 @@ impl ConfigStore {
     }
 
     #[allow(dead_code)] // read by the M11 banner priority (read-only wins over reconnect)
+    pub fn settings(&self) -> &estuary_engine::setup::Settings {
+        &self.file.settings
+    }
+
+    /// Changes settings and schedules the debounced save (C12).
+    pub fn update_settings(&mut self, f: impl FnOnce(&mut estuary_engine::setup::Settings)) {
+        f(&mut self.file.settings);
+        self.schedule_save();
+    }
+
     pub fn is_read_only(&self) -> bool {
         self.read_only
     }

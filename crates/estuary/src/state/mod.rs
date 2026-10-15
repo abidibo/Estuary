@@ -2,5 +2,7 @@
 
 pub mod edit;
 pub mod matrix_layout;
+pub mod preset;
+pub mod surfaces;
 pub mod volume;
 pub mod warnings;

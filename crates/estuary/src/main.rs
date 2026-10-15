@@ -4,6 +4,7 @@
 mod app;
 mod config;
 mod config_build;
+mod desktop;
 mod dialogs;
 mod i18n;
 mod pages;
@@ -25,7 +26,7 @@ fn init_tracing() {
 fn main() {
     init_tracing();
     i18n::init();
-    let app = adw::Application::builder().application_id(APP_ID).build();
+    let app = desktop::app::build_application();
 
     // Single instance. relm4 0.11's `RelmApp::run` ends with a blocking
     // `MainContext::iteration(true)` that hangs a remote (second) instance, which has nothing
@@ -34,14 +35,18 @@ fn main() {
     // app on the primary path, because registering emits `startup` before relm4 connects the
     // handler that builds the window.
     if primary_instance_running() {
-        // Plain GApplication run (no relm4): as a remote instance it forwards `activate`,
-        // flushes and unregisters cleanly, then returns.
+        // Plain GApplication run (no relm4): as a remote instance it forwards the command line
+        // (`--background` included) to the primary, then returns.
         tracing::debug!("another instance is running; activating it");
         app.run();
         return;
     }
 
-    RelmApp::from_app(app).run::<app::AppModel>(());
+    // The window is first shown by relm4's activate handler, which the command-line handler
+    // calls unless `--background` (desktop M11.D1).
+    RelmApp::from_app(app)
+        .visible_on_activate(true)
+        .run::<app::AppModel>(());
 }
 
 /// True if another process already owns our application ID on the session bus.

@@ -262,13 +262,20 @@ fn draw(area: &gtk::DrawingArea, st: &MeterState, cr: &gtk::cairo::Context, w: i
         let _ = cr.fill();
         return;
     }
+    let high_contrast = relm4::adw::StyleManager::default().is_high_contrast();
     let bar_h = ((h - 1.0) / 2.0).max(1.0);
     for (i, c) in st.ch.iter().enumerate() {
         let y = if i == 0 { 0.0 } else { bar_h + 1.0 };
-        // Track
+        // Track (outlined in high contrast, where a faint fill alone disappears)
         cr.set_source_rgba(fg.red().into(), fg.green().into(), fg.blue().into(), 0.12);
         cr.rectangle(0.0, y, w, bar_h);
         let _ = cr.fill();
+        if high_contrast {
+            cr.set_source_rgba(fg.red().into(), fg.green().into(), fg.blue().into(), 0.8);
+            cr.set_line_width(1.0);
+            cr.rectangle(0.5, y + 0.5, (w - 1.0).max(0.0), (bar_h - 1.0).max(0.0));
+            let _ = cr.stroke();
+        }
         // Level, split into zone segments
         let level = f64::from(fraction(c.level_db)) * w;
         let warn_x = f64::from(fraction(ballistics::WARN_DB)) * w;

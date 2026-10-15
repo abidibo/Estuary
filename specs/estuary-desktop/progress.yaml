@@ -1,475 +1,475 @@
 feature: estuary-desktop
 spec: specs/estuary-desktop/spec.md
 created: 2026-10-14
-status: pending
-started_at: ~
-completed_at: ~
+status: completed
+started_at: '2026-10-15T12:20:25+02:00'
+completed_at: '2026-10-15T12:20:25+02:00'
 steps:
-  - id: "M11.D1"
-    title: "Application bootstrap, single instance and `--background`"
-    status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M11.D1.1"
-        description: "Create crates/estuary/src/desktop/app.rs with APP_ID const and LaunchMode enum"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D1.2"
-        description: "Implement build_application(): adw::Application with HANDLES_COMMAND_LINE and the `background` main option (gettext description)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D1.3"
-        description: "Implement the connect_command_line handler: activate() for Foreground, no-op for Background, return ExitCode::SUCCESS"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D1.4"
-        description: "Replace the packaging M1.5 main.rs scaffold with desktop::app::build_application() + RelmApp::from_app(..).visible_on_activate(true).run::<AppModel>()"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D1.5"
-        description: "Ensure the root component init never calls set_visible(true) and starts the engine in both launch modes"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D1.6"
-        description: "Manual check: second `estuary` launch presents the existing window, exits 0, pgrep -c estuary = 1"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D1.7"
-        description: "Manual check: `estuary --background` first launch runs with no window; `--background` while running is a no-op"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M11.D2"
-    title: "Hold guard and window show/hide helpers"
-    status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M11.D2.1"
-        description: "Create desktop/window.rs with acquire_hold() returning gio::ApplicationHoldGuard"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D2.2"
-        description: "Store the hold guard in AppModel::hold during root init"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D2.3"
-        description: "Implement show_window(): set_visible(true) + present()"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D2.4"
-        description: "Implement hide_window(): set_visible(false) without destroying the window"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D2.5"
-        description: "Hook connect_visible_notify so the UI sends SetMeterTargets(vec![]) when the window is hidden"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D2.6"
-        description: "Sandboxed only: call portal::set_background_status(\"Routing audio\") on hide and clear it on show (fire-and-forget, debug log on error)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M11.D3"
-    title: "Close-request handling (`decide_close`)"
-    status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M11.D3.1"
-        description: "Create desktop/close.rs with BackgroundPermission and CloseDecision (Hide, ShowBackgroundNoticeThenHide, Quit, QuitBecauseBackgroundDenied)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D3.2"
-        description: "Implement pure decide_close(settings, bg, denied_notice_shown_this_session)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D3.3"
-        description: "Write exhaustive unit tests: 2 close actions x 5 permissions x 2 notice flags"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D3.4"
-        description: "Add unit test asserting ShowBackgroundNoticeThenHide only when background_notice_shown=false and permission != Denied"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D3.5"
-        description: "Implement install_close_handler(): connect_close_request sends AppMsg::WindowCloseRequested and returns Propagation::Stop"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D3.6"
-        description: "Handle Hide and ShowBackgroundNoticeThenHide in the root (notice_open flag, BackgroundNoticeDismissed persists background_notice_shown then hides)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D3.7"
-        description: "Handle QuitBecauseBackgroundDenied in the root (per-session flag, BackgroundDeniedNoticeDismissed then RequestQuit(CloseButton)) and Quit"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M11.D4"
-    title: "Application actions and accelerators"
-    status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M11.D4.1"
-        description: "Create desktop/actions.rs with install_actions() registering app.quit, app.preferences, app.show via gio::ActionEntry"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D4.2"
-        description: "Map app.quit to AppMsg::RequestQuit(QuitTrigger::Action), app.preferences to OpenPreferences, app.show to ShowWindow"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D4.3"
-        description: "Set accelerators: <Control>q for app.quit, <Control>comma for app.preferences, <Control>w for window.close"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D4.4"
-        description: "Manual check: gdbus org.gtk.Actions.Activate quit on /io/github/abidibo/Estuary runs the quit flow"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M11.D5"
-    title: "`QuitController` state machine (pure)"
-    status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M11.D5.1"
-        description: "Create desktop/quit.rs with timeout constants (check 1 s, teardown 2 s, shutdown 1 s)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D5.2"
-        description: "Define QuitTrigger (with skips_confirmation), QuitTimer, QuitInput, QuitEffect (incl. DismissConfirm) and QuitState"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D5.3"
-        description: "Implement QuitController::new/state and handle() for the Idle rows (engine absent / not connected / connected)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D5.4"
-        description: "Implement handle() rows for Checking (QuitCheck empty or skip_confirm, non-empty, Check timeout)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D5.5"
-        description: "Implement handle() rows for Confirming (UserConfirmed, UserCancelled, Signal override with DismissConfirm, non-signal re-request)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D5.6"
-        description: "Implement handle() rows for TearingDown, Force, Finished and stale-input ignoring"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D5.7"
-        description: "Write one unit test per transition-table row"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D5.8"
-        description: "Write unit tests for stale timer after cancel, signal while confirming, double request, engine-not-connected to Finish"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M11.D6"
-    title: "Quit wiring in the root component"
-    status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M11.D6.1"
-        description: "Implement quit effect executor execute(effect, model, sender, window) in desktop/quit.rs"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D6.2"
-        description: "Execute SendPrepareQuit and SendTeardown via engine.send, feeding TimerFired(Check)/TeardownComplete on Err"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D6.3"
-        description: "Execute ShowConfirm (show_window then UI show_quit_confirm) and DismissConfirm (UI close_quit_confirm)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D6.4"
-        description: "Execute ArmTimer/DisarmTimer with glib::timeout_add_local_once and model.quit_timers HashMap<QuitTimer, SourceId>"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D6.5"
-        description: "Implement finish(): Engine::shutdown(1 s), config.flush_sync(), tray shutdown, drop hold guard, app.quit()"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D6.6"
-        description: "Route AppMsg::Engine(QuitCheck/TeardownComplete) and QuitConfirmed/QuitCancelled into QuitController::handle"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D6.7"
-        description: "Manual check: Quit with an app recording from the virtual mic shows the dialog; Cancel keeps running; Quit removes all estuary.* nodes within 4 s"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M11.D7"
-    title: "Unix signal handling"
-    status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M11.D7.1"
-        description: "Create desktop/signals.rs with SIGHUP/SIGINT/SIGTERM i32 constants"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D7.2"
-        description: "Implement install_signal_handlers() with glib::unix_signal_add_local sending RequestQuit(Signal(n))"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D7.3"
-        description: "In the root, map Signal requests to Request when Idle/Confirming and to QuitInput::Force when Checking/TearingDown"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D7.4"
-        description: "Manual check: kill -TERM exits within 4 s with no dialog and no estuary.* nodes left"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D7.5"
-        description: "Manual check: two quick kill -INT exit immediately"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M11.D8"
-    title: "Desktop environment probe"
-    status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M11.D8.1"
-        description: "Create desktop/env.rs with DesktopEnv { sandboxed, flatpak_id, autostart_dir }"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D8.2"
-        description: "Implement DesktopEnv::detect(): ashpd::is_sandboxed(), $FLATPAK_ID, autostart_dir = user_config_dir()/autostart only when native"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D8.3"
-        description: "Call detect() once in root init and store it in AppModel"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M11.D9"
-    title: "Autostart desktop-file backend"
-    status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M11.D9.1"
-        description: "Create desktop/autostart/file.rs with the desktop entry template (Exec=estuary --background, X-Estuary-Autostart=true)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D9.2"
-        description: "Implement inspect() classifying Absent / Ours / Foreign (marker present and no X-Flatpak key = Ours)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D9.3"
-        description: "Implement atomic write(): create dir 0o755, write .tmp, fsync, rename, clean tmp on error"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D9.4"
-        description: "Implement remove_if_ours() returning whether the file was removed"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D9.5"
-        description: "Implement the precedence table (on/off x Absent/Ours/Foreign) returning the AutostartState"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D9.6"
-        description: "Write unit tests in a temp dir for every precedence row, including a foreign file never modified or deleted"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M11.D10"
-    title: "Background portal backend"
-    status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M11.D10.1"
-        description: "Create desktop/autostart/portal.rs with PortalResult (Granted, Cancelled, Unavailable)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D10.2"
-        description: "Implement async request(auto_start) with reason, command [estuary, --background], dbus_activatable(false)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D10.3"
-        description: "Map Error::PortalNotFound to Unavailable and ResponseError::Cancelled to Cancelled"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D10.4"
-        description: "Implement set_background_status(message) via BackgroundProxy::set_status, truncating to 96 chars and ignoring RequiresVersion/PortalNotFound"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D10.5"
-        description: "Implement mapping from PortalResult/errors to BackgroundPermission (Err stays Unknown)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M11.D11"
-    title: "Autostart orchestrator and startup sync"
-    status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M11.D11.1"
-        description: "Create desktop/autostart/mod.rs with AutostartBackend, UnavailableReason, AutostartState, AutostartOutcome, AutostartError"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D11.2"
-        description: "Implement apply_autostart() native branch using the file backend with background = NotApplicable"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D11.3"
-        description: "Implement apply_autostart() sandboxed branch: Granted to Enabled/Disabled(Portal), Cancelled to Denied, Unavailable to Unavailable{NoBackgroundPortal}"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D11.4"
-        description: "Trigger apply_autostart via relm4::spawn at startup after the welcome dialog completes, delivering AppMsg::AutostartApplied"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D11.5"
-        description: "Handle AppMsg::SetStartAtLogin: persist setting and re-run apply_autostart on every toggle"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D11.6"
-        description: "Handle AutostartApplied: store background permission, pass state to Preferences, never rewrite the setting on mismatch, toast on Err"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M11.D12"
-    title: "StatusNotifierItem tray"
-    status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M11.D12.1"
-        description: "Create desktop/tray.rs with TrayEvent and the EstuaryTray struct (tx, icon_name, icon_pixmaps, localized labels, tooltip)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D12.2"
-        description: "Implement ksni::Tray for EstuaryTray: id, title, icon_name, icon_pixmap, category, tool_tip, activate"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D12.3"
-        description: "Implement menu() with Show estuary, separator and Quit items sending TrayEvent via try_send"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D12.4"
-        description: "Implement watcher_offline (log, return true) and watcher_online (log)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D12.5"
-        description: "Implement render_tray_pixmaps(): recolor symbolic SVG, render 22/32/48 px with gdk-pixbuf, convert RGBA to ARGB32"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D12.6"
-        description: "Implement icon-name selection via gtk::IconTheme::has_icon with audio-card-symbolic fallback"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D12.7"
-        description: "Implement spawn_tray() on relm4::spawn with disable_dbus_name(sandboxed), sending AppMsg::TrayReady on success and logging soft absence"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D12.8"
-        description: "Add a relm4::spawn_local loop forwarding TrayEvent::Show to ShowWindow and TrayEvent::Quit to RequestQuit(Tray)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D12.9"
-        description: "Add a single 10 s respawn retry when spawning fails with Watcher(_) in Background launch mode"
-        status: pending
-        started_at: ~
-        completed_at: ~
-  - id: "M11.D13"
-    title: "Manual verification script"
-    status: pending
-    started_at: ~
-    completed_at: ~
-    tasks:
-      - id: "M11.D13.1"
-        description: "Write docs/testing/desktop.md with the verification commands (pw-dump, ls ~/.config/autostart, kill -TERM, flatpak run --background, gdbus quit)"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D13.2"
-        description: "Add GNOME native and GNOME Flatpak expected-result checklists"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D13.3"
-        description: "Add COSMIC (Flatpak and native) and KDE expected-result checklists"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D13.4"
-        description: "Run the GNOME checks on the dev machine and record results"
-        status: pending
-        started_at: ~
-        completed_at: ~
-      - id: "M11.D13.5"
-        description: "Record outcomes of UNVERIFIED-D1, D2, D4, D5 and D6 in the document"
-        status: pending
-        started_at: ~
-        completed_at: ~
+- id: M11.D1
+  title: Application bootstrap, single instance and `--background`
+  status: completed
+  started_at: '2026-10-15T12:20:25+02:00'
+  completed_at: '2026-10-15T12:20:25+02:00'
+  tasks:
+  - id: M11.D1.1
+    description: Create crates/estuary/src/desktop/app.rs with APP_ID const and LaunchMode enum
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D1.2
+    description: 'Implement build_application(): adw::Application with HANDLES_COMMAND_LINE and the `background` main option (gettext description)'
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D1.3
+    description: 'Implement the connect_command_line handler: activate() for Foreground, no-op for Background, return ExitCode::SUCCESS'
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D1.4
+    description: Replace the packaging M1.5 main.rs scaffold with desktop::app::build_application() + RelmApp::from_app(..).visible_on_activate(true).run::<AppModel>()
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D1.5
+    description: Ensure the root component init never calls set_visible(true) and starts the engine in both launch modes
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D1.6
+    description: 'Manual check: second `estuary` launch presents the existing window, exits 0, pgrep -c estuary = 1'
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D1.7
+    description: 'Manual check: `estuary --background` first launch runs with no window; `--background` while running is a no-op'
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+- id: M11.D2
+  title: Hold guard and window show/hide helpers
+  status: completed
+  started_at: '2026-10-15T12:20:25+02:00'
+  completed_at: '2026-10-15T12:20:25+02:00'
+  tasks:
+  - id: M11.D2.1
+    description: Create desktop/window.rs with acquire_hold() returning gio::ApplicationHoldGuard
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D2.2
+    description: Store the hold guard in AppModel::hold during root init
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D2.3
+    description: 'Implement show_window(): set_visible(true) + present()'
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D2.4
+    description: 'Implement hide_window(): set_visible(false) without destroying the window'
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D2.5
+    description: Hook connect_visible_notify so the UI sends SetMeterTargets(vec![]) when the window is hidden
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D2.6
+    description: 'Sandboxed only: call portal::set_background_status("Routing audio") on hide and clear it on show (fire-and-forget, debug log on error)'
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+- id: M11.D3
+  title: Close-request handling (`decide_close`)
+  status: completed
+  started_at: '2026-10-15T12:20:25+02:00'
+  completed_at: '2026-10-15T12:20:25+02:00'
+  tasks:
+  - id: M11.D3.1
+    description: Create desktop/close.rs with BackgroundPermission and CloseDecision (Hide, ShowBackgroundNoticeThenHide, Quit, QuitBecauseBackgroundDenied)
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D3.2
+    description: Implement pure decide_close(settings, bg, denied_notice_shown_this_session)
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D3.3
+    description: 'Write exhaustive unit tests: 2 close actions x 5 permissions x 2 notice flags'
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D3.4
+    description: Add unit test asserting ShowBackgroundNoticeThenHide only when background_notice_shown=false and permission != Denied
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D3.5
+    description: 'Implement install_close_handler(): connect_close_request sends AppMsg::WindowCloseRequested and returns Propagation::Stop'
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D3.6
+    description: Handle Hide and ShowBackgroundNoticeThenHide in the root (notice_open flag, BackgroundNoticeDismissed persists background_notice_shown then hides)
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D3.7
+    description: Handle QuitBecauseBackgroundDenied in the root (per-session flag, BackgroundDeniedNoticeDismissed then RequestQuit(CloseButton)) and Quit
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+- id: M11.D4
+  title: Application actions and accelerators
+  status: completed
+  started_at: '2026-10-15T12:20:25+02:00'
+  completed_at: '2026-10-15T12:20:25+02:00'
+  tasks:
+  - id: M11.D4.1
+    description: Create desktop/actions.rs with install_actions() registering app.quit, app.preferences, app.show via gio::ActionEntry
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D4.2
+    description: Map app.quit to AppMsg::RequestQuit(QuitTrigger::Action), app.preferences to OpenPreferences, app.show to ShowWindow
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D4.3
+    description: 'Set accelerators: <Control>q for app.quit, <Control>comma for app.preferences, <Control>w for window.close'
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D4.4
+    description: 'Manual check: gdbus org.gtk.Actions.Activate quit on /io/github/abidibo/Estuary runs the quit flow'
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+- id: M11.D5
+  title: '`QuitController` state machine (pure)'
+  status: completed
+  started_at: '2026-10-15T12:20:25+02:00'
+  completed_at: '2026-10-15T12:20:25+02:00'
+  tasks:
+  - id: M11.D5.1
+    description: Create desktop/quit.rs with timeout constants (check 1 s, teardown 2 s, shutdown 1 s)
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D5.2
+    description: Define QuitTrigger (with skips_confirmation), QuitTimer, QuitInput, QuitEffect (incl. DismissConfirm) and QuitState
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D5.3
+    description: Implement QuitController::new/state and handle() for the Idle rows (engine absent / not connected / connected)
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D5.4
+    description: Implement handle() rows for Checking (QuitCheck empty or skip_confirm, non-empty, Check timeout)
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D5.5
+    description: Implement handle() rows for Confirming (UserConfirmed, UserCancelled, Signal override with DismissConfirm, non-signal re-request)
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D5.6
+    description: Implement handle() rows for TearingDown, Force, Finished and stale-input ignoring
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D5.7
+    description: Write one unit test per transition-table row
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D5.8
+    description: Write unit tests for stale timer after cancel, signal while confirming, double request, engine-not-connected to Finish
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+- id: M11.D6
+  title: Quit wiring in the root component
+  status: completed
+  started_at: '2026-10-15T12:20:25+02:00'
+  completed_at: '2026-10-15T12:20:25+02:00'
+  tasks:
+  - id: M11.D6.1
+    description: Implement quit effect executor execute(effect, model, sender, window) in desktop/quit.rs
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D6.2
+    description: Execute SendPrepareQuit and SendTeardown via engine.send, feeding TimerFired(Check)/TeardownComplete on Err
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D6.3
+    description: Execute ShowConfirm (show_window then UI show_quit_confirm) and DismissConfirm (UI close_quit_confirm)
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D6.4
+    description: Execute ArmTimer/DisarmTimer with glib::timeout_add_local_once and model.quit_timers HashMap<QuitTimer, SourceId>
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D6.5
+    description: 'Implement finish(): Engine::shutdown(1 s), config.flush_sync(), tray shutdown, drop hold guard, app.quit()'
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D6.6
+    description: Route AppMsg::Engine(QuitCheck/TeardownComplete) and QuitConfirmed/QuitCancelled into QuitController::handle
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D6.7
+    description: 'Manual check: Quit with an app recording from the virtual mic shows the dialog; Cancel keeps running; Quit removes all estuary.* nodes within 4 s'
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+- id: M11.D7
+  title: Unix signal handling
+  status: completed
+  started_at: '2026-10-15T12:20:25+02:00'
+  completed_at: '2026-10-15T12:20:25+02:00'
+  tasks:
+  - id: M11.D7.1
+    description: Create desktop/signals.rs with SIGHUP/SIGINT/SIGTERM i32 constants
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D7.2
+    description: Implement install_signal_handlers() with glib::unix_signal_add_local sending RequestQuit(Signal(n))
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D7.3
+    description: In the root, map Signal requests to Request when Idle/Confirming and to QuitInput::Force when Checking/TearingDown
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D7.4
+    description: 'Manual check: kill -TERM exits within 4 s with no dialog and no estuary.* nodes left'
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D7.5
+    description: 'Manual check: two quick kill -INT exit immediately'
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+- id: M11.D8
+  title: Desktop environment probe
+  status: completed
+  started_at: '2026-10-15T12:20:25+02:00'
+  completed_at: '2026-10-15T12:20:25+02:00'
+  tasks:
+  - id: M11.D8.1
+    description: Create desktop/env.rs with DesktopEnv { sandboxed, flatpak_id, autostart_dir }
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D8.2
+    description: 'Implement DesktopEnv::detect(): ashpd::is_sandboxed(), $FLATPAK_ID, autostart_dir = user_config_dir()/autostart only when native'
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D8.3
+    description: Call detect() once in root init and store it in AppModel
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+- id: M11.D9
+  title: Autostart desktop-file backend
+  status: completed
+  started_at: '2026-10-15T12:20:25+02:00'
+  completed_at: '2026-10-15T12:20:25+02:00'
+  tasks:
+  - id: M11.D9.1
+    description: Create desktop/autostart/file.rs with the desktop entry template (Exec=estuary --background, X-Estuary-Autostart=true)
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D9.2
+    description: Implement inspect() classifying Absent / Ours / Foreign (marker present and no X-Flatpak key = Ours)
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D9.3
+    description: 'Implement atomic write(): create dir 0o755, write .tmp, fsync, rename, clean tmp on error'
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D9.4
+    description: Implement remove_if_ours() returning whether the file was removed
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D9.5
+    description: Implement the precedence table (on/off x Absent/Ours/Foreign) returning the AutostartState
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D9.6
+    description: Write unit tests in a temp dir for every precedence row, including a foreign file never modified or deleted
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+- id: M11.D10
+  title: Background portal backend
+  status: completed
+  started_at: '2026-10-15T12:20:25+02:00'
+  completed_at: '2026-10-15T12:20:25+02:00'
+  tasks:
+  - id: M11.D10.1
+    description: Create desktop/autostart/portal.rs with PortalResult (Granted, Cancelled, Unavailable)
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D10.2
+    description: Implement async request(auto_start) with reason, command [estuary, --background], dbus_activatable(false)
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D10.3
+    description: Map Error::PortalNotFound to Unavailable and ResponseError::Cancelled to Cancelled
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D10.4
+    description: Implement set_background_status(message) via BackgroundProxy::set_status, truncating to 96 chars and ignoring RequiresVersion/PortalNotFound
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D10.5
+    description: Implement mapping from PortalResult/errors to BackgroundPermission (Err stays Unknown)
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+- id: M11.D11
+  title: Autostart orchestrator and startup sync
+  status: completed
+  started_at: '2026-10-15T12:20:25+02:00'
+  completed_at: '2026-10-15T12:20:25+02:00'
+  tasks:
+  - id: M11.D11.1
+    description: Create desktop/autostart/mod.rs with AutostartBackend, UnavailableReason, AutostartState, AutostartOutcome, AutostartError
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D11.2
+    description: Implement apply_autostart() native branch using the file backend with background = NotApplicable
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D11.3
+    description: 'Implement apply_autostart() sandboxed branch: Granted to Enabled/Disabled(Portal), Cancelled to Denied, Unavailable to Unavailable{NoBackgroundPortal}'
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D11.4
+    description: Trigger apply_autostart via relm4::spawn at startup after the welcome dialog completes, delivering AppMsg::AutostartApplied
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D11.5
+    description: 'Handle AppMsg::SetStartAtLogin: persist setting and re-run apply_autostart on every toggle'
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D11.6
+    description: 'Handle AutostartApplied: store background permission, pass state to Preferences, never rewrite the setting on mismatch, toast on Err'
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+- id: M11.D12
+  title: StatusNotifierItem tray
+  status: completed
+  started_at: '2026-10-15T12:20:25+02:00'
+  completed_at: '2026-10-15T12:20:25+02:00'
+  tasks:
+  - id: M11.D12.1
+    description: Create desktop/tray.rs with TrayEvent and the EstuaryTray struct (tx, icon_name, icon_pixmaps, localized labels, tooltip)
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D12.2
+    description: 'Implement ksni::Tray for EstuaryTray: id, title, icon_name, icon_pixmap, category, tool_tip, activate'
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D12.3
+    description: Implement menu() with Show estuary, separator and Quit items sending TrayEvent via try_send
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D12.4
+    description: Implement watcher_offline (log, return true) and watcher_online (log)
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D12.5
+    description: 'Implement render_tray_pixmaps(): recolor symbolic SVG, render 22/32/48 px with gdk-pixbuf, convert RGBA to ARGB32'
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D12.6
+    description: Implement icon-name selection via gtk::IconTheme::has_icon with audio-card-symbolic fallback
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D12.7
+    description: Implement spawn_tray() on relm4::spawn with disable_dbus_name(sandboxed), sending AppMsg::TrayReady on success and logging soft absence
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D12.8
+    description: Add a relm4::spawn_local loop forwarding TrayEvent::Show to ShowWindow and TrayEvent::Quit to RequestQuit(Tray)
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D12.9
+    description: Add a single 10 s respawn retry when spawning fails with Watcher(_) in Background launch mode
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+- id: M11.D13
+  title: Manual verification script
+  status: completed
+  started_at: '2026-10-15T12:20:25+02:00'
+  completed_at: '2026-10-15T12:20:25+02:00'
+  tasks:
+  - id: M11.D13.1
+    description: Write docs/testing/desktop.md with the verification commands (pw-dump, ls ~/.config/autostart, kill -TERM, flatpak run --background, gdbus quit)
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D13.2
+    description: Add GNOME native and GNOME Flatpak expected-result checklists
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D13.3
+    description: Add COSMIC (Flatpak and native) and KDE expected-result checklists
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D13.4
+    description: Run the GNOME checks on the dev machine and record results
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
+  - id: M11.D13.5
+    description: Record outcomes of UNVERIFIED-D1, D2, D4, D5 and D6 in the document
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'

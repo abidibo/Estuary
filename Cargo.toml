@@ -21,6 +21,7 @@ gtk           = { package = "gtk4", version = "0.11.5", features = ["v4_14"] }
 adw           = { package = "libadwaita", version = "0.9.2", features = ["v1_5"] }
 ashpd         = { version = "0.13.13", default-features = false, features = ["tokio", "background"] }  # NEVER enable "pipewire"
 ksni          = "0.3.6"
+glib-unix     = "0.22.8"   # SIGTERM/SIGINT handlers (moved out of glib in 0.22; desktop M11.D7)
 nnnoiseless   = { version = "0.5.2", default-features = false }   # defaults pull clap/hound/anyhow/dasp
 rubato        = "5.0.1"  # resampling around the denoiser; API per estuary-dsp M10.2
 log           = { version = "0.4", features = ["release_max_level_debug"] }  # compiles out rubato RT-path trace! in release

@@ -161,6 +161,16 @@ The desktop layer also needs these root-model fields and UI services:
 
 ## Implementation Steps
 
+**Implementation notes (M11 as built, 2026-10-15).** These deviate from or refine the steps below. Where they conflict, the notes are authoritative.
+
+- **Signals:** glib 0.22 moved `unix_signal_add_local` into the sibling crate **`glib-unix` 0.22.8** (same gtk-rs line). It's a workspace dependency now (C1 addition, see the master amendment log).
+- **Executor:** the quit effects run in `AppModel::execute` (`crates/estuary/src/app/lifecycle.rs`), not a free `desktop::quit::execute`, because they need the root's private fields. A fired timer is removed from `quit_timers` before its input is fed, so `DisarmTimer` never removes a dead source. Effects that fail (engine gone) feed the machine immediately (D-F2).
+- **Single instance:** the M1.8 `NameHasOwner` pre-check stays. The remote's plain `app.run()` forwards the command line, including `--background`, to the primary's `command-line` handler. Measured: a second launch exits 0 in 77 ms and presents the window.
+- **Tray:** there are no icon assets yet (packaging M12), so `render_tray_pixmaps` draws a light-grey 3×3 matrix glyph with cairo at 22/32/48 px instead of rendering the bundled SVG; packaging may swap in the real symbol. `icon_name` is `io.github.abidibo.Estuary-symbolic` when the theme has it, else `audio-card-symbolic`. If spawning fails, one retry after 10 s, in any launch mode. On the dev session a StatusNotifierWatcher exists and the tray spawns.
+- **Autostart results** reach the root as `AppMsg::AutostartApplied(Result<AutostartOutcome, String>)` (errors stringified for the UI). There is no separate `BackgroundStatusChanged` message: the outcome carries the permission. The portal reason is localized on the UI thread and passed into `apply_autostart`.
+- **Verified by script** (native, GNOME): background start, second launch, start-at-login file write/remove, SIGTERM, double SIGINT, `app.quit` over D-Bus with and without usages, signal over an open confirmation. All quits finish in under 100 ms with no `estuary.*` nodes left. Details and the remaining manual and Flatpak checks: `docs/testing/desktop.md`.
+
+
 ### M11.D1: Application bootstrap, single instance and `--background`
 
 > **Binding constraint (found at M1.8, see packaging M1.5 "Implementation notes").** relm4 0.11's `RelmApp::run` hangs in a **remote** instance, because of a trailing blocking `MainContext::iteration(true)`. Whatever this step builds (`HANDLES_COMMAND_LINE`, `--background`), a second launch must never enter `RelmApp::run`. Keep the scaffold's pre-check (`NameHasOwner(APP_ID)` → plain `app.run()`, which forwards the command line or `activate` to the primary and exits). Never call `app.register()` on the primary path before relm4's run, since it emits `startup` too early. With `HANDLES_COMMAND_LINE`, the remote path's plain `app.run()` forwards `--background` to the primary's `command-line` handler unchanged. Add a manual check to M11.D13: a second launch exits in under 200 ms and presents the existing window (or keeps it hidden for `--background`).

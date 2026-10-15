@@ -222,24 +222,24 @@ steps:
     completed_at: null
 - id: 11
   title: M11 Desktop lifecycle
-  status: pending
-  started_at: null
+  status: in_progress
+  started_at: '2026-10-15T12:20:25+02:00'
   completed_at: null
   tasks:
   - id: '11.1'
     description: Complete estuary-desktop steps M11.D1-M11.D13 (specs/estuary-desktop/progress.yaml)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: '11.2'
     description: Complete estuary-ui steps M11.1-M11.5
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: '11.3'
-    description: 'Exit check: first run shows the welcome dialog and the preset builds the expected nodes; X hides with one-time notice; Quit with a recording app shows the warning and removes all estuary.* nodes; SIGTERM quits cleanly'
-    status: pending
-    started_at: null
+    description: 'Exit check: first run shows the welcome dialog and the preset builds the expected nodes; X hides with one-time notice; Quit with a recording app shows the warning and removes all estuary.* nodes; SIGTERM quits cleanly (scripted: background start, single instance, SIGTERM/SIGINT, app.quit with/without usages, autostart file — see docs/testing/desktop.md; hands-on window checks pending the user)'
+    status: in_progress
+    started_at: '2026-10-15T12:20:25+02:00'
     completed_at: null
 - id: 12
   title: M12 Flatpak and release

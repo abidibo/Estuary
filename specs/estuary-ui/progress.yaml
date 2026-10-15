@@ -847,226 +847,221 @@ steps:
     completed_at: '2026-10-15T12:08:53+02:00'
 - id: M11.1
   title: Welcome dialog and preset
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-15T12:20:25+02:00'
+  completed_at: '2026-10-15T12:20:25+02:00'
   tasks:
   - id: M11.1.1
     description: Implement dialogs/welcome.rs adw::Dialog (480 wide, no Escape, ✕ = Start empty) with Recommended and Start empty action rows
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.1.2
     description: Present the welcome on WindowShown/first Connected while first_run_done is false
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.1.3
     description: Implement state/preset.rs build_preset(snapshot, kind) per C10 with localized channel/mic names
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.1.4
     description: Unit-test build_preset with and without default output/input
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.1.5
     description: 'Handle WelcomeChosen: dispatch ApplyPreset, flush_sync, spawn deferred apply_autostart, select the Matrix or Apps page, toast when no output exists'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.1.6
     description: Implement apply_edit for ApplyPreset (setup replace + first_run_done) (moved from M5.2.9)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.1.7
-    description: Export estuary-engine test fixtures behind feature `test-util` (cfg(any(test, feature = "test-util"))) when UI tests first need them (moved from engine M2.10.3) (moved from M3.1.4) (moved from M5.2.11) (not needed by M9 tests; moved to M11)
-    status: pending
-    started_at: null
-    completed_at: null
+    description: Export estuary-engine test fixtures behind feature `test-util` (cfg(any(test, feature = "test-util"))) when UI tests first need them (moved from engine M2.10.3) (moved from M3.1.4) (moved from M5.2.11) (not needed by M9 tests; moved to M11) (never needed by UI tests; dropped)
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
 - id: M11.2
   title: Preferences dialog
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-15T12:20:25+02:00'
+  completed_at: '2026-10-15T12:20:25+02:00'
   tasks:
   - id: M11.2.1
     description: Implement dialogs/preferences.rs adw::PreferencesDialog with the Background group
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.2.2
     description: Add the close-action adw::ComboRow sending AppMsg::SetCloseAction → config.update_settings
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.2.3
     description: Add the Start at login adw::SwitchRow sending AppMsg::SetStartAtLogin and showing the user's intent
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.2.4
     description: Implement pure autostart_row(intent, last) -> AutostartRowSpec for every AutostartState plus Err
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.2.5
     description: Unit-test autostart_row for all states and assert the setting is never rewritten
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.2.6
     description: Store AutostartApplied results in UiState.autostart, update background, re-render the open dialog, toast on Err
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.2.7
     description: Handle BackgroundStatusChanged by updating AppModel::background and re-rendering Preferences
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.2.8
     description: Spawn apply_autostart at startup when the welcome is not pending (result → AutostartApplied) (moved from M3.4.6)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.2.9
     description: ConfigStore::settings(), update_settings() and welcome_pending() for the desktop and welcome flows (moved from M6.1.6)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
 - id: M11.3
   title: Window close and background notice
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-15T12:20:25+02:00'
+  completed_at: '2026-10-15T12:20:25+02:00'
   tasks:
   - id: M11.3.1
     description: Handle WindowCloseRequested via desktop::close::decide_close, ignoring it while notice_open
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.3.2
     description: Implement show_background_notice() adw::AlertDialog shown while visible, emitting BackgroundNoticeDismissed
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.3.3
     description: 'Handle BackgroundNoticeDismissed: update_settings(background_notice_shown = true) then hide_window'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.3.4
     description: Implement show_background_denied_notice() emitting BackgroundDeniedNoticeDismissed and setting the session flag
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.3.5
     description: Handle BackgroundDeniedNoticeDismissed by sending RequestQuit(QuitTrigger::CloseButton)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.3.6
     description: Handle ShowWindow via desktop::window::show_window and process queued notices on WindowShown
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.3.7
     description: Define AppInit and the AppModel struct in app.rs with the desktop-required fields (engine, config, quit, quit_timers, hold, tray, background, env, denied_notice_shown_this_session, notice_open) and UI fields (moved from M3.3.1)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.3.8
     description: Define the AppMsg enum with all desktop-required variants plus UI variants (Edit, SetCloseAction, MeterTargets, SaveTick, WelcomeChosen, RestartEngine, WindowShown) (moved from M3.3.2)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.3.9
     description: 'Write main.rs: tracing-subscriber with ESTUARY_LOG filter, i18n::init(), desktop::app::build_application(), RelmApp::from_app(app).visible_on_activate(true).run::<AppModel>(AppInit) (moved from M3.3.9)'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.3.10
     description: In AppModel::init detect DesktopEnv, acquire the hold, call install_actions, install_close_handler, spawn_tray (→ TrayReady) and install_signal_handlers (moved from M3.4.2)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
 - id: M11.4
   title: Quit confirmation and teardown state (UI side)
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-15T12:20:25+02:00'
+  completed_at: '2026-10-15T12:20:25+02:00'
   tasks:
   - id: M11.4.1
     description: Route RequestQuit, Quit, QuitConfirmed, QuitCancelled, QuitCheck and TeardownComplete into quit.handle and run effects via desktop::quit::execute
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.4.2
     description: Implement show_quit_confirm(usages) adw::AlertDialog with UsageKind wording, emitting QuitConfirmed/QuitCancelled
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.4.3
     description: Implement close_quit_confirm() force-closing quit_dialog without emitting a response (QuitEffect::DismissConfirm)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.4.4
     description: Make root_stack insensitive and show a header spinner while QuitState is Checking or TearingDown
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
 - id: M11.5
   title: Toasts, banners and recovery surfaces
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-15T12:20:25+02:00'
+  completed_at: '2026-10-15T12:20:25+02:00'
   tasks:
   - id: M11.5.1
     description: Implement pure banner_state(&UiState, read_only) -> Option<BannerSpec> with read-only priority over reconnect, plus unit tests
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.5.2
     description: Add the 1 s reconnect poll revealing the Retry banner after 30 s
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.5.3
     description: 'Implement RestartEngine: shutdown existing engine, Engine::start, re-forward events, resend SetSetup and SetMeterTargets'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.5.4
     description: Implement pure issue_text(&SetupIssue) with gettext-wrapped text per variant, plus unit tests
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.5.5
     description: Implement the SetupIssues toast with Details dialog, de-duplicated by key()
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.5.6
     description: 'Implement the EngineWarning mapping: badges per WarnedNode (60 s clear) and de-duplicated toasts'
-    status: pending
-    started_at: null
-    completed_at: null
-  - id: M11.5.7
-    description: Provide Italian translations for every UI msgid in it.po at the M12 hand-off (po/ build and install are owned by packaging; profile/devel styling is packaging M12.6) (moved from M3.2.6)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.5.8
     description: Add a check (script or CI step) that greps crates/estuary/src for user-visible string literals not wrapped in i18n*/ni18n_f (moved from M3.2.7)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'
   - id: M11.5.9
     description: PeakMeter high-contrast outline (adw::StyleManager::is_high_contrast) (moved from M4.2.7)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:20:25+02:00'
+    completed_at: '2026-10-15T12:20:25+02:00'

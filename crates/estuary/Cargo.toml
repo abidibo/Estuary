@@ -19,6 +19,7 @@ gtk.workspace = true
 adw.workspace = true
 ashpd.workspace = true
 ksni.workspace = true
+glib-unix.workspace = true
 gettext-rs.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true

@@ -38,8 +38,7 @@ steps:
     started_at: '2026-10-14T14:39:17+02:00'
     completed_at: '2026-10-14T14:39:17+02:00'
   - id: M1.2.2
-    description: Add [workspace.dependencies] to root Cargo.toml with the C1 versions (toml 1, rubato 5.0.1, log release_max_level_debug, sha2 0.11, gettext-rs 0.8, nnnoiseless default-features=false) plus
-      path deps estuary-dsp and estuary-engine
+    description: Add [workspace.dependencies] to root Cargo.toml with the C1 versions (toml 1, rubato 5.0.1, log release_max_level_debug, sha2 0.11, gettext-rs 0.8, nnnoiseless default-features=false) plus path deps estuary-dsp and estuary-engine
     status: completed
     started_at: '2026-10-14T14:39:17+02:00'
     completed_at: '2026-10-14T14:39:17+02:00'
@@ -132,8 +131,7 @@ steps:
   completed_at: '2026-10-14T14:50:14+02:00'
   tasks:
   - id: M1.5.1
-    description: Create crates/estuary/Cargo.toml with [[bin]] name estuary and the UI/runtime deps from the spec (relm4, gtk, adw, ashpd, ksni, gettext-rs, tracing, tracing-subscriber, serde, toml, async-channel,
-      uuid, thiserror, estuary-engine)
+    description: Create crates/estuary/Cargo.toml with [[bin]] name estuary and the UI/runtime deps from the spec (relm4, gtk, adw, ashpd, ksni, gettext-rs, tracing, tracing-subscriber, serde, toml, async-channel, uuid, thiserror, estuary-engine)
     status: completed
     started_at: '2026-10-14T14:39:17+02:00'
     completed_at: '2026-10-14T14:39:17+02:00'
@@ -361,6 +359,11 @@ steps:
     completed_at: null
   - id: M12.4.8
     description: Verify `build-aux/compile-mo.sh target` then `LANGUAGE=it cargo run -p estuary` shows Italian
+    status: pending
+    started_at: null
+    completed_at: null
+  - id: M12.4.9
+    description: Provide Italian translations for every UI msgid in it.po at the M12 hand-off (po/ build and install are owned by packaging; profile/devel styling is packaging M12.6) (moved from M3.2.6) (moved from UI M11.5)
     status: pending
     started_at: null
     completed_at: null
