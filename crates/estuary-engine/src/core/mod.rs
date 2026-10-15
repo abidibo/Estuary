@@ -796,8 +796,8 @@ impl EngineCore {
         Effects::default()
     }
 
-    /// C10 step 3: clear our retargets, destroy everything we own (sends, mics, channels),
-    /// then confirm with a sync.
+    /// C10 step 3: clear our retargets (into owned nodes, and every stream an app rule placed),
+    /// destroy everything we own (sends, mics, channels), then confirm with a sync.
     fn teardown(&mut self) -> Effects {
         let mut fx = Effects::default();
         if self.state != ConnState::Ready {
@@ -812,12 +812,14 @@ impl EngineCore {
             .filter(|n| matches!(n.kind, crate::graph::NodeKind::Owned(_)))
             .map(|n| n.serial)
             .collect();
+        let ruled = self.routing.ruled_streams(self.setup.as_ref());
         for ((subject, key), entry) in &self.mirror.default_meta {
             if key == TARGET_KEY
-                && entry
-                    .value
-                    .parse::<u64>()
-                    .is_ok_and(|s| owned_ids.contains(&s))
+                && (ruled.contains(subject)
+                    || entry
+                        .value
+                        .parse::<u64>()
+                        .is_ok_and(|s| owned_ids.contains(&s)))
             {
                 fx.ops.push(PwOp::MetaWrite {
                     subject: *subject,

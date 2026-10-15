@@ -42,13 +42,13 @@ pub fn autostart_row(
             AutostartState::Denied => row(
                 true,
                 Some(i18n(
-                    "Background activity isn't allowed for estuary. You can allow it in Settings → Apps → estuary.",
+                    "Background activity isn't allowed for Estuary. You can allow it in Settings → Apps → Estuary.",
                 )),
             ),
             AutostartState::ManagedElsewhere(path) => row(
                 true,
                 Some(i18n_f(
-                    "Another autostart entry exists at {}. estuary won't change it.",
+                    "Another autostart entry exists at {}. Estuary won't change it.",
                     &[&path.display().to_string()],
                 )),
             ),

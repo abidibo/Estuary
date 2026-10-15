@@ -1135,6 +1135,12 @@ Resolved by the master amendment log: C10 notice-before-hide, C9 `MeterBank::rea
 1. **Disabled cells (C8 amended, confirmation).** The engine has no node for `enabled=false` cells, but `GraphSnapshot.cells` still reports them with their stored gain. `CellButton` renders a present-but-disabled cell from `CellView { exists: true, enabled: false, gain_db }` (outlined pill, greyed dB) and **ignores `status`** while disabled, so no `Pending` spinner is shown for cells the engine intentionally does not build. No contract change.
 2. **Remembered apps (M5.6).** New UI surface beyond the master: lists and deletes rules for apps not currently playing. No contract change.
 3. **Input device rows on the Apps page.** Inputs appear only in the Matrix page (rows); outputs appear on both pages. No contract change.
+4. **UX pass (2026-10-15, hands-on testing with the user).** Deviations from the M9/M10 design above:
+   - **Headers** are a flat name button plus a meter; volume, noise suppression, voice gate, rename/delete and forget live in the name's popover. Group labels CHANNELS / MICROPHONES (rows) and OUTPUTS / VIRTUAL MICS (columns); no axis titles. Channel rows show their apps as a subtitle ("No apps yet" otherwise). Intro text on its own row, then "How it works" (popover) left and the add buttons right.
+   - **Alignment:** each row's header and slots share a vertical `SizeGroup`, each column's header and slots a horizontal one; `CELL_HEIGHT` 48, cells expand to fill (`adw::Clamp` 1200).
+   - **Noise-free row always shown** for every present input (switch off, nothing built). The first send from a row without a denoiser creates it enabled. The noise-free row and virtual-mic columns carry a hint (tooltip and popover) on how to use them in call apps.
+   - **App identity** (`pages/apps/identity.rs`): a missing icon or a "Chromium"/"Electron" name is resolved through the desktop entry for the binary; fallback icon `application-x-executable-symbolic`.
+   - **Apps page output dropdown** has a fixed width (label ellipsized at 24 chars, full names in the list and tooltip).
 
 ## Interfaces used from other sub-specs
 

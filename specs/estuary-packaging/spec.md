@@ -60,7 +60,7 @@ Getting any of these wrong late is expensive: Flathub rejects submissions on lin
 
 ### Existing repository state
 
-`/home/abidibo/Dev/abidibo/amatrix` contains only `specs/`. It is not yet a git repository. The GitHub repository `https://github.com/abidibo/estuary` (C1 `repository`) is assumed and must exist and be public before M12 (Flathub ID verification).
+`/home/abidibo/Dev/abidibo/amatrix` contains only `specs/`. It is not yet a git repository. The GitHub repository `https://github.com/abidibo/Estuary` (C1 `repository`) is assumed and must exist and be public before M12 (Flathub ID verification).
 
 ### Dev host
 
@@ -115,7 +115,7 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.93"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/abidibo/estuary"
+repository = "https://github.com/abidibo/Estuary"
 authors = ["abidibo"]
 
 [workspace.dependencies]
@@ -530,7 +530,7 @@ Design brief: a 3×3 grid of rounded squares (the matrix) with two lit crosspoin
 ```ini
 [Desktop Entry]
 Type=Application
-Name=estuary
+Name=Estuary
 GenericName=Audio Matrix
 Comment=Route, mix and clean up your PipeWire audio
 Exec=estuary
@@ -560,7 +560,7 @@ X-GNOME-UsesNotifications=true
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>MIT OR Apache-2.0</project_license>
 
-  <name>estuary</name>
+  <name>Estuary</name>
   <summary>Route, mix and clean up your audio</summary>
 
   <developer id="io.github.abidibo">
@@ -568,7 +568,7 @@ X-GNOME-UsesNotifications=true
   </developer>
 
   <description>
-    <p>estuary is an audio matrix for PipeWire. Send each application to the output or virtual channel you choose, mix channels to your headphones, speakers and virtual microphones with a volume on every crosspoint, and remove background noise from your microphone.</p>
+    <p>Estuary is an audio matrix for PipeWire. Send each application to the output or virtual channel you choose, mix channels to your headphones, speakers and virtual microphones with a volume on every crosspoint, and remove background noise from your microphone.</p>
     <ul>
       <li>Per-application routing that is remembered across restarts</li>
       <li>Virtual channels and virtual microphones for calls and streaming</li>
@@ -582,10 +582,10 @@ X-GNOME-UsesNotifications=true
   <launchable type="desktop-id">io.github.abidibo.Estuary.desktop</launchable>
   <translation type="gettext">estuary</translation>
 
-  <url type="homepage">https://github.com/abidibo/estuary</url>
-  <url type="bugtracker">https://github.com/abidibo/estuary/issues</url>
-  <url type="vcs-browser">https://github.com/abidibo/estuary</url>
-  <url type="translate">https://github.com/abidibo/estuary/tree/main/po</url>
+  <url type="homepage">https://github.com/abidibo/Estuary</url>
+  <url type="bugtracker">https://github.com/abidibo/Estuary/issues</url>
+  <url type="vcs-browser">https://github.com/abidibo/Estuary</url>
+  <url type="translate">https://github.com/abidibo/Estuary/tree/main/po</url>
 
   <branding>
     <color type="primary" scheme_preference="light">#c7d2fe</color>
@@ -604,11 +604,11 @@ X-GNOME-UsesNotifications=true
 
   <screenshots>
     <screenshot type="default">
-      <image>https://raw.githubusercontent.com/abidibo/estuary/v0.1.0/data/screenshots/matrix.png</image>
+      <image>https://raw.githubusercontent.com/abidibo/Estuary/v0.1.0/data/screenshots/matrix.png</image>
       <caption>The routing matrix with per-crosspoint levels</caption>
     </screenshot>
     <screenshot>
-      <image>https://raw.githubusercontent.com/abidibo/estuary/v0.1.0/data/screenshots/apps.png</image>
+      <image>https://raw.githubusercontent.com/abidibo/Estuary/v0.1.0/data/screenshots/apps.png</image>
       <caption>Choose where each application plays</caption>
     </screenshot>
   </screenshots>
@@ -676,7 +676,7 @@ KW="--keyword=gettext --keyword=pgettext:1c,2 --keyword=ngettext:1,2 --keyword=n
 
 grep -E '\.rs$' po/POTFILES.in > /tmp/estuary-rs.list || true
 run "xgettext $LANG_RS $KW --from-code=UTF-8 --add-comments=Translators \
-      --package-name=estuary --msgid-bugs-address=https://github.com/abidibo/estuary/issues \
+      --package-name=estuary --msgid-bugs-address=https://github.com/abidibo/Estuary/issues \
       -f /tmp/estuary-rs.list -o po/rust.pot"
 run "xgettext --language=Desktop -k -kName -kGenericName -kComment -kKeywords \
       data/io.github.abidibo.Estuary.desktop.in -o po/desktop.pot"
@@ -816,7 +816,7 @@ modules:
 The release manifest is identical except for:
 
 - `ESTUARY_PROFILE: default`;
-- `sources[0]` is `type: git`, `url: https://github.com/abidibo/estuary.git`, `tag: v<version>`, `commit: <sha>`, plus an `x-checker-data` block (`type: git`, `tag-pattern: ^v([\d.]+)$`), so the Flathub external-data checker opens update PRs automatically.
+- `sources[0]` is `type: git`, `url: https://github.com/abidibo/Estuary.git`, `tag: v<version>`, `commit: <sha>`, plus an `x-checker-data` block (`type: git`, `tag-pattern: ^v([\d.]+)$`), so the Flathub external-data checker opens update PRs automatically.
 
 **Runtime parity with C5/C13.** Nothing in the runtime is needed beyond `libpipewire-0.3`, which GNOME runtimes ship as a client library. Approach A loads no PipeWire modules (master UNVERIFIED-6 is moot). `media.category=Manager` is set in code (C5), and no manifest permission can replace it.
 
@@ -893,7 +893,7 @@ Linter rules most likely to fire, with mitigations:
 |---|---|
 | `finish-args-arbitrary-autostart-access` | Never request `xdg-config/autostart` (A3) |
 | `finish-args-wildcard-kde-talk-name` | Use exactly `org.kde.StatusNotifierWatcher`, never `org.kde.*`. ksni's `disable_dbus_name(true)` avoids `--own-name` (desktop sub-spec) |
-| `appid-url-not-reachable` | The repository `github.com/abidibo/estuary` must be public before submission |
+| `appid-url-not-reachable` | The repository `github.com/abidibo/Estuary` must be public before submission |
 | `module-*-build-network-access` | None: offline cargo |
 | `appstream-*` (screenshots on a branch, missing release) | M12.3 rules |
 
@@ -909,7 +909,7 @@ Linter rules most likely to fire, with mitigations:
 
 Checklist:
 
-- [ ] The repository `https://github.com/abidibo/estuary` is public; tag `v0.1.0` exists; MetaInfo, desktop file and icons are in the upstream repo (not only in the submission).
+- [ ] The repository `https://github.com/abidibo/Estuary` is public; tag `v0.1.0` exists; MetaInfo, desktop file and icons are in the upstream repo (not only in the submission).
 - [ ] App ID `io.github.abidibo.Estuary` has 4 components and matches the MetaInfo `<id>`, the manifest `id` and `application_id` in code (C14). GitHub URL matching is case-insensitive (`Estuary` ↔ `estuary`), **UNVERIFIED** against Flathub's verifier. If it is rejected, rename the GitHub repo to `Estuary`; the URL redirects keep working.
 - [ ] Fork `flathub/flathub`, branch from `new-pr`, add `io.github.abidibo.Estuary.yml` (release manifest) + `cargo-sources.json`, and open the PR against `new-pr`. Follow the PR template, then answer the reviewer and run `bot, build`.
 - [ ] Runtime is the latest at submission time (51 today; re-check before submitting).

@@ -105,6 +105,24 @@ impl RoutingState {
         out
     }
 
+    /// Streams placed by an app rule (any target but Default). Quit hands them back to the
+    /// default sink, which also clears WirePlumber's remembered target (C10, amended).
+    pub fn ruled_streams(&self, setup: Option<&Setup>) -> BTreeSet<u32> {
+        let Some(setup) = setup else {
+            return BTreeSet::new();
+        };
+        self.tracks
+            .iter()
+            .filter(|(_, t)| {
+                setup
+                    .app_rules
+                    .iter()
+                    .any(|r| r.app == t.key && r.target != RouteTarget::Default)
+            })
+            .map(|(id, _)| *id)
+            .collect()
+    }
+
     /// A new setup from the UI answers any pending external moves.
     pub fn on_setup(&mut self) {
         for t in self.tracks.values_mut() {

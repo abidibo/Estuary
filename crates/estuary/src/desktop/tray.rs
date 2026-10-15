@@ -23,7 +23,7 @@ impl ksni::Tray for EstuaryTray {
         crate::config_build::APP_ID.into()
     }
     fn title(&self) -> String {
-        "estuary".into()
+        "Estuary".into()
     }
     fn icon_name(&self) -> String {
         self.icon_name.clone()

@@ -151,7 +151,7 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.93"
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/abidibo/estuary"
+repository = "https://github.com/abidibo/Estuary"
 
 [workspace.dependencies]
 pipewire      = "0.10.1"
@@ -654,7 +654,7 @@ pub enum MeterTarget { App(AppKey), Device(DeviceKey), Channel(ChannelId), Virtu
 
 1. `Command::PrepareQuit`, which replies `QuitCheck(usages)`. A `VirtualDeviceUsage` (C3) is either an app stream linked to an Estuary channel (`PlayingToChannel`), or a recording stream linked to an Estuary virtual mic (`RecordingFromVirtualMic`). If no reply arrives within **1 s**, quitting continues as if the list were empty (fail-open, amended). If the engine is absent or not connected, steps 1–3 are skipped.
 2. If `usages` is non-empty, show an `adw::AlertDialog` listing them ("Discord is using 'Virtual mic'. Quitting will switch it back to your default microphone."), with Cancel / Quit.
-3. `Command::Teardown`. The engine clears `target.object` for every stream it targeted at an owned node, destroys cells, denoisers, virtual mics and channels in that order, waits for a core `sync`, then emits `TeardownComplete`. Timeout: 2 s (F17).
+3. `Command::Teardown`. The engine clears `target.object` for every stream it targeted at an owned node **and for every playing stream an app rule placed (amended: hardware targets too, so apps return to the default sink; clearing also makes WirePlumber forget its remembered target)**, destroys cells, denoisers, virtual mics and channels in that order, waits for a core `sync`, then emits `TeardownComplete`. Timeout: 2 s (F17).
 4. `Engine::shutdown(1 s)`, flush the config, drop the hold guard, shut down the tray, then `app.quit()`.
 
 **Signals (amended):** SIGTERM and SIGINT start Quit **without** the confirmation dialog (a dialog that's already open is closed). A second signal during an in-flight quit finishes immediately.
@@ -929,6 +929,9 @@ Reconciliation pass after the five sub-specs were drafted (2026-10-14). Every am
 | C11 / M10 exit | RNNoise's attenuation of synthetic noise depends on the noise realization and start offset (1.4–59 dB), so automated tests pin a fixture offline and check the voice gate live; real-world suppression is a manual check | dsp M10 notes |
 | C1 | Adds `glib-unix` 0.22.8 (Unix signal sources moved out of glib in 0.22) | desktop M11 notes |
 | C7 | Link-based external detection fires only when a stream's linked node *changes* after it was first observed; where a stream already plays when first seen is never a move | M12 live finding (docs/experiments.md) |
+| C1 | Adds `gio-unix` 0.22.8 (`DesktopAppInfo`): apps that report a generic name/icon (Electron as "Chromium") get theirs from the installed desktop entry for their binary | UI UX pass notes |
+| C10 | Teardown also clears `target.object` for every playing stream an app rule placed (hardware targets too), so apps return to the default sink and WirePlumber forgets the stored target | UX pass (user decision, 2026-10-15) |
+| — | User-visible app name is "Estuary" (desktop `Name`, MetaInfo `<name>`, tray, dialogs); binary, crates, gettext domain and config dir stay `estuary` | UX pass (user decision) |
 
 Conflict resolutions:
 

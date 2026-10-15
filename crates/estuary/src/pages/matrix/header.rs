@@ -1,4 +1,7 @@
-//! Matrix row and column headers (UI M9.3): name, level meter, volume and a menu.
+//! Matrix row and column headers (UI M9.3, redesigned in the M12 UX pass): a name and a level
+//! meter. Clicking the name opens a popover with everything else: volume, rename, delete, noise
+//! suppression, the voice gate, forget. Only the noise-suppressed row keeps its on/off switch
+//! in view.
 //!
 //! Row headers are exactly one cell tall and column headers exactly one cell wide, so the
 //! three grids line up without size groups.
@@ -14,13 +17,13 @@ use relm4::gtk::prelude::*;
 
 use super::cell::{CELL_HEIGHT, CELL_WIDTH};
 use crate::i18n::{i18n, i18n_f};
-use crate::state::matrix_layout::{ColKey, ColSpec, RowKey, RowSpec};
+use crate::state::matrix_layout::{ColKey, ColSpec, DenoiseView, RowKey, RowSpec};
 use crate::state::volume::{percent, slider_to_linear, volume_level};
 use crate::widgets::meter_hub::MeterHub;
 use crate::widgets::peak_meter::PeakMeter;
 
-pub const ROW_HEADER_WIDTH: i32 = 220;
-pub const COL_HEADER_HEIGHT: i32 = 108;
+pub const ROW_HEADER_WIDTH: i32 = 240;
+pub const COL_HEADER_HEIGHT: i32 = 62;
 const THROTTLE: Duration = Duration::from_millis(33);
 const COMMIT_AFTER: Duration = Duration::from_millis(400);
 const HOLD_AFTER_USER: Duration = Duration::from_millis(600);
@@ -30,7 +33,7 @@ pub enum HeaderAction {
     Rename,
     Delete,
     Forget,
-    /// The input menu's "Noise suppression" check (UI M10.1).
+    /// An input's "Noise suppression" check (UI M10.1).
     Denoise(bool),
 }
 
@@ -80,47 +83,45 @@ fn connect_throttled(
     });
 }
 
-/// A bare volume slider for headers (no mute button: there's no room; mute stays as it is).
+/// A volume slider with its percentage (mute stays as it is).
 #[derive(Debug, Clone)]
-struct CompactVolume {
+struct VolumeSlider {
+    root: gtk::Box,
     scale: gtk::Scale,
+    value: gtk::Label,
     updating: Rc<Cell<bool>>,
     last_user: Rc<Cell<Option<Instant>>>,
     muted: Rc<Cell<bool>>,
 }
 
-impl CompactVolume {
-    fn new(orientation: gtk::Orientation, length: i32, name: &str, on_change: VolumeFn) -> Self {
-        let scale = gtk::Scale::with_range(orientation, 0.0, 1.0, 0.01);
+impl VolumeSlider {
+    fn new(name: &str, on_change: VolumeFn) -> Self {
+        let scale = gtk::Scale::with_range(gtk::Orientation::Horizontal, 0.0, 1.0, 0.01);
         scale.set_draw_value(false);
-        if orientation == gtk::Orientation::Vertical {
-            scale.set_inverted(true);
-            scale.set_height_request(length);
-        } else {
-            scale.set_width_request(length);
-        }
-        scale.set_valign(gtk::Align::Center);
+        scale.set_hexpand(true);
         // Translators: accessible name of a volume slider; {} is a channel or device name
         scale.update_property(&[gtk::accessible::Property::Label(&i18n_f(
             "Volume of {}",
             &[name],
         ))]);
+        let value = gtk::Label::new(None);
+        value.set_width_chars(5);
+        value.set_xalign(1.0);
+        value.add_css_class("numeric");
+        let root = gtk::Box::new(gtk::Orientation::Horizontal, 6);
+        root.append(&scale);
+        root.append(&value);
         let this = Self {
+            root,
             scale: scale.clone(),
+            value,
             updating: Rc::default(),
             last_user: Rc::default(),
             muted: Rc::default(),
         };
         scale.connect_value_changed({
-            let updating = this.updating.clone();
-            move |scale| {
-                if !updating.get() {
-                    scale.set_tooltip_text(Some(&format!(
-                        "{} %",
-                        percent(slider_to_linear(scale.value()))
-                    )));
-                }
-            }
+            let label = this.value.clone();
+            move |scale| label.set_label(&format!("{} %", percent(slider_to_linear(scale.value()))))
         });
         let muted = this.muted.clone();
         connect_throttled(
@@ -133,7 +134,7 @@ impl CompactVolume {
     }
 
     fn set_volume(&self, v: Option<&Volume>) {
-        self.scale.set_sensitive(v.is_some());
+        self.root.set_sensitive(v.is_some());
         let Some(v) = v else { return };
         self.muted.set(v.muted);
         if self
@@ -146,135 +147,35 @@ impl CompactVolume {
         self.updating.set(true);
         self.scale.set_value(volume_level(v));
         self.updating.set(false);
-        self.scale.set_tooltip_text(Some(&format!(
-            "{} %",
-            percent(slider_to_linear(volume_level(v)))
-        )));
+        self.value
+            .set_label(&format!("{} %", percent(slider_to_linear(volume_level(v)))));
     }
 }
 
-/// `suppression`: an input's "Noise suppression" check and its state (UI M10.1).
-fn menu_button(
-    name: &str,
-    actions: &[(HeaderAction, String)],
-    suppression: Option<bool>,
-    on_action: &ActionFn,
-) -> gtk::MenuButton {
-    let button = gtk::MenuButton::new();
-    button.set_icon_name("view-more-symbolic");
-    button.add_css_class("flat");
-    button.set_valign(gtk::Align::Center);
-    // Translators: tooltip of a header's menu button; {} is a channel or device name
-    button.set_tooltip_text(Some(&i18n_f("Options for {}", &[name])));
-    let popover = gtk::Popover::new();
-    let content = gtk::Box::new(gtk::Orientation::Vertical, 2);
-    content.set_margin_top(6);
-    content.set_margin_bottom(6);
-    content.set_margin_start(6);
-    content.set_margin_end(6);
-    if let Some(on) = suppression {
-        let check = gtk::CheckButton::with_label(&i18n("Noise Suppression"));
-        check.set_active(on);
-        let f = on_action.clone();
-        check.connect_toggled(move |c| f(HeaderAction::Denoise(c.is_active())));
-        content.append(&check);
-    }
-    for (action, label) in actions {
-        let b = gtk::Button::with_label(label);
-        b.add_css_class("flat");
-        if *action != HeaderAction::Rename {
-            b.add_css_class("destructive-action");
-        }
-        let (action, popover, f) = (*action, popover.clone(), on_action.clone());
-        b.connect_clicked(move |_| {
-            popover.popdown();
-            f(action);
-        });
-        content.append(&b);
-    }
-    popover.set_child(Some(&content));
-    button.set_popover(Some(&popover));
-    button.set_visible(!actions.is_empty() || suppression.is_some());
-    button
-}
-
-fn row_actions(key: &RowKey, present: bool) -> Vec<(HeaderAction, String)> {
-    match key {
-        RowKey::Channel(_) => vec![
-            (HeaderAction::Rename, i18n("Rename…")),
-            (HeaderAction::Delete, i18n("Delete…")),
-        ],
-        RowKey::Input(_) if !present => vec![(HeaderAction::Forget, i18n("Forget Device…"))],
-        RowKey::Input(_) | RowKey::Denoised(_) => Vec::new(),
-    }
-}
-
-fn col_actions(key: &ColKey, present: bool) -> Vec<(HeaderAction, String)> {
-    match key {
-        ColKey::VirtualMic(_) => vec![
-            (HeaderAction::Rename, i18n("Rename…")),
-            (HeaderAction::Delete, i18n("Delete…")),
-        ],
-        ColKey::Output(_) if !present => vec![(HeaderAction::Forget, i18n("Forget Device…"))],
-        ColKey::Output(_) => Vec::new(),
-    }
-}
-
-pub struct RowHeader {
-    root: gtk::Box,
-    title: gtk::Label,
-    subtitle: gtk::Label,
-    /// Owned here: the hub only holds meters weakly.
-    _meter: PeakMeter,
-    volume: Option<CompactVolume>,
-    denoise: Option<DenoiseControls>,
-    menu_slot: gtk::Box,
-    spec: RefCell<RowSpec>,
-    on_action: ActionFn,
-}
-
-/// A noise-suppressed row's switch, voice gate and badge (UI M10.2).
+/// The voice gate: mutes what RNNoise doesn't think is speech (UI M10.2).
 #[derive(Debug)]
-struct DenoiseControls {
-    switch: gtk::Switch,
-    gate: gtk::Scale,
-    badge: gtk::Image,
+struct GateSlider {
+    scale: gtk::Scale,
     updating: Rc<Cell<bool>>,
     last_user: Rc<Cell<Option<Instant>>>,
 }
 
-impl DenoiseControls {
-    fn new(root: &gtk::Box, name: &str, on_denoise: &DenoiseFn) -> Self {
-        let updating: Rc<Cell<bool>> = Rc::default();
-        let last_user: Rc<Cell<Option<Instant>>> = Rc::default();
-        let switch = gtk::Switch::new();
-        switch.set_valign(gtk::Align::Center);
-        // Translators: accessible name; {} is a microphone name
-        switch.update_property(&[gtk::accessible::Property::Label(&i18n_f(
-            "Noise suppression for {}",
-            &[name],
-        ))]);
-        switch.connect_active_notify({
-            let (updating, f) = (updating.clone(), on_denoise.clone());
-            move |s| {
-                if !updating.get() {
-                    f(DenoiseEvent::Enabled(s.is_active()));
-                }
-            }
-        });
-        let gate = gtk::Scale::with_range(gtk::Orientation::Horizontal, 0.0, 0.95, 0.05);
-        gate.set_draw_value(false);
-        gate.set_width_request(56);
-        gate.set_valign(gtk::Align::Center);
-        gate.set_tooltip_text(Some(&i18n(
-            "Mutes sound that is unlikely to be speech. Off by default.",
-        )));
-        gate.update_property(&[gtk::accessible::Property::Label(&i18n("Voice gate"))]);
+impl GateSlider {
+    fn new(on_denoise: &DenoiseFn) -> Self {
+        let scale = gtk::Scale::with_range(gtk::Orientation::Horizontal, 0.0, 0.95, 0.05);
+        scale.set_draw_value(false);
+        scale.set_hexpand(true);
+        scale.update_property(&[gtk::accessible::Property::Label(&i18n("Voice gate"))]);
+        let this = Self {
+            scale: scale.clone(),
+            updating: Rc::default(),
+            last_user: Rc::default(),
+        };
         let f = on_denoise.clone();
         connect_throttled(
-            &gate,
-            updating.clone(),
-            last_user.clone(),
+            &scale,
+            this.updating.clone(),
+            this.last_user.clone(),
             Rc::new(move |v, commit| {
                 #[allow(clippy::cast_possible_truncation)] // 0..0.95
                 f(DenoiseEvent::Gate {
@@ -283,53 +184,211 @@ impl DenoiseControls {
                 });
             }),
         );
-        let badge = gtk::Image::new();
-        badge.set_pixel_size(16);
-        badge.set_visible(false);
-        root.append(&switch);
-        root.append(&gate);
-        root.append(&badge);
-        Self {
-            switch,
-            gate,
-            badge,
-            updating,
-            last_user,
-        }
+        this
     }
 
-    fn apply(&self, v: &crate::state::matrix_layout::DenoiseView) {
-        self.updating.set(true);
-        self.switch.set_active(v.enabled);
+    fn apply(&self, v: &DenoiseView) {
         if self
             .last_user
             .get()
             .is_none_or(|t| t.elapsed() >= HOLD_AFTER_USER)
         {
-            self.gate.set_value(f64::from(v.vad_gate));
+            self.updating.set(true);
+            self.scale.set_value(f64::from(v.vad_gate));
+            self.updating.set(false);
         }
-        self.updating.set(false);
-        self.gate.set_sensitive(v.enabled);
-        match &v.badge {
-            Some(b) => {
-                self.badge.set_icon_name(Some(if b.error {
-                    "dialog-error-symbolic"
-                } else {
-                    "dialog-warning-symbolic"
-                }));
-                self.badge.set_tooltip_text(Some(&b.text));
-                self.badge.set_visible(true);
-            }
-            None => self.badge.set_visible(false),
-        }
+        self.scale.set_sensitive(v.enabled);
     }
+}
+
+/// A header's popover: the full name, then the controls that apply to it.
+#[derive(Debug)]
+struct Popover {
+    title: gtk::Label,
+    volume: Option<VolumeSlider>,
+    suppression: Option<(gtk::CheckButton, Rc<Cell<bool>>)>,
+    gate: Option<GateSlider>,
+    forget: gtk::Button,
+}
+
+/// What a header's popover offers.
+struct PopoverSpec<'a> {
+    name: &'a str,
+    volume: Option<VolumeFn>,
+    /// Inputs: the "Noise suppression" check.
+    suppression: bool,
+    /// Noise-suppressed rows: the voice gate.
+    gate: Option<&'a DenoiseFn>,
+    /// Channels and virtual mics.
+    rename_delete: bool,
+    /// What this row or column is for, when that isn't obvious (also the name's tooltip).
+    hint: Option<&'a str>,
+}
+
+/// Explains the noise-suppressed row: where its sound has to go to be useful.
+fn denoised_hint() -> String {
+    i18n(
+        "Your microphone without background noise. Send it to a virtual mic, then choose that mic in Teams, Discord or OBS.",
+    )
+}
+
+/// Explains a virtual mic column: how other apps get to hear it.
+fn vmic_hint() -> String {
+    i18n(
+        "Choose this microphone in Teams, Discord or OBS, or make it the default input in Settings → Sound.",
+    )
+}
+
+impl Popover {
+    fn new(spec: &PopoverSpec<'_>, on_action: &ActionFn) -> (gtk::Popover, Self) {
+        let popover = gtk::Popover::new();
+        let content = gtk::Box::new(gtk::Orientation::Vertical, 8);
+        content.set_margin_top(12);
+        content.set_margin_bottom(12);
+        content.set_margin_start(12);
+        content.set_margin_end(12);
+        content.set_width_request(240);
+        let title = gtk::Label::new(Some(spec.name));
+        title.add_css_class("heading");
+        title.set_xalign(0.0);
+        title.set_wrap(true);
+        title.set_max_width_chars(28);
+        content.append(&title);
+        if let Some(text) = spec.hint {
+            let hint = gtk::Label::new(Some(text));
+            hint.add_css_class("caption");
+            hint.add_css_class("dim-label");
+            hint.set_wrap(true);
+            hint.set_max_width_chars(30);
+            hint.set_xalign(0.0);
+            content.append(&hint);
+        }
+
+        let caption = |text: &str| {
+            let l = gtk::Label::new(Some(text));
+            l.add_css_class("caption-heading");
+            l.add_css_class("dim-label");
+            l.set_xalign(0.0);
+            l
+        };
+        let volume = spec.volume.clone().map(|f| {
+            content.append(&caption(&i18n("Volume")));
+            let v = VolumeSlider::new(spec.name, f);
+            content.append(&v.root);
+            v
+        });
+        let suppression = spec.suppression.then(|| {
+            let check = gtk::CheckButton::with_label(&i18n("Noise Suppression"));
+            let updating = Rc::new(Cell::new(false));
+            let (f, u) = (on_action.clone(), updating.clone());
+            check.connect_toggled(move |c| {
+                if !u.get() {
+                    f(HeaderAction::Denoise(c.is_active()));
+                }
+            });
+            content.append(&check);
+            (check, updating)
+        });
+        let gate = spec.gate.map(|f| {
+            content.append(&caption(&i18n("Voice gate")));
+            let g = GateSlider::new(f);
+            content.append(&g.scale);
+            let hint = gtk::Label::new(Some(&i18n(
+                "Mutes sound that is unlikely to be speech. Off by default.",
+            )));
+            hint.add_css_class("caption");
+            hint.add_css_class("dim-label");
+            hint.set_wrap(true);
+            hint.set_max_width_chars(30);
+            hint.set_xalign(0.0);
+            content.append(&hint);
+            g
+        });
+
+        let action_button = |label: &str, action: HeaderAction, destructive: bool| {
+            let b = gtk::Button::with_label(label);
+            b.add_css_class("flat");
+            if destructive {
+                b.add_css_class("destructive-action");
+            }
+            let (p, f) = (popover.clone(), on_action.clone());
+            b.connect_clicked(move |_| {
+                p.popdown();
+                f(action);
+            });
+            b
+        };
+        if spec.rename_delete {
+            content.append(&gtk::Separator::new(gtk::Orientation::Horizontal));
+            content.append(&action_button(
+                &i18n("Rename…"),
+                HeaderAction::Rename,
+                false,
+            ));
+            content.append(&action_button(&i18n("Delete…"), HeaderAction::Delete, true));
+        }
+        let forget = action_button(&i18n("Forget Device…"), HeaderAction::Forget, true);
+        forget.set_visible(false);
+        content.append(&forget);
+        popover.set_child(Some(&content));
+        (
+            popover,
+            Self {
+                title,
+                volume,
+                suppression,
+                gate,
+                forget,
+            },
+        )
+    }
+
+    fn apply(&self, name: &str, present: bool, volume: Option<&Volume>) {
+        self.title.set_label(name);
+        if let Some(v) = &self.volume {
+            v.set_volume(volume);
+        }
+        // Forgetting is only for unplugged devices (F10).
+        self.forget.set_visible(!present);
+    }
+}
+
+/// The clickable name: a flat menu button holding the labels.
+fn name_button(
+    child: &impl IsA<gtk::Widget>,
+    popover: &gtk::Popover,
+    name: &str,
+    hint: Option<&str>,
+) -> gtk::MenuButton {
+    let button = gtk::MenuButton::new();
+    button.add_css_class("flat");
+    button.add_css_class("matrix-name");
+    button.set_child(Some(child));
+    button.set_popover(Some(popover));
+    button.set_hexpand(true);
+    // Translators: tooltip of a matrix header; {} is a channel or device name
+    let tip = i18n_f("{}: click for options", &[name]);
+    button.set_tooltip_text(Some(&match hint {
+        Some(h) => format!("{h}\n\n{tip}"),
+        None => tip,
+    }));
+    button
+}
+
+pub struct RowHeader {
+    root: gtk::Box,
+    title: gtk::Label,
+    subtitle: gtk::Label,
+    /// Owned here: the hub only holds meters weakly.
+    _meter: PeakMeter,
+    popover: Popover,
+    switch: Option<(gtk::Switch, Rc<Cell<bool>>)>,
+    badge: gtk::Image,
 }
 
 impl std::fmt::Debug for RowHeader {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("RowHeader")
-            .field("key", &self.spec.borrow().key)
-            .finish_non_exhaustive()
+        f.debug_struct("RowHeader").finish_non_exhaustive()
     }
 }
 
@@ -338,62 +397,79 @@ impl RowHeader {
         spec: &RowSpec,
         hub: &MeterHub,
         on_volume: VolumeFn,
-        on_action: ActionFn,
+        on_action: &ActionFn,
         on_denoise: &DenoiseFn,
     ) -> Self {
         let root: gtk::Box = glib::Object::builder()
             .property("orientation", gtk::Orientation::Horizontal)
-            .property("spacing", 6)
+            .property("spacing", 4)
             .property("accessible-role", gtk::AccessibleRole::RowHeader)
             .build();
         root.set_size_request(ROW_HEADER_WIDTH, CELL_HEIGHT);
         root.add_css_class("matrix-header");
-        if matches!(spec.key, RowKey::Denoised(_)) {
-            root.set_margin_start(16);
-        }
-        let meter = PeakMeter::vertical(&spec.label, 6, 36);
+        let denoised = matches!(spec.key, RowKey::Denoised(_));
+        let meter = PeakMeter::vertical(&spec.label, 6, 30);
         hub.register(&meter, spec.meter.clone());
         let title = gtk::Label::new(None);
         title.set_xalign(0.0);
         title.set_ellipsize(gtk::pango::EllipsizeMode::End);
-        title.set_max_width_chars(18);
-        let subtitle = gtk::Label::new(Some(&i18n("Disconnected")));
+        let subtitle = gtk::Label::new(None);
         subtitle.set_xalign(0.0);
+        subtitle.set_ellipsize(gtk::pango::EllipsizeMode::End);
         subtitle.add_css_class("caption");
         subtitle.add_css_class("dim-label");
         let labels = gtk::Box::new(gtk::Orientation::Vertical, 0);
         labels.set_valign(gtk::Align::Center);
-        labels.set_hexpand(true);
         labels.append(&title);
         labels.append(&subtitle);
+        let hint = denoised.then(denoised_hint);
+        let (popover, pop) = Popover::new(
+            &PopoverSpec {
+                name: &spec.label,
+                volume: spec.volume.as_ref().map(|_| on_volume),
+                suppression: matches!(spec.key, RowKey::Input(_)),
+                gate: denoised.then_some(on_denoise),
+                rename_delete: matches!(spec.key, RowKey::Channel(_)),
+                hint: hint.as_deref(),
+            },
+            on_action,
+        );
+        let button = name_button(&labels, &popover, &spec.label, hint.as_deref());
         root.append(meter.widget());
-        root.append(&labels);
-        let volume = spec.volume.as_ref().map(|_| {
-            let v = CompactVolume::new(gtk::Orientation::Horizontal, 80, &spec.label, on_volume);
-            root.append(&v.scale);
-            v
+        root.append(&button);
+        let badge = gtk::Image::new();
+        badge.set_pixel_size(16);
+        badge.set_visible(false);
+        root.append(&badge);
+        let switch = denoised.then(|| {
+            let s = gtk::Switch::new();
+            s.set_valign(gtk::Align::Center);
+            s.set_margin_end(8);
+            // Translators: accessible name; {} is a microphone name
+            s.update_property(&[gtk::accessible::Property::Label(&i18n_f(
+                "Noise suppression for {}",
+                &[&spec.label],
+            ))]);
+            let updating = Rc::new(Cell::new(false));
+            let (u, f) = (updating.clone(), on_denoise.clone());
+            s.connect_active_notify(move |s| {
+                if !u.get() {
+                    f(DenoiseEvent::Enabled(s.is_active()));
+                }
+            });
+            root.append(&s);
+            (s, updating)
         });
-        let denoise = spec
-            .denoise
-            .as_ref()
-            .map(|_| DenoiseControls::new(&root, &spec.label, on_denoise));
-        let menu_slot = gtk::Box::new(gtk::Orientation::Horizontal, 0);
-        if denoise.is_none() {
-            menu_slot.set_size_request(34, -1);
-        }
-        root.append(&menu_slot);
         let this = Self {
             root,
             title,
             subtitle,
             _meter: meter,
-            volume,
-            denoise,
-            menu_slot,
-            spec: RefCell::new(spec.clone()),
-            on_action,
+            popover: pop,
+            switch,
+            badge,
         };
-        this.apply(spec, true);
+        this.update(spec);
         this
     }
 
@@ -402,60 +478,72 @@ impl RowHeader {
     }
 
     pub fn update(&self, spec: &RowSpec) {
-        let menu_changed = {
-            let old = self.spec.borrow();
-            old.present != spec.present
-                || old.label != spec.label
-                || old.suppression != spec.suppression
-        };
-        self.apply(spec, menu_changed);
-        *self.spec.borrow_mut() = spec.clone();
-    }
-
-    fn apply(&self, spec: &RowSpec, rebuild_menu: bool) {
         // The noise-suppressed row sits right under its mic: a short label, the full name in
-        // the tooltip.
-        let title = if spec.denoise.is_some() {
-            i18n("↳ Noise-suppressed")
+        // the tooltip and the popover.
+        let denoise = spec.denoise.as_ref();
+        self.title.set_label(&if denoise.is_some() {
+            i18n("↳ Noise-free")
         } else {
             spec.label.clone()
-        };
-        self.title.set_label(&title);
-        self.root.set_tooltip_text(Some(&spec.label));
+        });
         self.root
             .update_property(&[gtk::accessible::Property::Label(&spec.label)]);
-        let off = spec.denoise.as_ref().is_some_and(|d| !d.enabled);
-        self.subtitle.set_label(&if !spec.present {
+        let off = denoise.is_some_and(|d| !d.enabled);
+        let channel = matches!(spec.key, RowKey::Channel(_));
+        let subtitle = if !spec.present && !channel {
             i18n("Disconnected")
         } else if off {
             // Translators: a noise-suppressed row while suppression is off (the mic passes through)
             i18n("Off")
+        } else if channel && spec.apps.is_empty() {
+            // Translators: under an empty channel in the matrix
+            i18n("No apps yet")
+        } else if channel {
+            spec.apps.join(" · ")
         } else {
             String::new()
-        });
-        self.subtitle.set_visible(!spec.present || off);
-        if let (Some(c), Some(v)) = (&self.denoise, &spec.denoise) {
-            c.apply(v);
-        }
+        };
+        self.subtitle.set_label(&subtitle);
+        let tip = if channel && spec.apps.is_empty() {
+            Some(i18n("Choose this channel for an app on the Apps page."))
+        } else {
+            channel.then(|| subtitle.clone())
+        };
+        self.subtitle.set_tooltip_text(tip.as_deref());
+        self.subtitle.set_visible(!subtitle.is_empty());
         if spec.present {
             self.root.remove_css_class("offline");
         } else {
             self.root.add_css_class("offline");
         }
-        if let Some(v) = &self.volume {
-            v.set_volume(spec.volume.as_ref());
+        self.popover
+            .apply(&spec.label, spec.present, spec.volume.as_ref());
+        if let (Some((check, updating)), Some(on)) = (&self.popover.suppression, spec.suppression) {
+            updating.set(true);
+            check.set_active(on);
+            updating.set(false);
         }
-        if rebuild_menu {
-            while let Some(c) = self.menu_slot.first_child() {
-                self.menu_slot.remove(&c);
+        if let Some(d) = denoise {
+            if let Some(g) = &self.popover.gate {
+                g.apply(d);
             }
-            let actions = row_actions(&spec.key, spec.present);
-            self.menu_slot.append(&menu_button(
-                &spec.label,
-                &actions,
-                spec.suppression,
-                &self.on_action,
-            ));
+            if let Some((s, updating)) = &self.switch {
+                updating.set(true);
+                s.set_active(d.enabled);
+                updating.set(false);
+            }
+            match &d.badge {
+                Some(b) => {
+                    self.badge.set_icon_name(Some(if b.error {
+                        "dialog-error-symbolic"
+                    } else {
+                        "dialog-warning-symbolic"
+                    }));
+                    self.badge.set_tooltip_text(Some(&b.text));
+                    self.badge.set_visible(true);
+                }
+                None => self.badge.set_visible(false),
+            }
         }
     }
 }
@@ -463,66 +551,75 @@ impl RowHeader {
 pub struct ColHeader {
     root: gtk::Box,
     title: gtk::Label,
+    offline: gtk::Label,
+    meter_widget: gtk::DrawingArea,
     /// Owned here: the hub only holds meters weakly.
     _meter: PeakMeter,
-    volume: Option<CompactVolume>,
-    menu_slot: gtk::Box,
-    spec: RefCell<ColSpec>,
-    on_action: ActionFn,
+    popover: Popover,
 }
 
 impl std::fmt::Debug for ColHeader {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ColHeader")
-            .field("key", &self.spec.borrow().key)
-            .finish_non_exhaustive()
+        f.debug_struct("ColHeader").finish_non_exhaustive()
     }
 }
 
 impl ColHeader {
-    pub fn new(spec: &ColSpec, hub: &MeterHub, on_volume: VolumeFn, on_action: ActionFn) -> Self {
+    pub fn new(spec: &ColSpec, hub: &MeterHub, on_volume: VolumeFn, on_action: &ActionFn) -> Self {
         let root: gtk::Box = glib::Object::builder()
             .property("orientation", gtk::Orientation::Vertical)
-            .property("spacing", 4)
+            .property("spacing", 0)
             .property("accessible-role", gtk::AccessibleRole::ColumnHeader)
             .build();
         root.set_size_request(CELL_WIDTH, COL_HEADER_HEIGHT);
+        root.set_hexpand(true);
         root.add_css_class("matrix-header");
         let title = gtk::Label::new(None);
         title.set_wrap(true);
         title.set_wrap_mode(gtk::pango::WrapMode::WordChar);
         title.set_lines(2);
-        title.set_max_width_chars(8);
+        title.set_max_width_chars(10);
         title.set_ellipsize(gtk::pango::EllipsizeMode::End);
         title.set_justify(gtk::Justification::Center);
-        title.set_height_request(34);
-        title.set_valign(gtk::Align::End);
-        let meter = PeakMeter::horizontal(&spec.label, 56, 6);
+        // Always two lines tall, text at the bottom: every column's meter sits on one line.
+        title.set_height_request(36);
+        title.set_yalign(1.0);
+        let meter = PeakMeter::horizontal(&spec.label, CELL_WIDTH - 28, 5);
         meter.widget().set_halign(gtk::Align::Center);
+        meter.widget().set_margin_top(4);
         hub.register(&meter, spec.meter.clone());
-        let controls = gtk::Box::new(gtk::Orientation::Horizontal, 0);
-        controls.set_halign(gtk::Align::Center);
-        let volume = spec.volume.as_ref().map(|_| {
-            let v = CompactVolume::new(gtk::Orientation::Vertical, 56, &spec.label, on_volume);
-            controls.append(&v.scale);
-            v
-        });
-        let menu_slot = gtk::Box::new(gtk::Orientation::Horizontal, 0);
-        menu_slot.set_valign(gtk::Align::End);
-        controls.append(&menu_slot);
-        root.append(&title);
-        root.append(meter.widget());
-        root.append(&controls);
+        let offline = gtk::Label::new(Some(&i18n("Disconnected")));
+        offline.add_css_class("caption");
+        offline.add_css_class("dim-label");
+        let inner = gtk::Box::new(gtk::Orientation::Vertical, 0);
+        inner.set_valign(gtk::Align::End);
+        inner.append(&title);
+        inner.append(meter.widget());
+        inner.append(&offline);
+        let vmic = matches!(spec.key, ColKey::VirtualMic(_));
+        let hint = vmic.then(vmic_hint);
+        let (popover, pop) = Popover::new(
+            &PopoverSpec {
+                name: &spec.label,
+                volume: spec.volume.as_ref().map(|_| on_volume),
+                suppression: false,
+                gate: None,
+                rename_delete: vmic,
+                hint: hint.as_deref(),
+            },
+            on_action,
+        );
+        let button = name_button(&inner, &popover, &spec.label, hint.as_deref());
+        root.append(&button);
         let this = Self {
             root,
             title,
+            offline,
+            meter_widget: meter.widget().clone(),
             _meter: meter,
-            volume,
-            menu_slot,
-            spec: RefCell::new(spec.clone()),
-            on_action,
+            popover: pop,
         };
-        this.apply(spec, true);
+        this.update(spec);
         this
     }
 
@@ -531,23 +628,9 @@ impl ColHeader {
     }
 
     pub fn update(&self, spec: &ColSpec) {
-        let menu_changed = {
-            let old = self.spec.borrow();
-            old.present != spec.present || old.label != spec.label
-        };
-        self.apply(spec, menu_changed);
-        *self.spec.borrow_mut() = spec.clone();
-    }
-
-    fn apply(&self, spec: &ColSpec, rebuild_menu: bool) {
         self.title.set_label(&spec.label);
-        let tooltip = if spec.present {
-            spec.label.clone()
-        } else {
-            // Translators: tooltip of an unplugged device; {} is its name
-            i18n_f("{} (disconnected)", &[&spec.label])
-        };
-        self.root.set_tooltip_text(Some(&tooltip));
+        self.offline.set_visible(!spec.present);
+        self.meter_widget.set_visible(spec.present);
         self.root
             .update_property(&[gtk::accessible::Property::Label(&spec.label)]);
         if spec.present {
@@ -555,16 +638,7 @@ impl ColHeader {
         } else {
             self.root.add_css_class("offline");
         }
-        if let Some(v) = &self.volume {
-            v.set_volume(spec.volume.as_ref());
-        }
-        if rebuild_menu {
-            while let Some(c) = self.menu_slot.first_child() {
-                self.menu_slot.remove(&c);
-            }
-            let actions = col_actions(&spec.key, spec.present);
-            self.menu_slot
-                .append(&menu_button(&spec.label, &actions, None, &self.on_action));
-        }
+        self.popover
+            .apply(&spec.label, spec.present, spec.volume.as_ref());
     }
 }

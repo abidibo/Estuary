@@ -899,6 +899,32 @@
     {
         "type": "archive",
         "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/gio-unix/gio-unix-0.22.8.crate",
+        "sha256": "ce8d768735e229742c135afa3d3326604088d2df0679901cdb05e791fe2fbe0a",
+        "dest": "cargo/vendor/gio-unix-0.22.8"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"ce8d768735e229742c135afa3d3326604088d2df0679901cdb05e791fe2fbe0a\", \"files\": {}}",
+        "dest": "cargo/vendor/gio-unix-0.22.8",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
+        "url": "https://static.crates.io/crates/gio-unix-sys/gio-unix-sys-0.22.9.crate",
+        "sha256": "7c01dbb58f92f67548d85e2209e073acc7ee04e107c7e04ee69b49e38b4933b4",
+        "dest": "cargo/vendor/gio-unix-sys-0.22.9"
+    },
+    {
+        "type": "inline",
+        "contents": "{\"package\": \"7c01dbb58f92f67548d85e2209e073acc7ee04e107c7e04ee69b49e38b4933b4\", \"files\": {}}",
+        "dest": "cargo/vendor/gio-unix-sys-0.22.9",
+        "dest-filename": ".cargo-checksum.json"
+    },
+    {
+        "type": "archive",
+        "archive-type": "tar-gzip",
         "url": "https://static.crates.io/crates/glib/glib-0.22.10.crate",
         "sha256": "e4cf9e5bd8713f1990a92c422998826e0fb34824277b46bc59757373483c6694",
         "dest": "cargo/vendor/glib-0.22.10"

@@ -192,7 +192,11 @@ impl FactoryComponent for AppRow {
         let model = gtk::StringList::new(&[]);
         let dropdown = gtk::DropDown::new(Some(model.clone()), None::<gtk::Expression>);
         dropdown.set_valign(gtk::Align::Center);
-        dropdown.set_width_request(200);
+        // Same width in every row, so the controls before it line up: the button's label is
+        // ellipsized (full name in the tooltip); the open list shows full names.
+        dropdown.set_hexpand(false);
+        dropdown.set_factory(Some(&label_factory(true)));
+        dropdown.set_list_factory(Some(&label_factory(false)));
         // Translators: accessible name of the output list; {} is an app name
         dropdown.update_property(&[gtk::accessible::Property::Label(&i18n_f(
             "Output of {}",
@@ -275,7 +279,16 @@ impl FactoryComponent for AppRow {
         }
         widgets.updating.set(false);
         widgets.dropdown.set_sensitive(g.movable);
-        let tip = (!g.movable).then(|| i18n("This app does not allow moving its audio"));
+        let current = widgets
+            .dropdown
+            .selected_item()
+            .and_downcast::<gtk::StringObject>()
+            .map(|o| o.string().to_string());
+        let tip = if g.movable {
+            current
+        } else {
+            Some(i18n("This app does not allow moving its audio"))
+        };
         widgets.dropdown.set_tooltip_text(tip.as_deref());
     }
 }
@@ -487,6 +500,38 @@ impl KeyedRow for RememberedRow {
     fn set_data(&mut self, data: RememberedRowData) {
         self.data = data;
     }
+}
+
+/// Labels for the output dropdown. `compact`: the button, a fixed width with an ellipsis.
+fn label_factory(compact: bool) -> gtk::SignalListItemFactory {
+    let factory = gtk::SignalListItemFactory::new();
+    factory.connect_setup(move |_, item| {
+        let Some(item) = item.downcast_ref::<gtk::ListItem>() else {
+            return;
+        };
+        let label = gtk::Label::new(None);
+        label.set_xalign(0.0);
+        if compact {
+            label.set_ellipsize(gtk::pango::EllipsizeMode::End);
+            label.set_width_chars(24);
+            label.set_max_width_chars(24);
+        }
+        item.set_child(Some(&label));
+    });
+    factory.connect_bind(|_, item| {
+        let Some(item) = item.downcast_ref::<gtk::ListItem>() else {
+            return;
+        };
+        let text = item
+            .item()
+            .and_downcast::<gtk::StringObject>()
+            .map(|o| o.string().to_string())
+            .unwrap_or_default();
+        if let Some(label) = item.child().and_downcast::<gtk::Label>() {
+            label.set_label(&text);
+        }
+    });
+    factory
 }
 
 #[cfg(test)]

@@ -22,7 +22,7 @@ KW="--keyword=i18n --keyword=i18n_f --keyword=ni18n_f:1,2 --keyword=pi18n:1c,2 \
 TMP=$(mktemp -d "$PWD/po/.pot-XXXXXX"); trap 'rm -rf "$TMP"' EXIT
 grep -E '\.rs$' po/POTFILES.in > "$TMP/rs.list"
 run "xgettext $LANG_RS $KW --from-code=UTF-8 --add-comments=Translators \
-      --package-name=estuary --msgid-bugs-address=https://github.com/abidibo/estuary/issues \
+      --package-name=estuary --msgid-bugs-address=https://github.com/abidibo/Estuary/issues \
       -f $TMP/rs.list -o $TMP/rust.pot"
 run "xgettext --language=Desktop -k -kName -kGenericName -kComment -kKeywords \
       --add-comments=Translators data/io.github.abidibo.Estuary.desktop.in -o $TMP/desktop.pot"

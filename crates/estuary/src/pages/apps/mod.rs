@@ -1,6 +1,7 @@
 //! Apps page (UI M3.6, M5): what is playing now and where, the outputs, and remembered rules.
 
 mod controls;
+pub(crate) mod identity;
 mod row;
 
 use std::sync::Arc;
@@ -137,8 +138,10 @@ impl SimpleComponent for AppsPage {
                         let extra: Vec<_> = std::iter::once(&g.current_target)
                             .chain(rule_target)
                             .collect();
+                        let mut group = g.clone();
+                        identity::resolve(&mut group);
                         AppRowData {
-                            group: g.clone(),
+                            group,
                             choices: target_choices(&snap, &extra),
                             hub: self.hub.clone(),
                         }

@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Name=estuary
+Name=Estuary
 GenericName=Audio Matrix
 Comment=Route, mix and clean up your PipeWire audio
 Exec=estuary

@@ -33,6 +33,9 @@ pub struct RowSpec {
     pub denoise: Option<DenoiseView>,
     /// Inputs only: whether noise suppression is on (the menu check, UI M10.1).
     pub suppression: Option<bool>,
+    /// Channels only: the apps in it (playing into it now, then saved rules), so a channel
+    /// reads as what it contains.
+    pub apps: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -106,6 +109,7 @@ pub fn compute(setup: &Setup, snap: &GraphSnapshot, warnings: &Warnings) -> Matr
             meter: MeterTarget::Channel(c.id),
             denoise: None,
             suppression: None,
+            apps: channel_apps(setup, snap, c.id),
         });
     }
     // The snapshot lists present and known-offline devices (C4).
@@ -120,6 +124,7 @@ pub fn compute(setup: &Setup, snap: &GraphSnapshot, warnings: &Warnings) -> Matr
             volume: d.volume.clone(),
             meter: MeterTarget::Device(d.key.clone()),
             denoise: None,
+            apps: Vec::new(),
             suppression: Some(
                 setup
                     .denoisers
@@ -127,7 +132,10 @@ pub fn compute(setup: &Setup, snap: &GraphSnapshot, warnings: &Warnings) -> Matr
                     .any(|n| n.input == d.key && n.enabled),
             ),
         });
-        if let Some(def) = setup.denoisers.iter().find(|n| n.input == d.key) {
+        // Every connected mic shows its noise-free row, so the feature can be found; nothing
+        // is built until suppression is switched on (or a send is added from the row).
+        let def = setup.denoisers.iter().find(|n| n.input == d.key);
+        if def.is_some() || d.present {
             let live = snap.denoisers.iter().find(|n| n.input == d.key);
             rows.push(RowSpec {
                 key: RowKey::Denoised(d.key.clone()),
@@ -138,14 +146,15 @@ pub fn compute(setup: &Setup, snap: &GraphSnapshot, warnings: &Warnings) -> Matr
                 volume: None,
                 meter: MeterTarget::Denoised(d.key.clone()),
                 denoise: Some(DenoiseView {
-                    enabled: def.enabled,
+                    enabled: def.is_some_and(|n| n.enabled),
                     active: live.is_some_and(|n| n.active),
-                    vad_gate: def.vad_gate,
+                    vad_gate: def.map_or(0.0, |n| n.vad_gate),
                     badge: warnings
                         .get(&estuary_engine::WarnedNode::Denoiser(d.key.clone()))
                         .cloned(),
                 }),
                 suppression: None,
+                apps: Vec::new(),
             });
         }
     }
@@ -203,6 +212,29 @@ pub fn compute(setup: &Setup, snap: &GraphSnapshot, warnings: &Warnings) -> Matr
         })
         .collect();
     MatrixLayout { rows, cols, cells }
+}
+
+/// Apps playing into channel `id` now, then apps whose saved rule points at it.
+fn channel_apps(setup: &Setup, snap: &GraphSnapshot, id: ChannelId) -> Vec<String> {
+    let target = estuary_engine::RouteTarget::Channel { id };
+    let mut out: Vec<String> = snap
+        .apps
+        .iter()
+        .filter(|a| a.current_target == target)
+        .map(|a| a.display_name.clone())
+        .collect();
+    for r in setup.app_rules.iter().filter(|r| r.target == target) {
+        let playing = snap.apps.iter().any(|a| a.key == r.app);
+        let name = if r.display_name.is_empty() {
+            r.app.0.clone()
+        } else {
+            r.display_name.clone()
+        };
+        if !playing && !out.contains(&name) {
+            out.push(name);
+        }
+    }
+    out
 }
 
 #[cfg(test)]
@@ -314,13 +346,18 @@ mod tests {
                 "Music",
                 "Chat",
                 "Laptop mic",
+                "Laptop mic (noise-suppressed)",
                 "USB mic",
                 "USB mic (noise-suppressed)"
             ]
         );
-        assert_eq!(l.rows[4].key, RowKey::Denoised(DeviceKey("usb".into())));
         assert!(
-            l.rows[4]
+            l.rows[3].denoise.as_ref().is_some_and(|d| !d.enabled),
+            "a mic without a denoiser still shows its noise-free row, switched off"
+        );
+        assert_eq!(l.rows[5].key, RowKey::Denoised(DeviceKey("usb".into())));
+        assert!(
+            l.rows[5]
                 .denoise
                 .as_ref()
                 .is_some_and(|d| d.enabled && !d.active)
@@ -394,5 +431,27 @@ mod tests {
         );
         assert!(a.has_owned_nodes());
         assert!(!compute(&Setup::default(), &f.snap, &Warnings::default()).has_owned_nodes());
+    }
+
+    #[test]
+    fn channel_rows_list_their_apps() {
+        let mut f = fixture();
+        f.snap.apps.push(estuary_engine::AppGroup {
+            key: estuary_engine::AppKey("bin:spotify".into()),
+            display_name: "Spotify".into(),
+            icon_name: None,
+            streams: Vec::new(),
+            current_target: estuary_engine::RouteTarget::Channel { id: f.music },
+            movable: true,
+            volume: Volume::unity(2),
+        });
+        f.setup.app_rules.push(estuary_engine::setup::AppRule {
+            app: estuary_engine::AppKey("bin:mpv".into()),
+            target: estuary_engine::RouteTarget::Channel { id: f.music },
+            display_name: "mpv".into(),
+        });
+        let l = compute(&f.setup, &f.snap, &Warnings::default());
+        assert_eq!(l.rows[0].apps, vec!["Spotify".to_owned(), "mpv".to_owned()]);
+        assert!(l.rows[1].apps.is_empty(), "Chat has none");
     }
 }

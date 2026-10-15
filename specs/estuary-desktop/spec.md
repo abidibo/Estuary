@@ -524,7 +524,7 @@ Content (`Exec` per C10, amended):
 ```ini
 [Desktop Entry]
 Type=Application
-Name=estuary
+Name=Estuary
 Comment=Audio matrix running in the background
 Icon=io.github.abidibo.Estuary
 Exec=estuary --background

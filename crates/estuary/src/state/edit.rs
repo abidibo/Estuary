@@ -289,6 +289,17 @@ pub fn apply_edit(cfg: &mut ConfigFile, snap: &GraphSnapshot, edit: Edit) -> Edi
                 if let MatrixDest::Output { key } = &key.dest {
                     remember_device(cfg, snap, key, DeviceKind::Output);
                 }
+                // A first send from a mic's noise-free row means "suppress it": the row is shown
+                // before any denoiser exists.
+                if let MatrixSource::Denoised { key } = &key.source
+                    && !cfg.setup.denoisers.iter().any(|d| &d.input == key)
+                {
+                    cfg.setup.denoisers.push(DenoiserDef {
+                        input: key.clone(),
+                        enabled: true,
+                        vad_gate: 0.0,
+                    });
+                }
                 cfg.setup.cells.push(CellDef {
                     source: key.source,
                     dest: key.dest,
@@ -917,6 +928,23 @@ mod tests {
 
     fn mic() -> DeviceKey {
         DeviceKey("mic".into())
+    }
+
+    #[test]
+    fn a_first_send_from_the_noise_free_row_switches_suppression_on() {
+        let mut cfg = ConfigFile::default();
+        let vmic = VirtualMicId::new_random();
+        let key = CellKey {
+            source: MatrixSource::Denoised { key: mic() },
+            dest: MatrixDest::VirtualMic { id: vmic },
+        };
+        apply_edit(&mut cfg, &snap(), Edit::ToggleCell { key: key.clone() });
+        assert_eq!(cfg.setup.denoisers.len(), 1);
+        assert!(cfg.setup.denoisers[0].enabled);
+        // Switched off later, it stays off when sends are toggled.
+        cfg.setup.denoisers[0].enabled = false;
+        apply_edit(&mut cfg, &snap(), Edit::ToggleCell { key });
+        assert!(!cfg.setup.denoisers[0].enabled);
     }
 
     #[test]

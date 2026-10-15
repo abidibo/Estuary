@@ -19,9 +19,7 @@ use estuary_engine::{CellKey, GraphSnapshot, MeterTarget, RouteTarget, Setup};
 use relm4::{ComponentParts, ComponentSender, SimpleComponent, adw, gtk};
 
 use self::cell::{CELL_HEIGHT, CELL_WIDTH, CellButton};
-use self::header::{
-    COL_HEADER_HEIGHT, ColHeader, DenoiseEvent, HeaderAction, ROW_HEADER_WIDTH, RowHeader,
-};
+use self::header::{ColHeader, DenoiseEvent, HeaderAction, ROW_HEADER_WIDTH, RowHeader};
 use self::keyboard::Nav;
 use crate::dialogs::{confirm, name};
 use crate::i18n::{i18n, i18n_f};
@@ -31,6 +29,8 @@ use crate::state::warnings::Warnings;
 use crate::widgets::meter_hub::MeterHub;
 
 const SPACING: i32 = 4;
+/// Height of a group label row (CHANNELS, MICROPHONES).
+const GROUP_HEIGHT: i32 = 26;
 
 pub struct MatrixPage {
     hub: MeterHub,
@@ -48,6 +48,9 @@ pub struct MatrixPage {
     col_scroller: gtk::ScrolledWindow,
     nav: Rc<RefCell<Nav>>,
     stack: gtk::Stack,
+    /// Each row's header and slots (and each column's header and slots) share a size group,
+    /// so the three grids can't drift apart whatever the labels contain.
+    size_groups: Vec<gtk::SizeGroup>,
 }
 
 impl std::fmt::Debug for MatrixPage {
@@ -103,12 +106,20 @@ impl SimpleComponent for MatrixPage {
         cell::install_css();
         let add_buttons = |orientation| {
             let b = gtk::Box::new(orientation, 6);
-            let channel = gtk::Button::with_label(&i18n("Add Channel"));
+            let labelled = |label: &str| {
+                let content = adw::ButtonContent::new();
+                content.set_icon_name("list-add-symbolic");
+                content.set_label(label);
+                let button = gtk::Button::new();
+                button.set_child(Some(&content));
+                button
+            };
+            let channel = labelled(&i18n("Add Channel"));
             channel.connect_clicked({
                 let s = sender.input_sender().clone();
                 move |_| s.emit(MatrixMsg::AddChannel)
             });
-            let mic = gtk::Button::with_label(&i18n("Add Virtual Mic"));
+            let mic = labelled(&i18n("Add Virtual Mic"));
             mic.connect_clicked({
                 let s = sender.input_sender().clone();
                 move |_| s.emit(MatrixMsg::AddMic)
@@ -139,23 +150,43 @@ impl SimpleComponent for MatrixPage {
         empty.set_child(Some(&empty_buttons));
         root.add_named(&empty, Some("empty"));
 
-        // Grid: corner | column headers / row headers | body.
-        let corner = add_buttons(gtk::Orientation::Vertical);
-        corner.set_size_request(ROW_HEADER_WIDTH, COL_HEADER_HEIGHT);
-        corner.set_valign(gtk::Align::Center);
-        corner.set_halign(gtk::Align::Start);
-        corner.set_margin_start(6);
+        // What this page is, in one line, plus the add buttons.
+        let intro = gtk::Label::new(Some(&i18n(
+            "Each row is a sound source, each column a destination. Click a slot to send the source there, then drag up or down on it (or scroll) to set the level. Click a name for its options.",
+        )));
+        intro.set_wrap(true);
+        intro.set_xalign(0.0);
+        intro.set_hexpand(true);
+        intro.add_css_class("dim-label");
+        let actions = gtk::Box::new(gtk::Orientation::Horizontal, 12);
+        actions.append(&how_it_works());
+        let top_buttons = add_buttons(gtk::Orientation::Horizontal);
+        top_buttons.set_hexpand(true);
+        top_buttons.set_halign(gtk::Align::End);
+        actions.append(&top_buttons);
+        let top = gtk::Box::new(gtk::Orientation::Vertical, 8);
+        top.set_margin_top(12);
+        top.set_margin_start(12);
+        top.set_margin_end(12);
+        top.append(&intro);
+        top.append(&actions);
+
+        // Grid: (empty) corner | column headers / row headers | body.
+        let corner = gtk::Box::new(gtk::Orientation::Vertical, 0);
+        corner.set_size_request(ROW_HEADER_WIDTH, -1);
         let grid = |accessible: Option<gtk::AccessibleRole>| {
             let mut b = gtk::glib::Object::builder::<gtk::Grid>()
                 .property("row-spacing", SPACING)
                 .property("column-spacing", SPACING)
-                .property("row-homogeneous", true)
+                .property("row-homogeneous", false)
                 .property("column-homogeneous", true);
             if let Some(role) = accessible {
                 b = b.property("accessible-role", role);
             }
             let g = b.build();
-            g.set_halign(gtk::Align::Start);
+            // Columns stretch to the available width (equal widths in the header and body
+            // grids, which share their scroller's width); rows stay at their size.
+            g.set_halign(gtk::Align::Fill);
             g.set_valign(gtk::Align::Start);
             g
         };
@@ -180,6 +211,7 @@ impl SimpleComponent for MatrixPage {
         // The header labels expand; that must not leak into the outer grid's columns.
         row_scroller.set_hexpand(false);
         corner.set_hexpand(false);
+        corner.set_vexpand(false);
         col_scroller.set_vexpand(false);
         let outer = gtk::Grid::new();
         outer.set_row_spacing(SPACING.unsigned_abs());
@@ -192,7 +224,16 @@ impl SimpleComponent for MatrixPage {
         outer.attach(&col_scroller, 1, 0, 1, 1);
         outer.attach(&row_scroller, 0, 1, 1, 1);
         outer.attach(&body_scroller, 1, 1, 1, 1);
-        root.add_named(&outer, Some("grid"));
+        let page = gtk::Box::new(gtk::Orientation::Vertical, 0);
+        page.append(&top);
+        // On very wide windows the table stops growing and stays centred.
+        let clamp = adw::Clamp::new();
+        clamp.set_maximum_size(1200);
+        clamp.set_tightening_threshold(1200);
+        clamp.set_child(Some(&outer));
+        clamp.set_vexpand(true);
+        page.append(&clamp);
+        root.add_named(&page, Some("grid"));
         root.set_visible_child_name("empty");
 
         for adj in [body_scroller.hadjustment(), body_scroller.vadjustment()] {
@@ -221,6 +262,7 @@ impl SimpleComponent for MatrixPage {
             col_scroller,
             nav,
             stack: root,
+            size_groups: Vec::new(),
         };
         ComponentParts { model, widgets: () }
     }
@@ -232,7 +274,12 @@ impl SimpleComponent for MatrixPage {
                 setup,
                 warnings,
             } => {
-                self.layout = matrix_layout::compute(&setup, &snapshot, &warnings);
+                // App names as the Apps page shows them (e.g. Electron apps' real names).
+                let mut snap = (*snapshot).clone();
+                for a in &mut snap.apps {
+                    crate::pages::apps::identity::resolve(a);
+                }
+                self.layout = matrix_layout::compute(&setup, &snap, &warnings);
                 self.setup = setup;
                 self.stack
                     .set_visible_child_name(if self.layout.has_owned_nodes() {
@@ -346,17 +393,61 @@ impl MatrixPage {
         self.cells.clear();
         self.rows.clear();
         self.cols.clear();
+        self.size_groups.clear();
+        let row_groups: Vec<gtk::SizeGroup> = (0..self.layout.rows.len())
+            .map(|_| gtk::SizeGroup::new(gtk::SizeGroupMode::Vertical))
+            .collect();
+        let col_groups: Vec<gtk::SizeGroup> = (0..self.layout.cols.len())
+            .map(|_| gtk::SizeGroup::new(gtk::SizeGroupMode::Horizontal))
+            .collect();
 
-        for (r, spec) in self.layout.rows.iter().enumerate() {
+        // Rows, with a label row before each group (and a matching spacer row in the body).
+        let n_cols = grid_index(self.layout.cols.len().max(1));
+        let mut grid_rows = Vec::with_capacity(self.layout.rows.len());
+        let mut next = 0;
+        let mut last_group = None;
+        let mut groups = 0;
+        for spec in &self.layout.rows {
+            let group = row_group(&spec.key);
+            if last_group != Some(group) {
+                last_group = Some(group);
+                let label = group_label(&group_title(group));
+                self.row_grid.attach(&label, 0, next, 1, 1);
+                let spacer = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+                spacer.set_size_request(-1, GROUP_HEIGHT);
+                self.body.attach(&spacer, 0, next, n_cols, 1);
+                let pair = gtk::SizeGroup::new(gtk::SizeGroupMode::Vertical);
+                pair.add_widget(&label);
+                pair.add_widget(&spacer);
+                self.size_groups.push(pair);
+                groups += 1;
+                next += 1;
+            }
             let on_volume = row_volume(&spec.key, sender);
             let on_action = {
                 let (s, key) = (sender.input_sender().clone(), spec.key.clone());
                 Rc::new(move |a| s.emit(MatrixMsg::Row(key.clone(), a))) as header::ActionFn
             };
             let on_denoise = row_denoise(&spec.key, sender);
-            let h = RowHeader::new(spec, &self.hub, on_volume, on_action, &on_denoise);
-            self.row_grid.attach(h.widget(), 0, grid_index(r), 1, 1);
+            let h = RowHeader::new(spec, &self.hub, on_volume, &on_action, &on_denoise);
+            row_groups[self.rows.len()].add_widget(h.widget());
+            self.row_grid.attach(h.widget(), 0, next, 1, 1);
             self.rows.push(h);
+            grid_rows.push(next);
+            next += 1;
+        }
+        // Columns: group labels across the top, then the headers.
+        let mut c = 0;
+        while c < self.layout.cols.len() {
+            let group = col_group(&self.layout.cols[c].key);
+            let span = self.layout.cols[c..]
+                .iter()
+                .take_while(|s| col_group(&s.key) == group)
+                .count();
+            let label = group_label(&group_title(group));
+            self.col_grid
+                .attach(&label, grid_index(c), 0, grid_index(span), 1);
+            c += span;
         }
         for (c, spec) in self.layout.cols.iter().enumerate() {
             let on_volume = col_volume(&spec.key, sender);
@@ -364,8 +455,9 @@ impl MatrixPage {
                 let (s, key) = (sender.input_sender().clone(), spec.key.clone());
                 Rc::new(move |a| s.emit(MatrixMsg::Col(key.clone(), a))) as header::ActionFn
             };
-            let h = ColHeader::new(spec, &self.hub, on_volume, on_action);
-            self.col_grid.attach(h.widget(), grid_index(c), 0, 1, 1);
+            let h = ColHeader::new(spec, &self.hub, on_volume, &on_action);
+            col_groups[c].add_widget(h.widget());
+            self.col_grid.attach(h.widget(), grid_index(c), 1, 1, 1);
             self.cols.push(h);
         }
         let mut nav_cells = Vec::with_capacity(self.layout.rows.len());
@@ -386,22 +478,27 @@ impl MatrixPage {
                     move |_| nav.borrow_mut().focused(&key)
                 });
                 cell.add_controller(focus);
-                self.body.attach(&cell, grid_index(c), grid_index(r), 1, 1);
+                row_groups[r].add_widget(&cell);
+                col_groups[c].add_widget(&cell);
+                self.body.attach(&cell, grid_index(c), grid_rows[r], 1, 1);
                 self.cells.insert(view.key.clone(), cell.clone());
                 nav_row.push(cell);
             }
             nav_cells.push(nav_row);
         }
+        self.size_groups.extend(row_groups);
+        self.size_groups.extend(col_groups);
         let had_focus = focused.is_some() && self.body.root().and_then(|w| w.focus()).is_none();
         self.nav.borrow_mut().reset(nav_cells, focused.as_ref());
         if had_focus && let Some(cell) = self.nav.borrow().current_cell() {
             cell.grab_focus();
         }
         // Keep header and body sizes in lockstep even with an empty dimension.
-        self.body.set_size_request(
-            span(self.layout.cols.len(), CELL_WIDTH),
-            span(self.layout.rows.len(), CELL_HEIGHT),
-        );
+        let rows = grid_index(self.layout.rows.len());
+        let height =
+            rows * CELL_HEIGHT + groups * GROUP_HEIGHT + (rows + groups - 1).max(0) * SPACING;
+        self.body
+            .set_size_request(span(self.layout.cols.len(), CELL_WIDTH), height);
     }
 
     fn on_row_action(&self, key: &RowKey, action: HeaderAction, sender: &ComponentSender<Self>) {
@@ -550,4 +647,94 @@ fn row_denoise(key: &RowKey, sender: &ComponentSender<MatrixPage>) -> header::De
         };
         s.emit(MatrixMsg::Edit(edit));
     })
+}
+
+/// Groups of rows and columns, in layout order.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Group {
+    Channels,
+    Microphones,
+    Outputs,
+    VirtualMics,
+}
+
+fn row_group(key: &RowKey) -> Group {
+    match key {
+        RowKey::Channel(_) => Group::Channels,
+        RowKey::Input(_) | RowKey::Denoised(_) => Group::Microphones,
+    }
+}
+
+fn col_group(key: &ColKey) -> Group {
+    match key {
+        ColKey::Output(_) => Group::Outputs,
+        ColKey::VirtualMic(_) => Group::VirtualMics,
+    }
+}
+
+fn group_title(g: Group) -> String {
+    match g {
+        // Translators: matrix group titles, shown in capitals
+        Group::Channels => i18n("CHANNELS"),
+        Group::Microphones => i18n("MICROPHONES"),
+        Group::Outputs => i18n("OUTPUTS"),
+        Group::VirtualMics => i18n("VIRTUAL MICS"),
+    }
+}
+
+fn group_label(text: &str) -> gtk::Label {
+    let l = gtk::Label::new(Some(text));
+    l.add_css_class("matrix-group");
+    l.set_xalign(0.0);
+    l.set_valign(gtk::Align::End);
+    l.set_ellipsize(gtk::pango::EllipsizeMode::End);
+    l.set_size_request(-1, GROUP_HEIGHT);
+    l
+}
+
+/// The "How it works" button: what channels and virtual mics are, with an example.
+fn how_it_works() -> gtk::MenuButton {
+    let button = gtk::MenuButton::new();
+    let label = adw::ButtonContent::new();
+    label.set_icon_name("help-about-symbolic");
+    label.set_label(&i18n("How it works"));
+    button.set_child(Some(&label));
+    button.add_css_class("flat");
+    button.set_valign(gtk::Align::Center);
+    let content = gtk::Box::new(gtk::Orientation::Vertical, 10);
+    content.set_margin_top(14);
+    content.set_margin_bottom(14);
+    content.set_margin_start(14);
+    content.set_margin_end(14);
+    let title = gtk::Label::new(Some(&i18n("How it works")));
+    title.add_css_class("title-4");
+    title.set_xalign(0.0);
+    content.append(&title);
+    for text in [
+        i18n(
+            "Channels group apps. On the Apps page, choose a channel for each app: Spotify into Music, a game into Games, Discord into Chat.",
+        ),
+        i18n(
+            "Each row sends its sound to the columns you switch on: your speakers or headphones, and virtual microphones. One slot, one level.",
+        ),
+        i18n(
+            "A virtual microphone is a microphone for other apps. Choose \u{201c}Virtual mic\u{201d} as the microphone in Discord or OBS, and they hear exactly what you send to it.",
+        ),
+        i18n(
+            "Example: Music and Games go to your headphones; Games and your noise-free microphone also go to the virtual mic. Your friends hear you and the game, not your music.",
+        ),
+        i18n(
+            "Click a slot to switch a send on or off. Drag up or down on it, or scroll, to change its level. Double-click resets it to 0 dB.",
+        ),
+    ] {
+        let l = gtk::Label::new(Some(&text));
+        l.set_wrap(true);
+        l.set_max_width_chars(48);
+        l.set_xalign(0.0);
+        content.append(&l);
+    }
+    let popover = gtk::Popover::new();
+    popover.set_child(Some(&content));
+    button.set_popover(Some(&popover));
+    button
 }

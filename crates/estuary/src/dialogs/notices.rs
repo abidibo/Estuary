@@ -19,8 +19,8 @@ fn ok_dialog(heading: &str, body: &str, on_dismissed: impl Fn() + 'static) -> ad
 /// C10: shown once, while the window is still visible, before hiding it.
 pub fn background_notice(parent: &impl IsA<gtk::Widget>, on_dismissed: impl Fn() + 'static) {
     ok_dialog(
-        &i18n("estuary keeps running"),
-        &i18n("Your audio routing keeps working in the background. Use Quit in the menu to stop estuary."),
+        &i18n("Estuary keeps running"),
+        &i18n("Your audio routing keeps working in the background. Use Quit in the menu to stop Estuary."),
         on_dismissed,
     )
     .present(Some(parent));
@@ -29,8 +29,8 @@ pub fn background_notice(parent: &impl IsA<gtk::Widget>, on_dismissed: impl Fn()
 /// Sandboxed with background activity denied: closing quits (once per session).
 pub fn background_denied_notice(parent: &impl IsA<gtk::Widget>, on_dismissed: impl Fn() + 'static) {
     ok_dialog(
-        &i18n("estuary will quit"),
-        &i18n("Background activity is not allowed for estuary, so closing the window quits it. You can allow it in Settings → Apps → estuary."),
+        &i18n("Estuary will quit"),
+        &i18n("Background activity is not allowed for Estuary, so closing the window quits it. You can allow it in Settings → Apps → Estuary."),
         on_dismissed,
     )
     .present(Some(parent));
@@ -61,7 +61,7 @@ pub fn quit_confirm(
     body.push(i18n(
         "Quitting will switch these apps back to your default devices.",
     ));
-    let dialog = adw::AlertDialog::new(Some(&i18n("Quit estuary?")), Some(&body.join("\n")));
+    let dialog = adw::AlertDialog::new(Some(&i18n("Quit Estuary?")), Some(&body.join("\n")));
     dialog.add_response("cancel", &i18n("Cancel"));
     dialog.add_response("quit", &i18n("Quit"));
     dialog.set_response_appearance("quit", adw::ResponseAppearance::Destructive);

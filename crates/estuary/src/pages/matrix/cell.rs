@@ -20,8 +20,8 @@ use crate::state::edit::Edit;
 use crate::state::matrix_layout::CellView;
 use crate::state::volume::{CELL_DB_MAX, CELL_DB_MIN, clamp_db, format_db};
 
-pub const CELL_WIDTH: i32 = 72;
-pub const CELL_HEIGHT: i32 = 44;
+pub const CELL_WIDTH: i32 = 100;
+pub const CELL_HEIGHT: i32 = 48;
 const DRAG_THRESHOLD: f64 = 4.0;
 const DB_PER_PX: f32 = 0.25;
 const DB_PER_PX_FINE: f32 = 0.05;
@@ -88,7 +88,7 @@ mod imp {
             let obj = self.obj();
             obj.set_size_request(CELL_WIDTH, CELL_HEIGHT);
             obj.set_focusable(true);
-            obj.set_hexpand(false);
+            obj.set_hexpand(true); // columns share the available width
             obj.set_vexpand(false);
             let overlay = gtk::Overlay::new();
             self.label.add_css_class("pill");
@@ -641,15 +641,18 @@ pub fn install_css() {
 }
 
 const CSS: &str = "
-cellbutton { border-radius: 8px; }
-cellbutton:hover { background-color: alpha(currentColor, 0.05); }
+cellbutton { border-radius: 8px; background-color: alpha(currentColor, 0.04); }
+cellbutton:hover { background-color: alpha(currentColor, 0.09); }
 cellbutton:focus-visible { outline: 2px solid alpha(@accent_color, 0.6); outline-offset: -2px; }
-cellbutton label.pill { border-radius: 999px; padding: 3px 8px; font-feature-settings: 'tnum'; }
-cellbutton.absent label.pill { opacity: 0; }
-cellbutton.absent:hover label.pill, cellbutton.absent:focus-visible label.pill { opacity: 0.45; }
+cellbutton label.pill { border-radius: 999px; padding: 3px 10px; font-feature-settings: 'tnum'; }
+cellbutton.absent label.pill { opacity: 0.35; }
+cellbutton.absent:hover label.pill, cellbutton.absent:focus-visible label.pill { opacity: 0.8; }
 cellbutton.on label.pill { background-color: @accent_bg_color; color: @accent_fg_color; }
 cellbutton.off label.pill { box-shadow: inset 0 0 0 1px alpha(currentColor, 0.35); color: alpha(currentColor, 0.55); }
 cellbutton.missing label.pill, cellbutton.error label.pill { opacity: 0.6; }
 cellbutton.error image { color: @error_color; }
 .matrix-header.offline { opacity: 0.55; }
+.matrix-group, .matrix-axis { font-size: 0.8em; font-weight: bold; letter-spacing: 0.06em; opacity: 0.55; }
+.matrix-name { padding: 2px 6px; }
+.matrix-name label { font-weight: normal; }
 ";

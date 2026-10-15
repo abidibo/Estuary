@@ -519,6 +519,58 @@ fn prepare_quit_and_teardown() {
 }
 
 #[test]
+fn teardown_hands_rule_placed_streams_back_to_the_default() {
+    const SPK: &str = "alsa_output.usb-speakers";
+    let mut h = Harness::connected(&FakeGraph::standard().device(SPK, "Speakers", "Audio/Sink"));
+    let (mut setup, _) = preset();
+    setup.app_rules.push(AppRule {
+        app: crate::AppKey("bin:spotify".into()),
+        target: RouteTarget::Device {
+            key: DeviceKey(SPK.into()),
+        },
+        display_name: "Spotify".into(),
+    });
+    h.command(Command::SetSetup(setup));
+    let spotify = h
+        .core
+        .mirror
+        .nodes
+        .values()
+        .find(|n| n.kind == NodeKind::AppPlayback)
+        .unwrap()
+        .id;
+    // Spotify is already linked, so it settled and the rule was applied by the setup.
+    let value = h
+        .ops
+        .iter()
+        .find_map(|op| match op {
+            PwOp::MetaWrite {
+                subject,
+                value: Some(v),
+                ..
+            } if *subject == spotify => Some(v.clone()),
+            _ => None,
+        })
+        .expect("the rule pins spotify to the speakers");
+    // The fake shell doesn't echo metadata; deliver the write as PipeWire would.
+    h.graph(&GraphChange::DefaultMetaProperty {
+        subject: spotify,
+        key: super::TARGET_KEY.into(),
+        type_: Some("Spa:Id".into()),
+        value: Some(value),
+    });
+
+    let fx = h.core.on_command(Command::Teardown);
+    assert!(
+        fx.ops.iter().any(|op| matches!(
+            op,
+            PwOp::MetaWrite { subject, value: None, .. } if *subject == spotify
+        )),
+        "quit clears the target so WirePlumber forgets it too"
+    );
+}
+
+#[test]
 fn a_topology_change_pulls_an_armed_retry_earlier() {
     let reconcile_after = |fx: &Effects| {
         fx.timers

@@ -39,7 +39,7 @@ use estuary_engine::setup::CloseAction;
 /// Debounce for recomputing which meters are visible (UI M4.4).
 const METER_RECOMPUTE: Duration = Duration::from_millis(100);
 
-const REPOSITORY: &str = "https://github.com/abidibo/estuary";
+const REPOSITORY: &str = "https://github.com/abidibo/Estuary";
 
 pub struct AppModel {
     engine: Option<Engine>,

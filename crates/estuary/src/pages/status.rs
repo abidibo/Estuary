@@ -6,7 +6,7 @@ use relm4::{adw, gtk};
 
 use crate::i18n::{i18n, i18n_f};
 
-const README_URL: &str = "https://github.com/abidibo/estuary#requirements";
+const README_URL: &str = "https://github.com/abidibo/Estuary#requirements";
 
 /// What the root stack should show for a connection state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
