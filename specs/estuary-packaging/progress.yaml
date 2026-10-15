@@ -512,9 +512,9 @@ steps:
     completed_at: '2026-10-15T12:48:31+02:00'
 - id: M12.11
   title: Release procedure
-  status: in_progress
+  status: completed
   started_at: '2026-10-15T15:50:00+02:00'
-  completed_at: null
+  completed_at: '2026-10-15T16:35:00+02:00'
   tasks:
   - id: M12.11.1
     description: Bump [workspace.package] version in Cargo.toml
@@ -541,14 +541,14 @@ steps:
     notes: Annotated tag v0.1.0 pushed; the Release workflow published https://github.com/abidibo/Estuary/releases/tag/v0.1.0 with the bundle and checksum (download verified and installed).
   - id: M12.11.5
     description: Update tag/commit and copy cargo-sources.json in the flathub repo manifest; test the buildbot flatpakref before merging
-    status: pending
-    started_at: null
+    status: cancelled
+    started_at: '2026-10-15T16:35:00+02:00'
     completed_at: null
 - id: M12.12
   title: Flathub submission (first release)
-  status: in_progress
+  status: completed
   started_at: '2026-10-15T15:50:00+02:00'
-  completed_at: null
+  completed_at: '2026-10-15T16:35:00+02:00'
   notes: 'Flathub submission dropped by the user (2026-10-15): Flathub rejects projects without a meaningful development history, forbids AI-generated manifests and AI-written submission PRs, and reviews disclosed AI-generated code at discretion. Replaced by a self-hosted, GPG-signed Flatpak repository on GitHub Pages (M12.12.8). Flathub can be reconsidered later, with a hand-written manifest and PR.'
   tasks:
   - id: M12.12.1
@@ -590,6 +590,7 @@ steps:
     completed_at: null
   - id: M12.12.8
     description: Self-hosted signed Flatpak repository on GitHub Pages (build-aux/publish-flatpak-repo.sh, dedicated GPG key in the FLATPAK_GPG_KEY secret, .flatpakref/.flatpakrepo, published by the Release workflow)
-    status: in_progress
+    status: completed
     started_at: '2026-10-15T16:10:00+02:00'
-    completed_at: null
+    completed_at: '2026-10-15T16:35:00+02:00'
+    notes: 'Live at https://abidibo.github.io/Estuary/ (Pages from gh-pages). Verified: summary signed and rejected without the key; installed from the published estuary.flatpakref with gpg-verify=true; flatpak update finds it.'
