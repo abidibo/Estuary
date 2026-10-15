@@ -7,3 +7,4 @@
 /po/*.mo
 /po/*~
 /build-aux/.screenshots.yml
+/build-aux/io.github.abidibo.Estuary.yml

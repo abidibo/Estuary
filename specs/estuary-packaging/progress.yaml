@@ -526,9 +526,10 @@ steps:
     completed_at: null
   - id: M12.11.3
     description: Refresh data/screenshots/matrix.png and apps.png from the Flatpak build (1000x700, light theme, English)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T15:10:00+02:00'
+    completed_at: '2026-10-15T15:15:00+02:00'
+    notes: Rendered with ESTUARY_SNAPSHOT from the native build (same UI as the release Flatpak), ADW_DEBUG_COLOR_SCHEME=prefer-light, demo config and silent pw-play streams with media.role=EstuaryDemo. A tag-triggered Release workflow (.github/workflows/release.yml) now builds the release-profile bundle and publishes the GitHub Release.
   - id: M12.11.4
     description: Run build-aux/update-pot.sh, commit, create annotated tag vX.Y.Z and push it
     status: pending
@@ -546,7 +547,7 @@ steps:
   completed_at: null
   tasks:
   - id: M12.12.1
-    description: Make github.com/abidibo/estuary public and push tag v0.1.0 with metainfo, desktop file and icons upstream
+    description: Make github.com/abidibo/Estuary public and push tag v0.1.0 with metainfo, desktop file and icons upstream
     status: pending
     started_at: null
     completed_at: null

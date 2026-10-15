@@ -1,0 +1,66 @@
+name: Release
+# Pushing a tag vX.Y.Z builds the release Flatpak and publishes it as a GitHub Release with a
+# single-file bundle (.flatpak). The bundle points at Flathub for the GNOME runtime, so
+# `flatpak install` fetches it automatically.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  bundle:
+    name: Flatpak bundle
+    runs-on: ubuntu-26.04
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-51
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v7
+      - name: Check tag against Cargo.toml and MetaInfo
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          grep -q "^version = \"$v\"" Cargo.toml || { echo "::error::Cargo.toml version is not $v"; exit 1; }
+          grep -q "<release version=\"$v\"" data/io.github.abidibo.Estuary.metainfo.xml.in \
+            || { echo "::error::MetaInfo has no <release version=\"$v\">"; exit 1; }
+      - name: Release manifest
+        # Same as the Devel manifest except for the profile (packaging M12.8).
+        run: |
+          sed 's/ESTUARY_PROFILE: devel/ESTUARY_PROFILE: default/' \
+            build-aux/io.github.abidibo.Estuary.Devel.yml > build-aux/io.github.abidibo.Estuary.yml
+          grep -q 'ESTUARY_PROFILE: default' build-aux/io.github.abidibo.Estuary.yml
+      - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          manifest-path: build-aux/io.github.abidibo.Estuary.yml
+          bundle: Estuary.flatpak
+          cache: false
+          upload-artifact: false
+      - name: Bundle with the Flathub runtime repo
+        run: |
+          flatpak build-bundle repo "Estuary-${GITHUB_REF_NAME}-x86_64.flatpak" io.github.abidibo.Estuary \
+            --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo
+          sha256sum "Estuary-${GITHUB_REF_NAME}-x86_64.flatpak" > "Estuary-${GITHUB_REF_NAME}-x86_64.flatpak.sha256"
+      - name: Release notes
+        run: |
+          cat > notes.md <<EOF
+          ## Install
+
+          Download **Estuary-${GITHUB_REF_NAME}-x86_64.flatpak** below, then double-click it
+          (GNOME Software / Pop!_Shop) or run:
+
+          \`\`\`sh
+          flatpak install --user ./Estuary-${GITHUB_REF_NAME}-x86_64.flatpak
+          \`\`\`
+
+          Flathub must be set up on your system (it is on Pop!_OS, Fedora and most distros);
+          the GNOME runtime is installed from it automatically. Full instructions, requirements
+          and a quick start are in the [README](https://github.com/${GITHUB_REPOSITORY}#readme).
+          EOF
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: Estuary ${{ github.ref_name }}
+          body_path: notes.md
+          files: |
+            Estuary-${{ github.ref_name }}-x86_64.flatpak
+            Estuary-${{ github.ref_name }}-x86_64.flatpak.sha256
