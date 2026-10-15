@@ -1,24 +1,34 @@
 name: Release
-# Pushing a tag vX.Y.Z builds the release Flatpak and publishes it as a GitHub Release with a
-# single-file bundle (.flatpak). The bundle points at Flathub for the GNOME runtime, so
-# `flatpak install` fetches it automatically.
+# A tag vX.Y.Z builds the release Flatpak and publishes:
+#  - a GitHub Release with a single-file bundle (.flatpak) and its checksum;
+#  - the signed Flatpak repository on GitHub Pages (https://abidibo.github.io/Estuary/), from
+#    which users install and get updates.
+# Running it by hand (workflow_dispatch) republishes only the repository, from the chosen ref.
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
-  bundle:
-    name: Flatpak bundle
+  release:
+    name: Flatpak release
     runs-on: ubuntu-26.04
     container:
       image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-51
       options: --privileged
+    env:
+      IS_TAG: ${{ startsWith(github.ref, 'refs/tags/v') }}
     steps:
       - uses: actions/checkout@v7
       - name: Check tag against Cargo.toml and MetaInfo
+        if: env.IS_TAG == 'true'
         run: |
           v="${GITHUB_REF_NAME#v}"
           grep -q "^version = \"$v\"" Cargo.toml || { echo "::error::Cargo.toml version is not $v"; exit 1; }
@@ -36,31 +46,67 @@ jobs:
           bundle: Estuary.flatpak
           cache: false
           upload-artifact: false
+
       - name: Bundle with the Flathub runtime repo
+        if: env.IS_TAG == 'true'
         run: |
           flatpak build-bundle repo "Estuary-${GITHUB_REF_NAME}-x86_64.flatpak" io.github.abidibo.Estuary \
             --runtime-repo=https://dl.flathub.org/repo/flathub.flatpakrepo
           sha256sum "Estuary-${GITHUB_REF_NAME}-x86_64.flatpak" > "Estuary-${GITHUB_REF_NAME}-x86_64.flatpak.sha256"
       - name: Release notes
+        if: env.IS_TAG == 'true'
         run: |
           cat > notes.md <<EOF
           ## Install
 
-          Download **Estuary-${GITHUB_REF_NAME}-x86_64.flatpak** below, then double-click it
-          (GNOME Software / Pop!_Shop) or run:
+          **Recommended:** open [estuary.flatpakref](https://abidibo.github.io/Estuary/estuary.flatpakref)
+          (GNOME Software / Pop!_Shop / KDE Discover install it, and updates arrive automatically), or:
 
           \`\`\`sh
-          flatpak install --user ./Estuary-${GITHUB_REF_NAME}-x86_64.flatpak
+          flatpak remote-add --user --if-not-exists estuary https://abidibo.github.io/Estuary/estuary.flatpakrepo
+          flatpak install --user estuary io.github.abidibo.Estuary
           \`\`\`
 
-          Flathub must be set up on your system (it is on Pop!_OS, Fedora and most distros);
-          the GNOME runtime is installed from it automatically. Full instructions, requirements
-          and a quick start are in the [README](https://github.com/${GITHUB_REPOSITORY}#readme).
+          **Single file:** download **Estuary-${GITHUB_REF_NAME}-x86_64.flatpak** below, then double-click it
+          or run \`flatpak install --user ./Estuary-${GITHUB_REF_NAME}-x86_64.flatpak\` (no automatic updates).
+
+          Flathub must be set up on your system for the GNOME runtime (it is on Pop!_OS, Fedora and most
+          distros). Requirements and a quick start are in the [README](https://github.com/${GITHUB_REPOSITORY}#readme).
           EOF
       - uses: softprops/action-gh-release@v2
+        if: env.IS_TAG == 'true'
         with:
           name: Estuary ${{ github.ref_name }}
           body_path: notes.md
           files: |
             Estuary-${{ github.ref_name }}-x86_64.flatpak
             Estuary-${{ github.ref_name }}-x86_64.flatpak.sha256
+
+      - name: Tools for signing and deploying
+        run: |
+          missing=""
+          command -v gpg >/dev/null || missing="$missing gnupg2"
+          command -v git >/dev/null || missing="$missing git"
+          [ -z "$missing" ] || dnf install -y $missing
+      - name: Signed Flatpak repository
+        env:
+          FLATPAK_GPG_KEY: ${{ secrets.FLATPAK_GPG_KEY }}
+        run: |
+          [ -n "$FLATPAK_GPG_KEY" ] || { echo "::error::secret FLATPAK_GPG_KEY is not set"; exit 1; }
+          export GNUPGHOME="$RUNNER_TEMP/gnupg"
+          mkdir -m 700 -p "$GNUPGHOME"
+          printf '%s\n' "$FLATPAK_GPG_KEY" | gpg --batch --import
+          key=$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr/ { print $10; exit }')
+          build-aux/publish-flatpak-repo.sh repo "$RUNNER_TEMP/site" "$key" "$GNUPGHOME"
+      - name: Deploy to gh-pages
+        # One orphan commit, force-pushed: the branch never accumulates old binaries.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd "$RUNNER_TEMP/site"
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Flatpak repository from ${GITHUB_REF_NAME} (${GITHUB_SHA})"
+          git push -q -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gh-pages

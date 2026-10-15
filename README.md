@@ -54,44 +54,48 @@ Native GTK4 and libadwaita app, written in Rust, built directly on PipeWire. Eng
 
 ## Install
 
-### From Flathub (recommended, coming soon)
+### From the Estuary repository (recommended)
 
-Estuary is being submitted to [Flathub](https://flathub.org). Once it is listed, search for
-**Estuary** in GNOME Software, Pop!_Shop or KDE Discover and click *Install*, or run:
+Estuary has its own Flatpak repository: you install it like any other app and updates arrive
+automatically, together with your other apps.
+
+**One click:** open [estuary.flatpakref](https://abidibo.github.io/Estuary/estuary.flatpakref).
+GNOME Software, Pop!_Shop or KDE Discover show Estuary with an *Install* button.
+
+**Or from a terminal:**
 
 ```sh
-flatpak install flathub io.github.abidibo.Estuary
+flatpak remote-add --user --if-not-exists estuary https://abidibo.github.io/Estuary/estuary.flatpakrepo
+flatpak install --user estuary io.github.abidibo.Estuary
 ```
 
-Updates then arrive automatically with your other apps.
+The GNOME runtime Estuary runs on comes from [Flathub](https://flathub.org), which is set up out
+of the box on most distributions. If it isn't on yours, add it first:
 
-### From GitHub Releases (available now)
+```sh
+flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+```
 
-1. Make sure Flathub is configured. It provides the GNOME runtime Estuary runs on, and it's set up
-   out of the box on most distributions. If you're not sure, this is safe to run:
+Start **Estuary** from your app grid, or with `flatpak run io.github.abidibo.Estuary`. Update with
+your software center or `flatpak update`.
 
-   ```sh
-   flatpak remote-add --if-not-exists --user flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-   ```
+The repository is signed; its key fingerprint is
+`543D AF15 9FE3 B8B3 9D2A  D8A1 7D4F 25E3 6188 8E38`.
 
-2. Download `Estuary-vX.Y.Z-x86_64.flatpak` from the
-   [latest release](https://github.com/abidibo/Estuary/releases/latest).
-3. Double-click it to open it in your software center, or install it from a terminal:
+### Single file from GitHub Releases
 
-   ```sh
-   flatpak install --user ./Estuary-vX.Y.Z-x86_64.flatpak
-   ```
-
-4. Start **Estuary** from your app grid, or with `flatpak run io.github.abidibo.Estuary`.
-
-To update, download the new release and install it the same way. Each release also has a
-`.sha256` file to verify the download (`sha256sum -c Estuary-*.flatpak.sha256`).
+Each [release](https://github.com/abidibo/Estuary/releases/latest) also has
+`Estuary-vX.Y.Z-x86_64.flatpak`. Double-click it, or run
+`flatpak install --user ./Estuary-vX.Y.Z-x86_64.flatpak`. This way there are no automatic updates:
+install the next release the same way. A `.sha256` file lets you verify the download
+(`sha256sum -c Estuary-*.flatpak.sha256`).
 
 ### Uninstall
 
 ```sh
 flatpak uninstall --user io.github.abidibo.Estuary               # keep your settings
 flatpak uninstall --user --delete-data io.github.abidibo.Estuary # remove settings too
+flatpak remote-delete --user estuary                             # remove the repository
 ```
 
 If you turned on *Start at login*, turn it off in Preferences before uninstalling, or delete
@@ -275,7 +279,11 @@ To add a language, copy `po/estuary.pot` to `po/<lang>.po`, translate it, and ad
 1. Bump `version` in `Cargo.toml` and add a `<release>` entry at the top of
    `data/io.github.abidibo.Estuary.metainfo.xml.in`.
 2. Commit, then tag and push: `git tag -a vX.Y.Z -m "Estuary X.Y.Z" && git push origin vX.Y.Z`.
-3. The *Release* workflow builds the Flatpak bundle and publishes the GitHub Release.
+3. The *Release* workflow builds the Flatpak, publishes the GitHub Release with the bundle, and
+   rebuilds the signed Flatpak repository on GitHub Pages (branch `gh-pages`) with
+   `build-aux/publish-flatpak-repo.sh`. It signs with the Actions secret `FLATPAK_GPG_KEY`; the
+   matching public key is `build-aux/estuary-flatpak-repo.gpg`. Running the workflow by hand
+   republishes only the repository.
 
 The design is documented in [`specs/estuary/spec.md`](specs/estuary/spec.md).
 
