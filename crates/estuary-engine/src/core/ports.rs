@@ -20,12 +20,23 @@ pub(crate) enum PortRole {
 }
 
 pub(crate) fn ports(m: &GraphMirror, node_id: u32, role: PortRole) -> Vec<&PortEntry> {
+    if role == PortRole::Capture {
+        // A source's outputs. Virtual sources (null sinks with a source class) flag every
+        // output `port.monitor`; prefer real capture ports, else take what there is.
+        let outs: Vec<&PortEntry> = m
+            .ports
+            .values()
+            .filter(|p| p.node_id == node_id && p.dir == PortDir::Out)
+            .collect();
+        let real: Vec<&PortEntry> = outs.iter().copied().filter(|p| !p.monitor).collect();
+        return if real.is_empty() { outs } else { real };
+    }
     m.ports
         .values()
         .filter(|p| p.node_id == node_id)
         .filter(|p| match role {
             PortRole::Monitor => p.dir == PortDir::Out && p.monitor,
-            PortRole::Capture => p.dir == PortDir::Out && !p.monitor,
+            PortRole::Capture => unreachable!("handled above"),
             PortRole::Playback => p.dir == PortDir::In,
             PortRole::FilterIn | PortRole::VmicIn => {
                 p.dir == PortDir::In && p.name.starts_with("input_")
@@ -200,5 +211,23 @@ mod tests {
                 .collect::<Vec<_>>(),
             vec![3]
         );
+    }
+
+    #[test]
+    fn virtual_source_captures_from_its_monitor_flagged_outputs() {
+        let mut m = GraphMirror::default();
+        for p in [
+            port(1, PortDir::In, "input_FL", "FL", false),
+            port(2, PortDir::Out, "capture_FL", "FL", true),
+            port(3, PortDir::Out, "capture_FR", "FR", true),
+        ] {
+            m.ports.insert(p.id, p);
+        }
+        let mut ids: Vec<u32> = ports(&m, 1, PortRole::Capture)
+            .iter()
+            .map(|p| p.id)
+            .collect();
+        ids.sort_unstable();
+        assert_eq!(ids, vec![2, 3]);
     }
 }

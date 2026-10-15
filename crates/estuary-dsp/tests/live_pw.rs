@@ -13,7 +13,9 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::{Duration, Instant};
 
-use estuary_dsp::{FilterNode, FilterState, Processor, STEREO_IN, STEREO_OUT, new_gain_node};
+use estuary_dsp::{
+    FilterNode, FilterState, Processor, STEREO_IN, STEREO_OUT, new_denoiser_node, new_gain_node,
+};
 use pipewire::context::ContextRc;
 use pipewire::core::CoreRc;
 use pipewire::loop_::Timeout;
@@ -346,4 +348,182 @@ fn create_link_drop_repeatedly_leaves_nothing_behind() {
         !pw_cli_ls("Node").contains("estuary.test.churn"),
         "no leaked nodes"
     );
+}
+
+/// dsp M10.6: the denoiser node has the C5 ports and reports its 20 ms ProcessLatency.
+#[test]
+#[ignore = "live-pw: needs a running PipeWire session"]
+fn denoiser_node_reports_its_latency() {
+    let pw = connect();
+    let (node, h) = new_denoiser_node(
+        &pw.core,
+        "estuary.test.denoise",
+        test_props("estuary.test.denoise"),
+    )
+    .unwrap();
+    h.set_vad_gate(0.5);
+    wait_paused(&pw, &node);
+    let id = node.node_id().unwrap();
+    pump(&pw, Duration::from_millis(200));
+    let ports = pw_cli_ls("Port");
+    let mine = ports
+        .split("\tid ")
+        .filter(|b| b.contains(&format!("node.id = \"{id}\"")))
+        .count();
+    assert_eq!(mine, 4, "four ports on node {id}");
+    // pw-dump may need our loop to answer, so keep pumping while it runs.
+    let mut dump = Command::new("pw-dump")
+        .arg(id.to_string())
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let mut out = String::new();
+    let done = pump_until(&pw, Duration::from_secs(3), || {
+        matches!(dump.try_wait(), Ok(Some(_)))
+    });
+    assert!(done, "pw-dump finished");
+    std::io::Read::read_to_string(dump.stdout.as_mut().unwrap(), &mut out).unwrap();
+    let compact: String = out.split_whitespace().collect();
+    assert!(
+        compact.contains("\"ns\":20000000"),
+        "ProcessLatency of 20 ms in the node's params:\n{out}"
+    );
+}
+
+/// Sum of squares (×1e12, integer) and sample count of what it receives; outputs silence.
+struct RmsProbe(
+    Arc<std::sync::atomic::AtomicU64>,
+    Arc<std::sync::atomic::AtomicU64>,
+);
+impl Processor for RmsProbe {
+    fn process(&mut self, ins: &[&[f32]], outs: &mut [&mut [f32]], n: usize, _rate: u32) {
+        let sq: f64 = ins[0][..n].iter().map(|v| f64::from(*v).powi(2)).sum();
+        self.0.fetch_add((sq * 1e12) as u64, Ordering::Relaxed);
+        self.1.fetch_add(n as u64, Ordering::Relaxed);
+        for o in outs.iter_mut() {
+            o[..n].fill(0.0);
+        }
+    }
+}
+
+/// dsp M10: the denoiser node runs in a live graph: bypass is transparent, the voice gate
+/// closes on noise, no underruns.
+#[test]
+#[ignore = "live-pw: needs a running PipeWire session"]
+fn denoiser_runs_in_graph() {
+    let pw = connect();
+    let (dn, handle) = new_denoiser_node(
+        &pw.core,
+        "estuary.test.denoise",
+        test_props("estuary.test.denoise"),
+    )
+    .unwrap();
+    let sum = Arc::new(std::sync::atomic::AtomicU64::new(0));
+    let count = Arc::new(std::sync::atomic::AtomicU64::new(0));
+    let probe = FilterNode::new(
+        &pw.core,
+        "estuary.test.probe",
+        test_props("estuary.test.probe"),
+        &STEREO_IN,
+        &STEREO_OUT,
+        RmsProbe(Arc::clone(&sum), Arc::clone(&count)),
+    )
+    .unwrap();
+    wait_paused(&pw, &dn);
+    wait_paused(&pw, &probe);
+    // White noise at −30 dBFS RMS.
+    let path = std::env::temp_dir().join("estuary-test-noise.raw");
+    let amp = 10f32.powf(-30.0 / 20.0) * 3f32.sqrt();
+    let mut seed = 9_u64; // the unit test's fixture (see denoise_attenuates_noise)
+    let mut pcm = Vec::new();
+    for _ in 0..48_000 * 20 {
+        seed ^= seed << 13;
+        seed ^= seed >> 7;
+        seed ^= seed << 17;
+        let u = (seed >> 40) as f32 / (1u64 << 24) as f32 * 2.0 - 1.0;
+        let v = (u * amp * 32767.0) as i16;
+        pcm.extend_from_slice(&v.to_le_bytes());
+        pcm.extend_from_slice(&v.to_le_bytes());
+    }
+    std::fs::write(&path, pcm).unwrap();
+    let mut player = Command::new("pw-cat")
+        .args(["--playback", "--raw", "--format", "s16", "--rate", "48000", "--channels", "2"])
+        .args(["--volume", "1.0"])
+        .args([
+            "-P",
+            "{ node.name = \"estuary-test-noise\" node.autoconnect = false state.restore-props = false }",
+        ])
+        .arg(&path)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .unwrap();
+    pump(&pw, Duration::from_millis(500));
+    for (o, i) in [
+        (
+            "estuary-test-noise:output_FL",
+            "estuary.test.denoise:input_FL",
+        ),
+        (
+            "estuary-test-noise:output_FR",
+            "estuary.test.denoise:input_FR",
+        ),
+        (
+            "estuary.test.denoise:output_FL",
+            "estuary.test.probe:input_FL",
+        ),
+        (
+            "estuary.test.denoise:output_FR",
+            "estuary.test.probe:input_FR",
+        ),
+    ] {
+        let mut c = link(o, i);
+        assert!(pump_until(&pw, Duration::from_secs(2), || c
+            .try_wait()
+            .ok()
+            .flatten()
+            .is_some()));
+    }
+    let measure = |pw: &Pw| -> f64 {
+        pump(pw, Duration::from_millis(1500));
+        sum.store(0, Ordering::Relaxed);
+        count.store(0, Ordering::Relaxed);
+        pump(pw, Duration::from_secs(2));
+        let ms =
+            sum.load(Ordering::Relaxed) as f64 / 1e12 / count.load(Ordering::Relaxed).max(1) as f64;
+        10.0 * ms.max(1e-18).log10()
+    };
+    let on = measure(&pw);
+    handle.set_vad_gate(0.9);
+    let gated = measure(&pw);
+    handle.set_enabled(false);
+    let off = measure(&pw);
+    let stats = dn.stats();
+    eprintln!(
+        "in-graph RMS: off {off:.1} dBFS, on {on:.1} dBFS, gate 0.9 {gated:.1} dBFS; underruns {}, xruns {}, unsupported {}, rate {}, quantum {}",
+        stats.underruns.load(Ordering::Relaxed),
+        stats.xruns.load(Ordering::Relaxed),
+        stats.unsupported_rate.load(Ordering::Relaxed),
+        stats.last_rate.load(Ordering::Relaxed),
+        stats.last_quantum.load(Ordering::Relaxed)
+    );
+    let _ = player.kill();
+    let _ = player.wait();
+    let _ = std::fs::remove_file(path);
+    // RNNoise's attenuation of synthetic noise depends on the exact realization and its start
+    // offset (offline `denoise_attenuates_noise`); the voice gate closing on noise doesn't.
+    assert!(
+        (off + 30.0).abs() < 0.5,
+        "bypass passes the noise unchanged ({off:.1} dBFS)"
+    );
+    assert!(
+        gated < -60.0,
+        "the voice gate closed on noise ({gated:.1} dBFS)"
+    );
+    assert!(
+        on < off + 1.0,
+        "suppression doesn't amplify ({on:.1} vs {off:.1})"
+    );
+    assert_eq!(stats.underruns.load(Ordering::Relaxed), 0);
+    assert_eq!(stats.unsupported_rate.load(Ordering::Relaxed), 0);
 }

@@ -14,6 +14,7 @@ pub(crate) fn build_snapshot(
     m: &GraphMirror,
     setup: Option<&Setup>,
     reconciler: &super::reconcile::Reconciler,
+    denoiser_xruns: &std::collections::HashMap<DeviceKey, u64>,
 ) -> GraphSnapshot {
     let empty = Setup::default();
     let setup = setup.unwrap_or(&empty);
@@ -84,8 +85,8 @@ pub(crate) fn build_snapshot(
             .map(|d| DenoiserState {
                 input: d.input.clone(),
                 enabled: d.enabled,
-                active: false,
-                xruns: 0,
+                active: reconciler.denoiser_active(&d.input),
+                xruns: denoiser_xruns.get(&d.input).copied().unwrap_or(0),
             })
             .collect(),
         cells: setup

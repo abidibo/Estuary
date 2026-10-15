@@ -40,7 +40,7 @@ use crate::graph::{
 use crate::meter::{MeterBank, MeterSlotId};
 use crate::model::CellKey;
 use crate::{Command, EngineConfig, Event};
-use estuary_dsp::{FilterNode, GainHandle};
+use estuary_dsp::{DenoiseHandle, FilterNode, GainHandle};
 use pipewire::link::Link;
 
 /// Linux `EPIPE`: the core reports a lost connection as `error(PW_ID_CORE, .., -EPIPE, ..)`.
@@ -58,6 +58,7 @@ enum Input {
 struct Conn {
     /// Matrix sends (`FilterNode`s) and their gain handles.
     cells: HashMap<CellKey, (FilterNode, GainHandle)>,
+    denoisers: HashMap<crate::model::DeviceKey, (FilterNode, DenoiseHandle)>,
     /// Channel / virtual-mic adapter proxies, kept for the objects' lifetime.
     owned_nodes: HashMap<OwnedKey, Node>,
     owned_links: HashMap<LinkKey, Link>,
@@ -384,6 +385,47 @@ impl Shell {
                     }
                 }
             }
+            PwOp::CreateDenoiser {
+                key,
+                name,
+                props,
+                enabled,
+                vad_gate,
+            } => match estuary_dsp::new_denoiser_node(&conn.core, &name, to_properties(&props)) {
+                Ok((node, handle)) => {
+                    handle.set_enabled(enabled);
+                    handle.set_vad_gate(vad_gate);
+                    let weak = Rc::downgrade(&self.0);
+                    let input = key.clone();
+                    node.set_state_listener(move |state, _id| {
+                        if let estuary_dsp::FilterState::Error(message) = state {
+                            let change = GraphChange::DenoiserError {
+                                key: input.clone(),
+                                message: message.clone(),
+                            };
+                            Self::callback(&weak, |s| s.push(Input::Graph(change)));
+                        }
+                    });
+                    conn.denoisers.insert(key, (node, handle));
+                }
+                Err(e) => {
+                    return vec![GraphChange::CreateFailed {
+                        key: OwnedKey::Denoiser(key),
+                        message: e.to_string(),
+                    }];
+                }
+            },
+            PwOp::SetDenoise {
+                key,
+                enabled,
+                vad_gate,
+            } => {
+                tracing::debug!(input = %key.0, enabled, vad_gate, found = conn.denoisers.contains_key(&key), "set denoise");
+                if let Some((_, handle)) = conn.denoisers.get(&key) {
+                    handle.set_enabled(enabled);
+                    handle.set_vad_gate(vad_gate);
+                }
+            }
             PwOp::CreateLink {
                 key,
                 out_node,
@@ -418,15 +460,28 @@ impl Shell {
             }
             PwOp::Destroy { key, global_id } => {
                 // Cells are our own client's nodes: dropping the FilterNode removes them.
+                // So are denoisers.
                 let cell = match &key {
-                    OwnedKey::Cell(c) => conn.cells.remove(c),
+                    OwnedKey::Cell(c) => conn.cells.remove(c).map(|(n, _)| n),
+                    OwnedKey::Denoiser(k) => conn.denoisers.remove(k).map(|(n, _)| n),
                     OwnedKey::StaleNode(id) => {
-                        let found = conn
+                        let cell = conn
                             .cells
                             .iter()
                             .find(|(_, (n, _))| n.node_id() == Some(*id))
                             .map(|(k, _)| k.clone());
-                        found.and_then(|k| conn.cells.remove(&k))
+                        let denoiser = conn
+                            .denoisers
+                            .iter()
+                            .find(|(_, (n, _))| n.node_id() == Some(*id))
+                            .map(|(k, _)| k.clone());
+                        cell.and_then(|k| conn.cells.remove(&k))
+                            .map(|(n, _)| n)
+                            .or_else(|| {
+                                denoiser
+                                    .and_then(|k| conn.denoisers.remove(&k))
+                                    .map(|(n, _)| n)
+                            })
                     }
                     _ => None,
                 };
@@ -441,7 +496,7 @@ impl Shell {
                 if let Some(p) = &proxy {
                     conn.owned_proxies.remove(&p.id());
                 }
-                if let Some((node, _)) = cell {
+                if let Some(node) = cell {
                     st.cell_graveyard.push(node);
                     self.bury();
                 } else if proxy.is_none()
@@ -480,6 +535,33 @@ impl Shell {
                         changes.push(GraphChange::FilterXruns {
                             key: key.clone(),
                             total,
+                        });
+                    }
+                }
+                for (key, (node, _)) in &conn.denoisers {
+                    let stats = node.stats();
+                    let load = |a: &std::sync::atomic::AtomicU64| {
+                        a.load(std::sync::atomic::Ordering::Relaxed)
+                    };
+                    if stats.poisoned.load(std::sync::atomic::Ordering::Relaxed) {
+                        changes.push(GraphChange::DenoiserPoisoned { key: key.clone() });
+                    }
+                    if log_process {
+                        let ns = stats
+                            .max_process_ns
+                            .swap(0, std::sync::atomic::Ordering::Relaxed);
+                        tracing::debug!(input = %key.0, max_process_us = ns / 1000, "denoiser processing time");
+                    }
+                    let (xruns, underruns) = (load(&stats.xruns), load(&stats.underruns));
+                    let unsupported_rate = stats
+                        .unsupported_rate
+                        .load(std::sync::atomic::Ordering::Relaxed);
+                    if xruns > 0 || underruns > 0 || unsupported_rate > 0 {
+                        changes.push(GraphChange::DenoiserStats {
+                            key: key.clone(),
+                            xruns,
+                            underruns,
+                            unsupported_rate,
                         });
                     }
                 }
@@ -561,6 +643,7 @@ impl Shell {
             .register();
         self.0.state.borrow_mut().conn = Some(Conn {
             cells: HashMap::new(),
+            denoisers: HashMap::new(),
             owned_nodes: HashMap::new(),
             owned_links: HashMap::new(),
             owned_proxies: HashMap::new(),

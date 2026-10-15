@@ -6,3 +6,6 @@ pub const MAX_QUANTUM: usize = 8192;
 pub const MAX_PORTS: usize = 8;
 /// Gain changes ramp linearly over this long, at any rate (C11).
 pub const GAIN_RAMP_SECS: f32 = 0.010;
+/// nnnoiseless runs at 48 kHz on 480-frame (10 ms) blocks (F11).
+pub const DENOISE_RATE: u32 = 48_000;
+pub const DENOISE_BLOCK: usize = 480;

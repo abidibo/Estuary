@@ -167,6 +167,22 @@ pub(crate) enum GraphChange {
         key: crate::model::CellKey,
         total: u64,
     },
+    /// A denoiser's `pw_filter` entered the error state.
+    DenoiserError {
+        key: crate::model::DeviceKey,
+        message: String,
+    },
+    /// A denoiser's processor panicked (stats poll).
+    DenoiserPoisoned {
+        key: crate::model::DeviceKey,
+    },
+    /// A denoiser's cumulative counters (stats poll, M10.2).
+    DenoiserStats {
+        key: crate::model::DeviceKey,
+        xruns: u64,
+        underruns: u64,
+        unsupported_rate: u32,
+    },
     DeviceRoute {
         device_id: u32,
         index: i32,
@@ -413,6 +429,9 @@ impl GraphMirror {
             | GraphChange::FilterError { .. }
             | GraphChange::FilterPoisoned { .. }
             | GraphChange::FilterXruns { .. }
+            | GraphChange::DenoiserError { .. }
+            | GraphChange::DenoiserPoisoned { .. }
+            | GraphChange::DenoiserStats { .. }
             | GraphChange::VolumeWriteFailed { .. }
             | GraphChange::MeterStreamFailed { .. }
             | GraphChange::SyncDone { .. } => ChangeImpact::default(),

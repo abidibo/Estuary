@@ -6,6 +6,7 @@ use estuary_engine::{
     MeterTarget, Setup, VirtualMicId, Volume,
 };
 
+use super::warnings::{Badge, Warnings};
 use crate::i18n::i18n_f;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -30,6 +31,8 @@ pub struct RowSpec {
     pub volume: Option<Volume>,
     pub meter: MeterTarget,
     pub denoise: Option<DenoiseView>,
+    /// Inputs only: whether noise suppression is on (the menu check, UI M10.1).
+    pub suppression: Option<bool>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -55,9 +58,11 @@ pub struct CellView {
 #[derive(Debug, Clone, PartialEq)]
 pub struct DenoiseView {
     pub enabled: bool,
+    /// The node is in the graph (off still passes the mic through: constant latency, C11).
     pub active: bool,
     pub vad_gate: f32,
-    pub xrun_warning: bool,
+    /// Overload, creation failure or unsupported rate (M11.5 mapping).
+    pub badge: Option<Badge>,
 }
 
 #[derive(Debug, Clone, PartialEq, Default)]
@@ -88,7 +93,7 @@ impl MatrixLayout {
     }
 }
 
-pub fn compute(setup: &Setup, snap: &GraphSnapshot) -> MatrixLayout {
+pub fn compute(setup: &Setup, snap: &GraphSnapshot, warnings: &Warnings) -> MatrixLayout {
     let mut rows = Vec::new();
     for c in &setup.channels {
         let live = snap.channels.iter().find(|s| s.id == c.id);
@@ -100,6 +105,7 @@ pub fn compute(setup: &Setup, snap: &GraphSnapshot) -> MatrixLayout {
             volume: Some(live.map_or_else(|| c.volume.clone(), |s| s.volume.clone())),
             meter: MeterTarget::Channel(c.id),
             denoise: None,
+            suppression: None,
         });
     }
     // The snapshot lists present and known-offline devices (C4).
@@ -114,6 +120,12 @@ pub fn compute(setup: &Setup, snap: &GraphSnapshot) -> MatrixLayout {
             volume: d.volume.clone(),
             meter: MeterTarget::Device(d.key.clone()),
             denoise: None,
+            suppression: Some(
+                setup
+                    .denoisers
+                    .iter()
+                    .any(|n| n.input == d.key && n.enabled),
+            ),
         });
         if let Some(def) = setup.denoisers.iter().find(|n| n.input == d.key) {
             let live = snap.denoisers.iter().find(|n| n.input == d.key);
@@ -129,8 +141,11 @@ pub fn compute(setup: &Setup, snap: &GraphSnapshot) -> MatrixLayout {
                     enabled: def.enabled,
                     active: live.is_some_and(|n| n.active),
                     vad_gate: def.vad_gate,
-                    xrun_warning: false,
+                    badge: warnings
+                        .get(&estuary_engine::WarnedNode::Denoiser(d.key.clone()))
+                        .cloned(),
                 }),
+                suppression: None,
             });
         }
     }
@@ -291,7 +306,7 @@ mod tests {
     #[test]
     fn rows_channels_then_sorted_inputs_with_denoised_below() {
         let f = fixture();
-        let l = compute(&f.setup, &f.snap);
+        let l = compute(&f.setup, &f.snap, &Warnings::default());
         let labels: Vec<&str> = l.rows.iter().map(|r| r.label.as_str()).collect();
         assert_eq!(
             labels,
@@ -315,7 +330,7 @@ mod tests {
     #[test]
     fn columns_outputs_by_description_then_mics() {
         let f = fixture();
-        let l = compute(&f.setup, &f.snap);
+        let l = compute(&f.setup, &f.snap, &Warnings::default());
         let labels: Vec<&str> = l.cols.iter().map(|c| c.label.as_str()).collect();
         assert_eq!(labels, ["Headphones", "Speakers", "Virtual mic"]);
         assert_eq!(l.cols[2].key, ColKey::VirtualMic(f.mic));
@@ -324,7 +339,7 @@ mod tests {
     #[test]
     fn offline_devices_stay_listed() {
         let f = fixture();
-        let l = compute(&f.setup, &f.snap);
+        let l = compute(&f.setup, &f.snap, &Warnings::default());
         let usb = l.rows.iter().find(|r| r.label == "USB mic").unwrap();
         assert!(
             !usb.present,
@@ -335,7 +350,7 @@ mod tests {
     #[test]
     fn cells_carry_setup_and_status() {
         let f = fixture();
-        let l = compute(&f.setup, &f.snap);
+        let l = compute(&f.setup, &f.snap, &Warnings::default());
         assert_eq!(l.cells.len(), l.rows.len());
         assert!(l.cells.iter().all(|r| r.len() == l.cols.len()));
         let to_hp = &l.cells[0][0];
@@ -355,7 +370,7 @@ mod tests {
     #[test]
     fn live_channel_volume_and_presence() {
         let f = fixture();
-        let l = compute(&f.setup, &f.snap);
+        let l = compute(&f.setup, &f.snap, &Warnings::default());
         assert!(l.rows[0].present);
         assert_eq!(l.rows[0].volume.as_ref().unwrap().channels, vec![0.5, 0.5]);
         assert!(!l.rows[1].present, "Chat isn't in the graph yet");
@@ -365,13 +380,19 @@ mod tests {
     #[test]
     fn shape_changes_only_with_rows_or_columns() {
         let f = fixture();
-        let a = compute(&f.setup, &f.snap);
+        let a = compute(&f.setup, &f.snap, &Warnings::default());
         let mut setup = f.setup.clone();
         setup.cells[0].gain_db = 0.0;
-        assert_eq!(compute(&setup, &f.snap).shape_key(), a.shape_key());
+        assert_eq!(
+            compute(&setup, &f.snap, &Warnings::default()).shape_key(),
+            a.shape_key()
+        );
         setup.channels.pop();
-        assert_ne!(compute(&setup, &f.snap).shape_key(), a.shape_key());
+        assert_ne!(
+            compute(&setup, &f.snap, &Warnings::default()).shape_key(),
+            a.shape_key()
+        );
         assert!(a.has_owned_nodes());
-        assert!(!compute(&Setup::default(), &f.snap).has_owned_nodes());
+        assert!(!compute(&Setup::default(), &f.snap, &Warnings::default()).has_owned_nodes());
     }
 }

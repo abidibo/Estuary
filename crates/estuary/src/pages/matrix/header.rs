@@ -30,11 +30,55 @@ pub enum HeaderAction {
     Rename,
     Delete,
     Forget,
+    /// The input menu's "Noise suppression" check (UI M10.1).
+    Denoise(bool),
+}
+
+/// From a noise-suppressed row's own controls (UI M10.2).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum DenoiseEvent {
+    Enabled(bool),
+    Gate { gate: f32, commit: bool },
 }
 
 /// `(level, muted, commit)`: throttled while moving, committed 400 ms after the last change.
 pub type VolumeFn = Rc<dyn Fn(f64, bool, bool)>;
 pub type ActionFn = Rc<dyn Fn(HeaderAction)>;
+pub type DenoiseFn = Rc<dyn Fn(DenoiseEvent)>;
+
+/// User changes of `scale` reach `on_value(value, commit)`: throttled to 30 Hz with
+/// `commit = false`, then once with `commit = true` 400 ms after the last change.
+fn connect_throttled(
+    scale: &gtk::Scale,
+    updating: Rc<Cell<bool>>,
+    last_user: Rc<Cell<Option<Instant>>>,
+    on_value: Rc<dyn Fn(f64, bool)>,
+) {
+    let throttle_pending = Rc::new(Cell::new(false));
+    let commit_timer: Rc<RefCell<Option<glib::SourceId>>> = Rc::default();
+    scale.connect_value_changed(move |scale| {
+        if updating.get() {
+            return;
+        }
+        last_user.set(Some(Instant::now()));
+        if !throttle_pending.replace(true) {
+            let (scale, pending, f) = (scale.clone(), throttle_pending.clone(), on_value.clone());
+            glib::timeout_add_local_once(THROTTLE, move || {
+                pending.set(false);
+                f(scale.value(), false);
+            });
+        }
+        if let Some(t) = commit_timer.borrow_mut().take() {
+            t.remove();
+        }
+        let (scale, timer, f) = (scale.clone(), commit_timer.clone(), on_value.clone());
+        let id = glib::timeout_add_local_once(COMMIT_AFTER, move || {
+            timer.borrow_mut().take();
+            f(scale.value(), true);
+        });
+        *commit_timer.borrow_mut() = Some(id);
+    });
+}
 
 /// A bare volume slider for headers (no mute button: there's no room; mute stays as it is).
 #[derive(Debug, Clone)]
@@ -67,47 +111,24 @@ impl CompactVolume {
             last_user: Rc::default(),
             muted: Rc::default(),
         };
-        let throttle_pending = Rc::new(Cell::new(false));
-        let commit_timer: Rc<RefCell<Option<glib::SourceId>>> = Rc::default();
         scale.connect_value_changed({
-            let this = this.clone();
+            let updating = this.updating.clone();
             move |scale| {
-                if this.updating.get() {
-                    return;
+                if !updating.get() {
+                    scale.set_tooltip_text(Some(&format!(
+                        "{} %",
+                        percent(slider_to_linear(scale.value()))
+                    )));
                 }
-                this.last_user.set(Some(Instant::now()));
-                scale.set_tooltip_text(Some(&format!(
-                    "{} %",
-                    percent(slider_to_linear(scale.value()))
-                )));
-                if !throttle_pending.replace(true) {
-                    let (scale, pending, muted, f) = (
-                        scale.clone(),
-                        throttle_pending.clone(),
-                        this.muted.clone(),
-                        on_change.clone(),
-                    );
-                    glib::timeout_add_local_once(THROTTLE, move || {
-                        pending.set(false);
-                        f(scale.value(), muted.get(), false);
-                    });
-                }
-                if let Some(t) = commit_timer.borrow_mut().take() {
-                    t.remove();
-                }
-                let (scale, timer, muted, f) = (
-                    scale.clone(),
-                    commit_timer.clone(),
-                    this.muted.clone(),
-                    on_change.clone(),
-                );
-                let id = glib::timeout_add_local_once(COMMIT_AFTER, move || {
-                    timer.borrow_mut().take();
-                    f(scale.value(), muted.get(), true);
-                });
-                *commit_timer.borrow_mut() = Some(id);
             }
         });
+        let muted = this.muted.clone();
+        connect_throttled(
+            &scale,
+            this.updating.clone(),
+            this.last_user.clone(),
+            Rc::new(move |level, commit| on_change(level, muted.get(), commit)),
+        );
         this
     }
 
@@ -132,9 +153,11 @@ impl CompactVolume {
     }
 }
 
+/// `suppression`: an input's "Noise suppression" check and its state (UI M10.1).
 fn menu_button(
     name: &str,
     actions: &[(HeaderAction, String)],
+    suppression: Option<bool>,
     on_action: &ActionFn,
 ) -> gtk::MenuButton {
     let button = gtk::MenuButton::new();
@@ -149,6 +172,13 @@ fn menu_button(
     content.set_margin_bottom(6);
     content.set_margin_start(6);
     content.set_margin_end(6);
+    if let Some(on) = suppression {
+        let check = gtk::CheckButton::with_label(&i18n("Noise Suppression"));
+        check.set_active(on);
+        let f = on_action.clone();
+        check.connect_toggled(move |c| f(HeaderAction::Denoise(c.is_active())));
+        content.append(&check);
+    }
     for (action, label) in actions {
         let b = gtk::Button::with_label(label);
         b.add_css_class("flat");
@@ -164,7 +194,7 @@ fn menu_button(
     }
     popover.set_child(Some(&content));
     button.set_popover(Some(&popover));
-    button.set_visible(!actions.is_empty());
+    button.set_visible(!actions.is_empty() || suppression.is_some());
     button
 }
 
@@ -175,7 +205,6 @@ fn row_actions(key: &RowKey, present: bool) -> Vec<(HeaderAction, String)> {
             (HeaderAction::Delete, i18n("Delete…")),
         ],
         RowKey::Input(_) if !present => vec![(HeaderAction::Forget, i18n("Forget Device…"))],
-        // Noise suppression controls arrive in M10.
         RowKey::Input(_) | RowKey::Denoised(_) => Vec::new(),
     }
 }
@@ -198,9 +227,102 @@ pub struct RowHeader {
     /// Owned here: the hub only holds meters weakly.
     _meter: PeakMeter,
     volume: Option<CompactVolume>,
+    denoise: Option<DenoiseControls>,
     menu_slot: gtk::Box,
     spec: RefCell<RowSpec>,
     on_action: ActionFn,
+}
+
+/// A noise-suppressed row's switch, voice gate and badge (UI M10.2).
+#[derive(Debug)]
+struct DenoiseControls {
+    switch: gtk::Switch,
+    gate: gtk::Scale,
+    badge: gtk::Image,
+    updating: Rc<Cell<bool>>,
+    last_user: Rc<Cell<Option<Instant>>>,
+}
+
+impl DenoiseControls {
+    fn new(root: &gtk::Box, name: &str, on_denoise: &DenoiseFn) -> Self {
+        let updating: Rc<Cell<bool>> = Rc::default();
+        let last_user: Rc<Cell<Option<Instant>>> = Rc::default();
+        let switch = gtk::Switch::new();
+        switch.set_valign(gtk::Align::Center);
+        // Translators: accessible name; {} is a microphone name
+        switch.update_property(&[gtk::accessible::Property::Label(&i18n_f(
+            "Noise suppression for {}",
+            &[name],
+        ))]);
+        switch.connect_active_notify({
+            let (updating, f) = (updating.clone(), on_denoise.clone());
+            move |s| {
+                if !updating.get() {
+                    f(DenoiseEvent::Enabled(s.is_active()));
+                }
+            }
+        });
+        let gate = gtk::Scale::with_range(gtk::Orientation::Horizontal, 0.0, 0.95, 0.05);
+        gate.set_draw_value(false);
+        gate.set_width_request(56);
+        gate.set_valign(gtk::Align::Center);
+        gate.set_tooltip_text(Some(&i18n(
+            "Mutes sound that is unlikely to be speech. Off by default.",
+        )));
+        gate.update_property(&[gtk::accessible::Property::Label(&i18n("Voice gate"))]);
+        let f = on_denoise.clone();
+        connect_throttled(
+            &gate,
+            updating.clone(),
+            last_user.clone(),
+            Rc::new(move |v, commit| {
+                #[allow(clippy::cast_possible_truncation)] // 0..0.95
+                f(DenoiseEvent::Gate {
+                    gate: v as f32,
+                    commit,
+                });
+            }),
+        );
+        let badge = gtk::Image::new();
+        badge.set_pixel_size(16);
+        badge.set_visible(false);
+        root.append(&switch);
+        root.append(&gate);
+        root.append(&badge);
+        Self {
+            switch,
+            gate,
+            badge,
+            updating,
+            last_user,
+        }
+    }
+
+    fn apply(&self, v: &crate::state::matrix_layout::DenoiseView) {
+        self.updating.set(true);
+        self.switch.set_active(v.enabled);
+        if self
+            .last_user
+            .get()
+            .is_none_or(|t| t.elapsed() >= HOLD_AFTER_USER)
+        {
+            self.gate.set_value(f64::from(v.vad_gate));
+        }
+        self.updating.set(false);
+        self.gate.set_sensitive(v.enabled);
+        match &v.badge {
+            Some(b) => {
+                self.badge.set_icon_name(Some(if b.error {
+                    "dialog-error-symbolic"
+                } else {
+                    "dialog-warning-symbolic"
+                }));
+                self.badge.set_tooltip_text(Some(&b.text));
+                self.badge.set_visible(true);
+            }
+            None => self.badge.set_visible(false),
+        }
+    }
 }
 
 impl std::fmt::Debug for RowHeader {
@@ -212,7 +334,13 @@ impl std::fmt::Debug for RowHeader {
 }
 
 impl RowHeader {
-    pub fn new(spec: &RowSpec, hub: &MeterHub, on_volume: VolumeFn, on_action: ActionFn) -> Self {
+    pub fn new(
+        spec: &RowSpec,
+        hub: &MeterHub,
+        on_volume: VolumeFn,
+        on_action: ActionFn,
+        on_denoise: &DenoiseFn,
+    ) -> Self {
         let root: gtk::Box = glib::Object::builder()
             .property("orientation", gtk::Orientation::Horizontal)
             .property("spacing", 6)
@@ -245,8 +373,14 @@ impl RowHeader {
             root.append(&v.scale);
             v
         });
+        let denoise = spec
+            .denoise
+            .as_ref()
+            .map(|_| DenoiseControls::new(&root, &spec.label, on_denoise));
         let menu_slot = gtk::Box::new(gtk::Orientation::Horizontal, 0);
-        menu_slot.set_size_request(34, -1);
+        if denoise.is_none() {
+            menu_slot.set_size_request(34, -1);
+        }
         root.append(&menu_slot);
         let this = Self {
             root,
@@ -254,6 +388,7 @@ impl RowHeader {
             subtitle,
             _meter: meter,
             volume,
+            denoise,
             menu_slot,
             spec: RefCell::new(spec.clone()),
             on_action,
@@ -269,18 +404,39 @@ impl RowHeader {
     pub fn update(&self, spec: &RowSpec) {
         let menu_changed = {
             let old = self.spec.borrow();
-            old.present != spec.present || old.label != spec.label
+            old.present != spec.present
+                || old.label != spec.label
+                || old.suppression != spec.suppression
         };
         self.apply(spec, menu_changed);
         *self.spec.borrow_mut() = spec.clone();
     }
 
     fn apply(&self, spec: &RowSpec, rebuild_menu: bool) {
-        self.title.set_label(&spec.label);
+        // The noise-suppressed row sits right under its mic: a short label, the full name in
+        // the tooltip.
+        let title = if spec.denoise.is_some() {
+            i18n("↳ Noise-suppressed")
+        } else {
+            spec.label.clone()
+        };
+        self.title.set_label(&title);
         self.root.set_tooltip_text(Some(&spec.label));
         self.root
             .update_property(&[gtk::accessible::Property::Label(&spec.label)]);
-        self.subtitle.set_visible(!spec.present);
+        let off = spec.denoise.as_ref().is_some_and(|d| !d.enabled);
+        self.subtitle.set_label(&if !spec.present {
+            i18n("Disconnected")
+        } else if off {
+            // Translators: a noise-suppressed row while suppression is off (the mic passes through)
+            i18n("Off")
+        } else {
+            String::new()
+        });
+        self.subtitle.set_visible(!spec.present || off);
+        if let (Some(c), Some(v)) = (&self.denoise, &spec.denoise) {
+            c.apply(v);
+        }
         if spec.present {
             self.root.remove_css_class("offline");
         } else {
@@ -294,8 +450,12 @@ impl RowHeader {
                 self.menu_slot.remove(&c);
             }
             let actions = row_actions(&spec.key, spec.present);
-            self.menu_slot
-                .append(&menu_button(&spec.label, &actions, &self.on_action));
+            self.menu_slot.append(&menu_button(
+                &spec.label,
+                &actions,
+                spec.suppression,
+                &self.on_action,
+            ));
         }
     }
 }
@@ -404,7 +564,7 @@ impl ColHeader {
             }
             let actions = col_actions(&spec.key, spec.present);
             self.menu_slot
-                .append(&menu_button(&spec.label, &actions, &self.on_action));
+                .append(&menu_button(&spec.label, &actions, None, &self.on_action));
         }
     }
 }

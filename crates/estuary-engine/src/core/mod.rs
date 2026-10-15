@@ -41,6 +41,15 @@ const RESTORE_MAX_WAIT: Duration = Duration::from_secs(5);
 /// F12: more xruns than this within a minute on one cell → warning (at most once a minute).
 const XRUNS_PER_MINUTE_WARN: u64 = 10;
 
+/// What the engine remembers of a denoiser's counters between stats polls.
+#[derive(Debug, Default, Clone)]
+struct DenoiserTrack {
+    xruns: u64,
+    underruns: u64,
+    underrun_log: Option<Instant>,
+    unsupported_rate: u32,
+}
+
 #[derive(Debug)]
 pub(crate) struct EngineCore {
     instance: String,
@@ -58,7 +67,10 @@ pub(crate) struct EngineCore {
     restore_pending: Option<Instant>,
     torn_down: bool,
     /// Per-cell xrun history for F12: (first total seen this minute, when, last warning).
-    xruns: std::collections::HashMap<crate::model::CellKey, (u64, Instant, Option<Instant>)>,
+    /// Per DSP node: (count at the start of the minute, minute start, last warning).
+    xruns: std::collections::HashMap<WarnedNode, (u64, Instant, Option<Instant>)>,
+    /// Per denoiser: latest counters from the stats poll (M10.2).
+    denoisers: std::collections::HashMap<crate::model::DeviceKey, DenoiserTrack>,
     had_ready_before: bool,
     /// Sync requests in flight: purpose → sequence number returned by `core.sync()`.
     pending_syncs: Vec<(SyncPurpose, i32)>,
@@ -83,6 +95,7 @@ impl EngineCore {
             restore_pending: None,
             torn_down: false,
             xruns: std::collections::HashMap::new(),
+            denoisers: std::collections::HashMap::new(),
             had_ready_before: false,
             pending_syncs: Vec::new(),
             probe_failed: false,
@@ -220,7 +233,24 @@ impl EngineCore {
                 return fx;
             }
             GraphChange::FilterXruns { key, total } => {
-                fx.merge(self.on_xruns(key, *total));
+                fx.merge(self.on_xruns(WarnedNode::Cell(key.clone()), *total));
+                return fx;
+            }
+            GraphChange::DenoiserError { key, message } => {
+                fx.merge(self.denoiser_failed(key, message));
+                return fx;
+            }
+            GraphChange::DenoiserPoisoned { key } => {
+                fx.merge(self.denoiser_failed(key, "processing panicked; recreated"));
+                return fx;
+            }
+            GraphChange::DenoiserStats {
+                key,
+                xruns,
+                underruns,
+                unsupported_rate,
+            } => {
+                fx.merge(self.on_denoiser_stats(key, *xruns, *underruns, *unsupported_rate));
                 return fx;
             }
             GraphChange::MeterStreamFailed { slot, message } => {
@@ -397,7 +427,29 @@ impl EngineCore {
                 fx.events.push(Event::QuitCheck(usages));
             }
             Command::Teardown => fx.merge(self.teardown()),
-            Command::SetVadGate { .. } => tracing::debug!("noise suppression arrives in M10"),
+            Command::SetVadGate { input, gate } => {
+                let gate = if gate.is_nan() {
+                    0.0
+                } else {
+                    gate.clamp(0.0, 0.95)
+                };
+                let def = self
+                    .setup
+                    .as_mut()
+                    .and_then(|s| s.denoisers.iter_mut().find(|d| d.input == input));
+                if let Some(d) = def {
+                    d.vad_gate = gate;
+                    let enabled = d.enabled;
+                    if self.reconciler.denoiser_active(&input) {
+                        self.reconciler.on_denoise_applied(&input, enabled, gate);
+                        fx.ops.push(PwOp::SetDenoise {
+                            key: input,
+                            enabled,
+                            vad_gate: gate,
+                        });
+                    }
+                }
+            }
         }
         fx
     }
@@ -436,7 +488,7 @@ impl EngineCore {
             }
             TimerKind::StatsPoll => {
                 self.stats_armed = false;
-                if self.state == ConnState::Ready && self.any_owned_cell() {
+                if self.state == ConnState::Ready && self.any_owned_dsp() {
                     fx.ops.push(PwOp::PollStats);
                     self.stats_armed = true;
                     fx.timers.push((TimerKind::StatsPoll, STATS_POLL));
@@ -593,7 +645,7 @@ impl EngineCore {
         }
         let empty = Setup::default();
         let setup = self.setup.as_ref().unwrap_or(&empty);
-        let desired = desired::build_desired(setup, &self.mirror);
+        let desired = desired::build_desired(setup, &self.mirror, &self.meters.denoised_slots());
         let now = Instant::now();
         let out = self
             .reconciler
@@ -632,7 +684,7 @@ impl EngineCore {
             && fx
                 .ops
                 .iter()
-                .any(|op| matches!(op, PwOp::CreateCell { .. }))
+                .any(|op| matches!(op, PwOp::CreateCell { .. } | PwOp::CreateDenoiser { .. }))
         {
             self.stats_armed = true;
             fx.timers.push((TimerKind::StatsPoll, STATS_POLL));
@@ -661,10 +713,69 @@ impl EngineCore {
         fx
     }
 
-    /// F12: warn when a cell exceeds the xrun rate, at most once a minute.
-    fn on_xruns(&mut self, key: &crate::model::CellKey, total: u64) -> Effects {
+    /// A denoiser's filter failed or panicked: drop it (the next pass recreates it) and count it.
+    fn denoiser_failed(&mut self, key: &crate::model::DeviceKey, message: &str) -> Effects {
+        tracing::warn!(input = %key.0, %message, "noise suppression failed");
+        let owned = OwnedKey::Denoiser(key.clone());
+        self.reconciler.on_failure(&owned);
+        let hash = crate::setup::input_hash(key);
+        let global_id =
+            self.owned_node(|r| matches!(r, crate::graph::OwnedRole::Denoise(h) if *h == hash));
+        let mut fx = Effects {
+            ops: vec![PwOp::Destroy {
+                key: owned,
+                global_id,
+            }],
+            events: vec![Event::Warning(EngineWarning::NodeCreateFailed {
+                node: WarnedNode::Denoiser(key.clone()),
+                message: message.to_owned(),
+            })],
+            ..Default::default()
+        };
+        fx.merge(self.schedule_reconcile(RECONCILE_DEBOUNCE));
+        fx
+    }
+
+    /// M10.2: xruns like any DSP node; underruns logged (a bug indicator, at most once a
+    /// minute); an unsupported graph rate is reported once per rate.
+    fn on_denoiser_stats(
+        &mut self,
+        key: &crate::model::DeviceKey,
+        xruns: u64,
+        underruns: u64,
+        unsupported_rate: u32,
+    ) -> Effects {
+        let mut fx = self.on_xruns(WarnedNode::Denoiser(key.clone()), xruns);
         let now = Instant::now();
-        let entry = self.xruns.entry(key.clone()).or_insert((total, now, None));
+        let t = self.denoisers.entry(key.clone()).or_default();
+        if xruns != t.xruns {
+            t.xruns = xruns;
+            fx.merge(self.mark_dirty());
+        }
+        let t = self.denoisers.entry(key.clone()).or_default();
+        if underruns > t.underruns
+            && t.underrun_log
+                .is_none_or(|at| now.duration_since(at) >= Duration::from_secs(60))
+        {
+            tracing::warn!(input = %key.0, new = underruns - t.underruns, "denoiser underruns");
+            t.underruns = underruns;
+            t.underrun_log = Some(now);
+        }
+        if unsupported_rate != 0 && unsupported_rate != t.unsupported_rate {
+            t.unsupported_rate = unsupported_rate;
+            fx.events
+                .push(Event::Warning(EngineWarning::DenoiseRateUnsupported {
+                    input: key.clone(),
+                    rate: unsupported_rate,
+                }));
+        }
+        fx
+    }
+
+    /// F12: warn when a DSP node exceeds the xrun rate, at most once a minute.
+    fn on_xruns(&mut self, node: WarnedNode, total: u64) -> Effects {
+        let now = Instant::now();
+        let entry = self.xruns.entry(node.clone()).or_insert((total, now, None));
         if now.duration_since(entry.1) >= Duration::from_secs(60) {
             *entry = (total, now, entry.2);
         }
@@ -676,7 +787,7 @@ impl EngineCore {
             entry.2 = Some(now);
             return Effects {
                 events: vec![Event::Warning(EngineWarning::Xruns {
-                    node: WarnedNode::Cell(key.clone()),
+                    node,
                     per_minute: u32::try_from(per_minute).unwrap_or(u32::MAX),
                 })],
                 ..Default::default()
@@ -719,9 +830,9 @@ impl EngineCore {
         for rank in 0..3 {
             for n in self.mirror.nodes.values() {
                 let (r, key) = match &n.kind {
-                    crate::graph::NodeKind::Owned(crate::graph::OwnedRole::Cell(_)) => {
-                        (0, OwnedKey::StaleNode(n.id))
-                    }
+                    crate::graph::NodeKind::Owned(
+                        crate::graph::OwnedRole::Cell(_) | crate::graph::OwnedRole::Denoise(_),
+                    ) => (0, OwnedKey::StaleNode(n.id)),
                     crate::graph::NodeKind::Owned(crate::graph::OwnedRole::Vmic(id)) => {
                         (1, OwnedKey::Vmic(*id))
                     }
@@ -765,9 +876,14 @@ impl EngineCore {
         self.owned_cell_id(key).is_some()
     }
 
-    fn any_owned_cell(&self) -> bool {
-        self.owned_node(|r| matches!(r, crate::graph::OwnedRole::Cell(_)))
-            .is_some()
+    fn any_owned_dsp(&self) -> bool {
+        self.owned_node(|r| {
+            matches!(
+                r,
+                crate::graph::OwnedRole::Cell(_) | crate::graph::OwnedRole::Denoise(_)
+            )
+        })
+        .is_some()
     }
 
     /// Meter streams exist only while Ready (C9).
@@ -835,10 +951,16 @@ impl EngineCore {
 
     fn snapshot_event(&mut self) -> Event {
         self.snapshot_dirty = false;
+        let xruns: std::collections::HashMap<_, _> = self
+            .denoisers
+            .iter()
+            .map(|(k, t)| (k.clone(), t.xruns))
+            .collect();
         Event::Snapshot(Arc::new(snapshot::build_snapshot(
             &self.mirror,
             self.setup.as_ref(),
             &self.reconciler,
+            &xruns,
         )))
     }
 }
@@ -849,6 +971,7 @@ pub(crate) fn warned_node(key: &OwnedKey) -> Option<WarnedNode> {
         OwnedKey::Channel(id) => Some(WarnedNode::Channel(*id)),
         OwnedKey::Vmic(id) => Some(WarnedNode::VirtualMic(*id)),
         OwnedKey::Cell(c) => Some(WarnedNode::Cell(c.clone())),
+        OwnedKey::Denoiser(k) => Some(WarnedNode::Denoiser(k.clone())),
         _ => None,
     }
 }

@@ -4,6 +4,7 @@
 #![cfg_attr(test, allow(clippy::unwrap_used))]
 
 pub mod consts;
+mod denoise;
 mod error;
 mod filter;
 mod fpu;
@@ -11,7 +12,10 @@ mod gain;
 mod processor;
 mod stats;
 
-pub use consts::{GAIN_RAMP_SECS, MAX_PORTS, MAX_QUANTUM};
+pub use consts::{DENOISE_BLOCK, DENOISE_RATE, GAIN_RAMP_SECS, MAX_PORTS, MAX_QUANTUM};
+pub use denoise::{
+    DenoiseHandle, DenoiseProcessor, NN_DELAY, denoise_processor, latency_frames, new_denoiser_node,
+};
 pub use error::DspError;
 pub use filter::{FilterNode, FilterState};
 pub use gain::{GainHandle, GainProcessor, db_to_linear, gain_processor, new_gain_node};

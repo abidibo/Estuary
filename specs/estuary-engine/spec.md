@@ -1152,6 +1152,14 @@ Fake-graph reconciler suite, driving `EngineCore` and `FakeShell` until quiescen
 
 ### M10 (engine side): Noise suppression
 
+**Implementation notes (M10 as built, 2026-10-15).**
+
+- **Desired graph:** `DesiredNodeKey::Denoiser(input)` exists while the `[[denoisers]]` entry exists and the input is present, **on or off** (off = bypass in the same node, C11). Links: mic capture → denoiser `input_*`; `Denoised` cells take the denoiser's `output_*`; `Denoised` meters get denoiser `output_*` → `estuary.meter.<slot>` `input_*` links (`Endpoint::Meter`), from `MeterPlan::denoised_slots()`. The C8 stray-link rule covers denoisers like cells.
+- **Settings:** created with the setup's `enabled`/`vad_gate`; later changes (SetSetup or the `SetVadGate` fast path) only send `PwOp::SetDenoise`. The reconciler tracks what each handle holds.
+- **Stats:** `GraphChange::{DenoiserError, DenoiserPoisoned, DenoiserStats}`. Xruns share the F12 rule (the tracker is keyed by `WarnedNode`), underruns are logged with their delta at most once a minute, and an unsupported rate emits `Warning(DenoiseRateUnsupported)` once per rate. `DenoiserState.active` = node present; `xruns` = latest total.
+- **Capture ports (C5 amended):** virtual sources (null sinks with `Audio/Source/Virtual`, as made by Estuary-like tools) flag every output `port.monitor = true`. The Capture role takes a source's non-monitor outputs, else all of them. Before this fix such inputs could never be routed. Found by the live test.
+- **Live `denoise_attenuates`:** a virtual source fed white noise acts as the mic. It checks that the voice gate set live (0.9) silences the virtual mic (−180 dBFS), and that bypass is transparent (vmic = raw mic level). It doesn't assert an attenuation figure: RNNoise's result on synthetic noise isn't predictable (dsp M10 notes).
+
 #### M10.1 Desired denoisers and links
 
 This is already defined in M8.3 (the `Denoiser` node exists iff its `[[denoisers]]` entry exists and the input is present, with links `Device(input) capture_* → input_FL/FR` following the mono rule of M8.4). This step adds the `Denoised(key)` source endpoint resolution in `match_ports` (role `FilterOut`) and the `DenoisedWithoutDenoiser` validation in M6.2.

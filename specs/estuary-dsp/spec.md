@@ -557,6 +557,17 @@ The test binary runs single-threaded (`harness = true`, each test arms around it
 
 ---
 
+**Implementation notes (M10 as built, 2026-10-15).** These deviate from or refine the text below. Where they conflict, the notes are authoritative.
+
+- **`NN_DELAY = 480`**, measured (`nn_delay_is_pinned`). Latency: **960 frames (20 ms) at 48 kHz**; 1764 frames (40.0 ms) at 44.1 kHz, 3840 (40.0 ms) at 96 kHz, 640 (40.0 ms) at 16 kHz, exact in both bypass and enabled modes (`denoise_latency_per_rate`). `latency_frames(rate)` = priming + resampler delays + `NN_DELAY` at the rate.
+- **Crossfade after warm-up.** On enable, the fade to wet starts only *after* the warm-up block's mix (and the crossfade snaps to dry on a rate reconfiguration). Fading during the warm-up block, whose wet output is replaced by dry, completed the fade on dry audio and jumped to wet on the next block: a click the toggle test caught (0.071 step against a 0.020 sine slope; now 0.0199).
+- **VadGate** computes each sample's gain from its block position (no accumulated steps), so ramps land exactly on 0 or 1.
+- **`denoise_odd_quanta_no_underrun`** runs 2,000 cycles per rate (6 rates) by default; the spec's 10⁶ per rate is `denoise_odd_quanta_no_underrun_full` (ignored; passes in release, about 4.5 min). Bypass mode: timing is identical and RNNoise isn't needed for the arithmetic.
+- **RNNoise on synthetic noise is not predictable.** Raw nnnoiseless attenuates stationary white or pink noise anywhere from 1.6 to 59 dB depending on the noise realization, and even on the *start offset* of the same noise (1.4–15.9 dB). `denoise_attenuates_noise` therefore pins one realization (white, seed 9, from t=0: 14.8 dB) as a regression fixture. Live tests check the voice gate instead (it closes on noise to exact silence) plus transparent bypass. Real-world suppression (fan, typing) is a manual check.
+- **Measured:** 0.045 ms per 480-frame block in release (budget 1 ms); all 11 `RatePath`s built in 2.1 ms, so no background construction. Zero allocations after warm-up, including enable toggles, gate changes and table-rate switches (`tests/no_alloc_denoise.rs`, its own binary because of the counting allocator).
+- **`NodeStats`** gained `last_rate` / `last_quantum` (diagnostics, set every cycle). `FilterNode::new_with_params` passes serialized pods to `pw_filter_connect`; `new_denoiser_node` reports `ProcessLatency { ns: 20_000_000 }`, confirmed live in `pw-dump`.
+- `SPA_PARAM_PROCESS_LATENCY_ns` exists under that name in libspa-sys (UNVERIFIED resolved).
+
 ### M10.1: Fifo, DelayLine, Crossfade, VadGate building blocks
 
 All of these are plain safe Rust, allocate only in `new`, and are single-threaded (owned by the processor).

@@ -113,6 +113,11 @@ impl RtState {
             return;
         }
         crate::fpu::flush_denormals();
+        shared.stats.last_rate.store(rate, Ordering::Relaxed);
+        shared
+            .stats
+            .last_quantum
+            .store(u32::try_from(n).unwrap_or(u32::MAX), Ordering::Relaxed);
 
         // Phase 2: process in chunks of at most MAX_QUANTUM, containing any panic.
         let Self {

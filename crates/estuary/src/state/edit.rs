@@ -1,9 +1,9 @@
 //! Edit model (UI M5.2): every user action becomes an `Edit`; `apply_edit` is the only place
 //! the desired state (`ConfigFile`) changes, and it returns the engine commands to send.
-//! Pure: unit-tested without GTK. Noise-suppression and preset edits join in M10–M11.
+//! Pure: unit-tested without GTK. Preset edits join in M11.
 
 use estuary_engine::setup::{
-    AppRule, CellDef, ChannelDef, ConfigFile, DeviceKind, KnownDevice, VirtualMicDef,
+    AppRule, CellDef, ChannelDef, ConfigFile, DenoiserDef, DeviceKind, KnownDevice, VirtualMicDef,
 };
 use estuary_engine::{
     AppKey, CellKey, ChannelId, Command, DeviceKey, GraphSnapshot, MatrixDest, MatrixSource,
@@ -94,6 +94,17 @@ pub enum Edit {
     /// Only while the device is absent (F10).
     ForgetDevice {
         key: DeviceKey,
+    },
+    /// First enable creates the noise suppressor; disabling keeps it and its sends (C6).
+    SetDenoise {
+        input: DeviceKey,
+        enabled: bool,
+    },
+    /// `commit = false` while dragging (engine fast path only).
+    SetVadGate {
+        input: DeviceKey,
+        gate: f32,
+        commit: bool,
     },
 }
 
@@ -333,6 +344,45 @@ pub fn apply_edit(cfg: &mut ConfigFile, snap: &GraphSnapshot, edit: Edit) -> Edi
             if changed {
                 moved_toast(moved, &mut out);
                 setup_changed(cfg, &mut out);
+            }
+        }
+        Edit::SetDenoise { input, enabled } => {
+            match cfg.setup.denoisers.iter_mut().find(|d| d.input == input) {
+                Some(d) if d.enabled == enabled => return out,
+                Some(d) => d.enabled = enabled,
+                None if !enabled => return out,
+                None => {
+                    remember_device(cfg, snap, &input, DeviceKind::Input);
+                    cfg.setup.denoisers.push(DenoiserDef {
+                        input,
+                        enabled: true,
+                        vad_gate: 0.0,
+                    });
+                    out.toasts.push(i18n(
+                        "Noise suppression on. Send the noise-suppressed row to a virtual mic in the matrix.",
+                    ));
+                }
+            }
+            setup_changed(cfg, &mut out);
+        }
+        Edit::SetVadGate {
+            input,
+            gate,
+            commit,
+        } => {
+            let gate = if gate.is_nan() {
+                0.0
+            } else {
+                gate.clamp(0.0, 0.95)
+            };
+            if let Some(d) = cfg.setup.denoisers.iter_mut().find(|d| d.input == input) {
+                d.vad_gate = gate;
+                if commit {
+                    out.commands.push(Command::SetSetup(cfg.setup.clone()));
+                    out.save = true;
+                } else {
+                    out.commands.push(Command::SetVadGate { input, gate });
+                }
             }
         }
     }
@@ -852,5 +902,101 @@ mod tests {
         assert!(cfg.setup.known_devices.is_empty() && cfg.setup.cells.is_empty());
         assert_eq!(cfg.setup.app_rules[0].target, RouteTarget::Default);
         assert_eq!(out.toasts.len(), 1);
+    }
+
+    fn mic() -> DeviceKey {
+        DeviceKey("mic".into())
+    }
+
+    #[test]
+    fn first_enable_creates_the_suppressor_and_hints() {
+        let mut cfg = ConfigFile::default();
+        let out = apply_edit(
+            &mut cfg,
+            &snap(),
+            Edit::SetDenoise {
+                input: mic(),
+                enabled: false,
+            },
+        );
+        assert!(
+            out.commands.is_empty(),
+            "disabling a missing suppressor is a no-op"
+        );
+        let out = apply_edit(
+            &mut cfg,
+            &snap(),
+            Edit::SetDenoise {
+                input: mic(),
+                enabled: true,
+            },
+        );
+        assert_eq!(cfg.setup.denoisers.len(), 1);
+        assert_eq!(cfg.setup.denoisers[0].vad_gate, 0.0);
+        assert_eq!(cfg.setup.known_devices[0].key, mic());
+        assert!(out.save && out.structure_changed && out.toasts.len() == 1);
+        // Off keeps the entry (and its sends); on again doesn't hint twice.
+        let out = apply_edit(
+            &mut cfg,
+            &snap(),
+            Edit::SetDenoise {
+                input: mic(),
+                enabled: false,
+            },
+        );
+        assert!(!cfg.setup.denoisers[0].enabled && out.save);
+        let out = apply_edit(
+            &mut cfg,
+            &snap(),
+            Edit::SetDenoise {
+                input: mic(),
+                enabled: true,
+            },
+        );
+        assert!(cfg.setup.denoisers[0].enabled && out.toasts.is_empty());
+        let out = apply_edit(
+            &mut cfg,
+            &snap(),
+            Edit::SetDenoise {
+                input: mic(),
+                enabled: true,
+            },
+        );
+        assert!(out.commands.is_empty(), "unchanged");
+    }
+
+    #[test]
+    fn voice_gate_is_a_fast_path_saved_on_commit() {
+        let mut cfg = ConfigFile::default();
+        apply_edit(
+            &mut cfg,
+            &snap(),
+            Edit::SetDenoise {
+                input: mic(),
+                enabled: true,
+            },
+        );
+        let out = apply_edit(
+            &mut cfg,
+            &snap(),
+            Edit::SetVadGate {
+                input: mic(),
+                gate: 2.0,
+                commit: false,
+            },
+        );
+        assert!(!out.save && !out.structure_changed);
+        assert!(matches!(&out.commands[..], [Command::SetVadGate { gate, .. }] if *gate == 0.95));
+        let out = apply_edit(
+            &mut cfg,
+            &snap(),
+            Edit::SetVadGate {
+                input: mic(),
+                gate: 0.5,
+                commit: true,
+            },
+        );
+        assert!(out.save && matches!(&out.commands[..], [Command::SetSetup(_)]));
+        assert_eq!(cfg.setup.denoisers[0].vad_gate, 0.5);
     }
 }

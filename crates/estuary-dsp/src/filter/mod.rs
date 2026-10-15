@@ -3,7 +3,10 @@
 #![allow(unsafe_code)]
 
 mod ffi;
+mod props;
 pub(crate) mod rt;
+
+pub(crate) use props::process_latency_param;
 
 use std::cell::{Cell, RefCell, UnsafeCell};
 use std::ffi::CString;
@@ -61,6 +64,19 @@ impl FilterNode {
         inputs: &[PortSpec],
         outputs: &[PortSpec],
         processor: P,
+    ) -> Result<FilterNode, DspError> {
+        Self::new_with_params(core, name, props, inputs, outputs, processor, &[])
+    }
+
+    /// As `new`, plus global params (serialized SPA pods) passed to `pw_filter_connect`.
+    pub(crate) fn new_with_params<P: Processor>(
+        core: &pipewire::core::Core,
+        name: &str,
+        props: PropertiesBox,
+        inputs: &[PortSpec],
+        outputs: &[PortSpec],
+        processor: P,
+        params: &[Vec<u8>],
     ) -> Result<FilterNode, DspError> {
         if name.is_empty() || name.contains('\0') {
             return Err(DspError::InvalidName(name.to_owned()));
@@ -174,13 +190,24 @@ impl FilterNode {
         }
 
         // Followers scheduled by the graph: never DRIVER, TRIGGER or ASYNC.
-        // SAFETY: filter is live; no params.
+        let mut pods: Vec<*const libspa_sys::spa_pod> = params
+            .iter()
+            .filter(|p| !p.is_empty())
+            .map(|p| p.as_ptr().cast())
+            .collect();
+        let n_pods = u32::try_from(pods.len()).unwrap_or(0);
+        // SAFETY: filter is live; each pod pointer refers to a complete serialized pod in
+        // `params`, which outlives the call (PipeWire copies params during connect).
         let res = unsafe {
             pw_sys::pw_filter_connect(
                 raw,
                 pw_sys::pw_filter_flags_PW_FILTER_FLAG_RT_PROCESS,
-                std::ptr::null_mut(),
-                0,
+                if pods.is_empty() {
+                    std::ptr::null_mut()
+                } else {
+                    pods.as_mut_ptr()
+                },
+                n_pods,
             )
         };
         if res < 0 {

@@ -404,6 +404,7 @@ version = "0.1.0"
 dependencies = [
  "libspa",
  "libspa-sys",
+ "log",
  "nnnoiseless",
  "pipewire",
  "pipewire-sys",

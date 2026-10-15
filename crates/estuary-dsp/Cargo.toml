@@ -13,6 +13,7 @@ pipewire.workspace = true
 pipewire-sys.workspace = true
 libspa.workspace = true
 libspa-sys.workspace = true
+log.workspace = true          # release_max_level_debug strips rubato RT trace! (A6)
 nnnoiseless.workspace = true
 rubato.workspace = true
 thiserror.workspace = true

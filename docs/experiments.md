@@ -66,3 +66,17 @@ Result: peak **0.251** (the tone at −6 dB plus room noise). **0 %** of 50 ms r
 3. **Spurious "volume write failed".** A fresh adapter answers our initial `subscribe_params(Props)` enumeration with ENOENT before it is configured. The subscription stays and later changes still arrive. Enumeration errors are now logged at debug and no longer reported as volume-write failures.
 4. **"unknown resource N" on teardown.** Destroying our own adapters and links both through `registry.destroy_global` and by dropping their proxies made the proxy drop talk to a removed resource. Our objects (`object.linger=false`) are now destroyed by dropping their proxy alone. `destroy_global` is kept for objects we hold no proxy for, such as leftovers from an earlier connection.
 5. **Test pitfall.** WirePlumber's restore-stream applied a saved volume of 0.532 (−5.5 dB) to every `pw-cat` stream. Test players now pass `--volume 1.0` and `state.restore-props=false`.
+
+## M10 (RNNoise on synthetic noise), 2026-10-15
+
+While writing the live attenuation test, the denoiser cut −30 dBFS white noise by only 1.2 dB in a live graph against 14.8 dB offline. Bisecting:
+
+- **Not the pipeline.** Raw nnnoiseless (no FIFOs, crossfade or resampling of ours) on the same signals gives the same numbers within about 1 dB. Rate (48000) and quantum (2048) in the live graph were as expected; FTZ makes no difference.
+- **The noise realization decides.** White noise, 6 s, same level, different xorshift seeds: 1.6, 4.6, 14.8, 26.8 dB. Pink noise: 6.1 to 44.4 dB. Over 20 s, one seed stays around 2 dB throughout while another climbs from 2 to 59 dB.
+- **Even the start offset decides.** The same seed-9 noise after 0 / 1 / 100 / 240 / 479 / 4800 / 23456 samples of silence: 15.9 / 11.8 / 15.8 / 3.1 / 12.8 / 15.9 / 1.4 dB.
+
+→ RNNoise (trained on real recordings) has no predictable behaviour on synthetic stationary noise. Automated tests pin one realization offline (`denoise_attenuates_noise`, regression only). Live tests check what is deterministic: the voice gate at 0.9 silences noise exactly (−180 dBFS), bypass is transparent, no underruns. Whether real fan noise and typing are suppressed is judged by ear with a real mic (the master's M10 exit check).
+
+## M10 (virtual sources' capture ports), 2026-10-15
+
+A `support.null-audio-sink` with `media.class=Audio/Source/Virtual` exposes `capture_FL/FR` with **`port.monitor = "true"`** (checked with `pw-cli ls Port`). The engine's Capture role took only non-monitor outputs, so such sources (made by tools like Easy Effects) could never be routed. Fixed (C5 amended): a source's capture ports are its non-monitor outputs, else all of them.

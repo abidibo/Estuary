@@ -600,3 +600,212 @@ fn a_reconnect_rebuilds_everything_and_restores_once() {
         .count();
     assert_eq!(restored, 1);
 }
+
+fn denoised_setup() -> (Setup, VirtualMicId) {
+    let vmic = VirtualMicId::new_random();
+    let setup = Setup {
+        virtual_mics: vec![VirtualMicDef {
+            id: vmic,
+            name: "Calls".into(),
+            volume: Volume::unity(2),
+            position: None,
+        }],
+        denoisers: vec![crate::setup::DenoiserDef {
+            input: input(),
+            enabled: true,
+            vad_gate: 0.0,
+        }],
+        cells: vec![cell(
+            MatrixSource::Denoised { key: input() },
+            MatrixDest::VirtualMic { id: vmic },
+            0.0,
+        )],
+        ..Default::default()
+    };
+    (setup, vmic)
+}
+
+fn denoisers(h: &Harness) -> usize {
+    h.owned(|r| matches!(r, OwnedRole::Denoise(_)))
+}
+
+#[test]
+fn denoiser_follows_its_input_and_feeds_its_sends() {
+    let mut h = Harness::connected(&FakeGraph::standard());
+    let mic = h
+        .core
+        .mirror
+        .nodes
+        .values()
+        .find(|n| n.kind == NodeKind::Input)
+        .unwrap()
+        .id;
+    h.graph(&GraphChange::NodeRemoved(mic));
+    let (setup, _) = denoised_setup();
+    h.command(Command::SetSetup(setup.clone()));
+    assert_eq!(denoisers(&h), 0, "no input, no denoiser");
+    assert!(!h.core.reconciler.denoiser_active(&input()));
+    assert_eq!(
+        h.status(&setup.cells[0].key()),
+        Some(CellStatus::SourceMissing)
+    );
+
+    for ch in FakeGraph::new()
+        .device(
+            FakeGraph::INPUT,
+            "Built-in Audio Analog Stereo",
+            "Audio/Source",
+        )
+        .changes()
+    {
+        h.graph(&ch);
+    }
+    h.reconcile();
+    assert_eq!(denoisers(&h), 1);
+    assert!(h.core.reconciler.denoiser_active(&input()));
+    let dn = h
+        .core
+        .mirror
+        .nodes
+        .values()
+        .find(|n| matches!(n.kind, NodeKind::Owned(OwnedRole::Denoise(_))))
+        .unwrap()
+        .id;
+    let mic = h
+        .core
+        .mirror
+        .nodes
+        .values()
+        .find(|n| n.kind == NodeKind::Input)
+        .unwrap()
+        .id;
+    let into = h
+        .core
+        .mirror
+        .links
+        .values()
+        .filter(|l| l.out_node == mic && l.in_node == dn)
+        .count();
+    assert_eq!(into, 2, "mic capture → denoiser inputs");
+    let out = h
+        .core
+        .mirror
+        .links
+        .values()
+        .filter(|l| l.out_node == dn)
+        .count();
+    assert_eq!(out, 2, "denoiser outputs → the send");
+    assert_eq!(h.status(&setup.cells[0].key()), Some(CellStatus::Active));
+    assert_eq!(h.shell.denoise.get(&input()), Some(&(true, 0.0)));
+}
+
+#[test]
+fn toggling_and_gating_never_recreate_the_denoiser() {
+    let mut h = Harness::connected(&FakeGraph::standard());
+    let (mut setup, _) = denoised_setup();
+    h.command(Command::SetSetup(setup.clone()));
+    assert_eq!(h.shell.created_denoisers, 1);
+    setup.denoisers[0].enabled = false;
+    let before = h.ops.len();
+    h.command(Command::SetSetup(setup.clone()));
+    let ops = &h.ops[before..];
+    assert!(
+        ops.iter()
+            .any(|op| matches!(op, PwOp::SetDenoise { enabled: false, .. })),
+        "{ops:?}"
+    );
+    assert!(
+        !ops.iter()
+            .any(|op| matches!(op, PwOp::CreateDenoiser { .. } | PwOp::Destroy { .. }))
+    );
+    assert_eq!(h.shell.denoise.get(&input()), Some(&(false, 0.0)));
+
+    // The live gate slider: one SetDenoise, the engine's copy updated, nothing else.
+    let fx = h.core.on_command(Command::SetVadGate {
+        input: input(),
+        gate: 2.0,
+    });
+    assert_eq!(
+        fx.ops,
+        vec![PwOp::SetDenoise {
+            key: input(),
+            enabled: false,
+            vad_gate: 0.95
+        }]
+    );
+    assert!(fx.timers.is_empty(), "no reconcile");
+    h.run(fx);
+    assert_eq!(h.core.setup.as_ref().unwrap().denoisers[0].vad_gate, 0.95);
+    assert!(h.reconcile().is_empty(), "the pass agrees with the handle");
+    assert_eq!(h.shell.created_denoisers, 1);
+}
+
+#[test]
+fn denoised_meter_is_linked_and_kept() {
+    let mut h = Harness::connected(&FakeGraph::standard());
+    let (setup, _) = denoised_setup();
+    h.command(Command::SetSetup(setup));
+    h.command(Command::SetMeterTargets(vec![
+        crate::meter::MeterTarget::Denoised(input()),
+    ]));
+    h.reconcile();
+    let meter = h
+        .core
+        .mirror
+        .nodes
+        .values()
+        .find(|n| matches!(n.kind, NodeKind::Owned(OwnedRole::Meter(_))))
+        .expect("meter stream created")
+        .id;
+    let dn = h
+        .core
+        .mirror
+        .nodes
+        .values()
+        .find(|n| matches!(n.kind, NodeKind::Owned(OwnedRole::Denoise(_))))
+        .unwrap()
+        .id;
+    let links = |h: &Harness| {
+        h.core
+            .mirror
+            .links
+            .values()
+            .filter(|l| l.out_node == dn && l.in_node == meter)
+            .count()
+    };
+    assert_eq!(links(&h), 2, "denoiser outputs → meter inputs");
+    assert!(h.reconcile().is_empty(), "C8 leaves the meter links alone");
+    assert_eq!(links(&h), 2);
+    h.command(Command::SetMeterTargets(Vec::new()));
+    h.reconcile();
+    assert_eq!(links(&h), 0, "gone with the meter");
+}
+
+#[test]
+fn unsupported_rate_is_reported_once() {
+    let mut h = Harness::connected(&FakeGraph::standard());
+    let (setup, _) = denoised_setup();
+    h.command(Command::SetSetup(setup));
+    let stats = |rate| GraphChange::DenoiserStats {
+        key: input(),
+        xruns: 0,
+        underruns: 0,
+        unsupported_rate: rate,
+    };
+    h.graph(&stats(50_000));
+    h.graph(&stats(50_000));
+    let warned = h
+        .events
+        .iter()
+        .filter(|e| {
+            matches!(
+                e,
+                Event::Warning(crate::error::EngineWarning::DenoiseRateUnsupported {
+                    rate: 50_000,
+                    ..
+                })
+            )
+        })
+        .count();
+    assert_eq!(warned, 1);
+}

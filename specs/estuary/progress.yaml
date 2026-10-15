@@ -196,29 +196,29 @@ steps:
     completed_at: null
 - id: 10
   title: M10 Noise suppression
-  status: pending
-  started_at: null
+  status: in_progress
+  started_at: '2026-10-15T12:08:53+02:00'
   completed_at: null
   tasks:
   - id: '10.1'
     description: Complete estuary-dsp steps M10.1-M10.7
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:08:53+02:00'
+    completed_at: '2026-10-15T12:08:53+02:00'
   - id: '10.2'
     description: Complete estuary-engine steps M10.1-M10.4
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:08:53+02:00'
+    completed_at: '2026-10-15T12:08:53+02:00'
   - id: '10.3'
     description: Complete estuary-ui steps M10.1-M10.2
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:08:53+02:00'
+    completed_at: '2026-10-15T12:08:53+02:00'
   - id: '10.4'
-    description: 'Exit check: virtual-mic recording (`pw-record --target <vmic>`) has fan noise and typing clearly attenuated; denoiser latency measured ~20 ms at 48 kHz'
-    status: pending
-    started_at: null
+    description: 'Exit check: virtual-mic recording (`pw-record --target <vmic>`) has fan noise and typing clearly attenuated; denoiser latency measured ~20 ms at 48 kHz (automated: voice gate silences noise live, bypass transparent, 20 ms latency confirmed; real-world fan/typing check by the user pending — RNNoise on synthetic noise is unpredictable, see docs/experiments.md)'
+    status: in_progress
+    started_at: '2026-10-15T12:08:53+02:00'
     completed_at: null
 - id: 11
   title: M11 Desktop lifecycle

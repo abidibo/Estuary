@@ -5,7 +5,7 @@ use std::time::Duration;
 use crate::Event;
 use crate::graph::Props;
 use crate::meter::MeterSlotId;
-use crate::model::{CellKey, ChannelId, VirtualMicId, Volume};
+use crate::model::{CellKey, ChannelId, DeviceKey, VirtualMicId, Volume};
 
 /// Objects the engine owns or tracks by proxy.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -15,6 +15,8 @@ pub(crate) enum OwnedKey {
     Channel(ChannelId),
     Vmic(VirtualMicId),
     Cell(CellKey),
+    /// The noise suppressor of an input (keyed by the input).
+    Denoiser(DeviceKey),
     Link(LinkKey),
     /// An owned node no setup item explains (e.g. a cell from an older setup).
     StaleNode(u32),
@@ -83,6 +85,19 @@ pub(crate) enum PwOp {
     SetGain {
         key: CellKey,
         db: f32,
+    },
+    CreateDenoiser {
+        key: DeviceKey,
+        name: String,
+        props: Props,
+        enabled: bool,
+        vad_gate: f32,
+    },
+    /// Handle stores only: toggling never recreates the node (C11).
+    SetDenoise {
+        key: DeviceKey,
+        enabled: bool,
+        vad_gate: f32,
     },
     /// Read node stats (M8.12); the shell reports findings as graph changes.
     PollStats,

@@ -16,4 +16,7 @@ pub struct NodeStats {
     pub underruns: AtomicU64,
     /// Last graph rate the denoiser could not handle (0 = none).
     pub unsupported_rate: AtomicU32,
+    /// Graph rate and quantum of the latest cycle (diagnostics).
+    pub last_rate: AtomicU32,
+    pub last_quantum: AtomicU32,
 }

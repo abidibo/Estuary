@@ -844,6 +844,13 @@ Rows and columns with `present == false` stay visible (F10, keep-and-restore). S
 
 ### M10: Noise suppression UI
 
+**Implementation notes (M10 as built, 2026-10-15).**
+
+- **Off still passes audio.** The engine keeps the denoiser node in bypass when suppression is off (constant latency, click-free toggle, C11), so the noise-suppressed row keeps carrying the *unprocessed* mic and its sends keep working. The header shows "Off" in that case; `DenoiseView.active` means "node present", not "suppressing".
+- **Input menu:** a "Noise Suppression" `gtk::CheckButton` → `Edit::SetDenoise` (`HeaderAction::Denoise(bool)`; `RowSpec.suppression` holds the state for inputs). The first enable toasts the routing hint.
+- **Noise-suppressed row header:** a short "↳ Noise-suppressed" label (full name in the tooltip), a `gtk::Switch`, a 56 px voice-gate scale (0–0.95, step 0.05; no marks, they don't fit) with the spec tooltip, and a badge image. The gate edits use the shared throttle (30 Hz `commit=false`, `commit=true` 400 ms after the last change).
+- **Warnings (`state/warnings.rs`):** the denoiser part of the M11.5 mapping: Xruns → warning badge, NodeCreateFailed → error badge, DenoiseRateUnsupported → error badge plus one toast per rate. Badges clear after 60 s without a repeat (`AppMsg::ExpireWarnings` every 10 s). The rest of the mapping arrives with M11. `DenoiseView.badge` replaces `xrun_warning`.
+
 #### M10.1 Per-input toggle
 
 Each input row's menu has a "Noise suppression" check item. Toggling sends `Edit::SetDenoise { input, enabled }`:

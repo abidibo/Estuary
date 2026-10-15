@@ -19,12 +19,15 @@ use estuary_engine::{CellKey, GraphSnapshot, MeterTarget, RouteTarget, Setup};
 use relm4::{ComponentParts, ComponentSender, SimpleComponent, adw, gtk};
 
 use self::cell::{CELL_HEIGHT, CELL_WIDTH, CellButton};
-use self::header::{COL_HEADER_HEIGHT, ColHeader, HeaderAction, ROW_HEADER_WIDTH, RowHeader};
+use self::header::{
+    COL_HEADER_HEIGHT, ColHeader, DenoiseEvent, HeaderAction, ROW_HEADER_WIDTH, RowHeader,
+};
 use self::keyboard::Nav;
 use crate::dialogs::{confirm, name};
 use crate::i18n::{i18n, i18n_f};
 use crate::state::edit::Edit;
 use crate::state::matrix_layout::{self, ColKey, MatrixLayout, RowKey};
+use crate::state::warnings::Warnings;
 use crate::widgets::meter_hub::MeterHub;
 
 const SPACING: i32 = 4;
@@ -62,6 +65,7 @@ pub enum MatrixMsg {
     Update {
         snapshot: Arc<GraphSnapshot>,
         setup: Arc<Setup>,
+        warnings: Arc<Warnings>,
     },
     AddChannel,
     AddMic,
@@ -223,8 +227,12 @@ impl SimpleComponent for MatrixPage {
 
     fn update(&mut self, msg: MatrixMsg, sender: ComponentSender<Self>) {
         match msg {
-            MatrixMsg::Update { snapshot, setup } => {
-                self.layout = matrix_layout::compute(&setup, &snapshot);
+            MatrixMsg::Update {
+                snapshot,
+                setup,
+                warnings,
+            } => {
+                self.layout = matrix_layout::compute(&setup, &snapshot, &warnings);
                 self.setup = setup;
                 self.stack
                     .set_visible_child_name(if self.layout.has_owned_nodes() {
@@ -345,7 +353,8 @@ impl MatrixPage {
                 let (s, key) = (sender.input_sender().clone(), spec.key.clone());
                 Rc::new(move |a| s.emit(MatrixMsg::Row(key.clone(), a))) as header::ActionFn
             };
-            let h = RowHeader::new(spec, &self.hub, on_volume, on_action);
+            let on_denoise = row_denoise(&spec.key, sender);
+            let h = RowHeader::new(spec, &self.hub, on_volume, on_action, &on_denoise);
             self.row_grid.attach(h.widget(), 0, grid_index(r), 1, 1);
             self.rows.push(h);
         }
@@ -423,6 +432,10 @@ impl MatrixPage {
                     },
                 );
             }
+            (RowKey::Input(k), HeaderAction::Denoise(enabled)) => send(Edit::SetDenoise {
+                input: k.clone(),
+                enabled,
+            }),
             (RowKey::Input(k), HeaderAction::Forget) if !spec.present => {
                 let key = k.clone();
                 confirm::forget(&self.stack, &spec.label, move || {
@@ -511,6 +524,28 @@ fn col_volume(key: &ColKey, sender: &ComponentSender<MatrixPage>) -> header::Vol
                 key: k.clone(),
                 level,
                 muted,
+            },
+        };
+        s.emit(MatrixMsg::Edit(edit));
+    })
+}
+
+fn row_denoise(key: &RowKey, sender: &ComponentSender<MatrixPage>) -> header::DenoiseFn {
+    let s = sender.input_sender().clone();
+    let key = key.clone();
+    Rc::new(move |ev| {
+        let RowKey::Denoised(input) = &key else {
+            return;
+        };
+        let edit = match ev {
+            DenoiseEvent::Enabled(enabled) => Edit::SetDenoise {
+                input: input.clone(),
+                enabled,
+            },
+            DenoiseEvent::Gate { gate, commit } => Edit::SetVadGate {
+                input: input.clone(),
+                gate,
+                commit,
             },
         };
         s.emit(MatrixMsg::Edit(edit));

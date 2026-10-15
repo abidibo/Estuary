@@ -9,7 +9,7 @@ use super::effects::{LinkKey, OwnedKey, PwOp};
 use super::ports::{PortRole, match_ports, ports};
 use crate::graph::{GraphMirror, NodeEntry, NodeKind, OwnedRole, Props};
 use crate::model::{CellKey, CellStatus, DeviceKey, MatrixDest, MatrixSource};
-use crate::setup::{Setup, cell_hash};
+use crate::setup::{Setup, cell_hash, input_hash};
 
 /// A creation not confirmed by the registry within this long counts as a failure (C8).
 pub(crate) const PENDING_TIMEOUT: Duration = Duration::from_secs(2);
@@ -31,6 +31,10 @@ pub(crate) struct Reconciler {
     statuses: BTreeMap<CellKeyOrd, CellStatus>,
     /// Items whose permanent failure was already reported.
     reported_failed: BTreeSet<DesiredNodeKey>,
+    /// Denoiser settings last handed to the node (enabled, VAD gate).
+    applied_denoise: BTreeMap<DeviceKey, (bool, f32)>,
+    /// Denoisers present in the graph after the last pass.
+    active_denoisers: BTreeSet<DeviceKey>,
 }
 
 #[derive(Debug, Default)]
@@ -74,6 +78,15 @@ impl Reconciler {
                 }
             }
         }
+    }
+
+    pub fn on_denoise_applied(&mut self, key: &DeviceKey, enabled: bool, vad_gate: f32) {
+        self.applied_denoise
+            .insert(key.clone(), (enabled, vad_gate));
+    }
+
+    pub fn denoiser_active(&self, key: &DeviceKey) -> bool {
+        self.active_denoisers.contains(key)
     }
 
     pub fn on_gain_applied(&mut self, key: &CellKey, db: f32) {
@@ -156,13 +169,19 @@ impl Reconciler {
                 global_id: Some(node.id),
             });
             self.volume_applied.remove(key);
-            if let DesiredNodeKey::Cell(c) = key {
-                self.applied_gain.remove(c);
+            match key {
+                DesiredNodeKey::Cell(c) => {
+                    self.applied_gain.remove(c);
+                }
+                DesiredNodeKey::Denoiser(k) => {
+                    self.applied_denoise.remove(k);
+                }
+                _ => {}
             }
         }
-        // Owned nodes we can't map to anything desired (stale cells from an older setup).
+        // Owned nodes we can't map to anything desired (stale DSP nodes from an older setup).
         for n in m.nodes.values() {
-            if let NodeKind::Owned(OwnedRole::Cell(hash)) = &n.kind
+            if let NodeKind::Owned(OwnedRole::Cell(hash) | OwnedRole::Denoise(hash)) = &n.kind
                 && !desired.hash_to_key.contains_key(hash)
             {
                 out.ops.push(PwOp::Destroy {
@@ -178,7 +197,7 @@ impl Reconciler {
                 DesiredNode::Channel { name, .. } | DesiredNode::Vmic { name, .. } => {
                     n.props.get("node.description") != Some(name)
                 }
-                DesiredNode::Cell { .. } => false,
+                DesiredNode::Cell { .. } | DesiredNode::Denoiser { .. } => false,
             });
             if (owned.contains_key(key) && !renamed) || self.pending_nodes.contains_key(key) {
                 continue;
@@ -230,6 +249,18 @@ impl Reconciler {
                         db: *gain_db,
                     });
                     self.applied_gain.insert(c.clone(), *gain_db);
+                }
+                (DesiredNodeKey::Denoiser(k), DesiredNode::Denoiser { enabled, vad_gate }) => {
+                    let name = format!("estuary.denoise.{}", input_hash(k));
+                    out.ops.push(PwOp::CreateDenoiser {
+                        key: k.clone(),
+                        props: denoise_props(&name, k, instance),
+                        name,
+                        enabled: *enabled,
+                        vad_gate: *vad_gate,
+                    });
+                    self.applied_denoise
+                        .insert(k.clone(), (*enabled, *vad_gate));
                 }
                 _ => {}
             }
@@ -299,10 +330,14 @@ impl Reconciler {
                 .get(&id)
                 .is_some_and(|n| matches!(n.kind, NodeKind::Owned(_)) || referenced.contains(&id))
         };
+        // Our DSP nodes: stray links on them are removed (cells and denoisers alike).
         let is_cell = |id: u32| {
-            m.nodes
-                .get(&id)
-                .is_some_and(|n| matches!(n.kind, NodeKind::Owned(OwnedRole::Cell(_))))
+            m.nodes.get(&id).is_some_and(|n| {
+                matches!(
+                    n.kind,
+                    NodeKind::Owned(OwnedRole::Cell(_) | OwnedRole::Denoise(_))
+                )
+            })
         };
         for l in m.links.values() {
             if (is_cell(l.out_node) || is_cell(l.in_node))
@@ -337,6 +372,19 @@ impl Reconciler {
                         self.applied_gain.insert(c.clone(), *gain_db);
                     }
                 }
+                (DesiredNodeKey::Denoiser(k), DesiredNode::Denoiser { enabled, vad_gate }) => {
+                    let want = (*enabled, *vad_gate);
+                    if owned.contains_key(key)
+                        && self.applied_denoise.get(k).is_none_or(|a| *a != want)
+                    {
+                        out.ops.push(PwOp::SetDenoise {
+                            key: k.clone(),
+                            enabled: *enabled,
+                            vad_gate: *vad_gate,
+                        });
+                        self.applied_denoise.insert(k.clone(), want);
+                    }
+                }
                 (_, DesiredNode::Channel { volume, .. } | DesiredNode::Vmic { volume, .. }) => {
                     if let Some(n) = owned.get(key)
                         && n.info_received
@@ -351,6 +399,14 @@ impl Reconciler {
                 _ => {}
             }
         }
+
+        self.active_denoisers = owned
+            .keys()
+            .filter_map(|k| match k {
+                DesiredNodeKey::Denoiser(d) => Some(d.clone()),
+                _ => None,
+            })
+            .collect();
 
         // Statuses (M8.9).
         self.statuses.clear();
@@ -399,7 +455,9 @@ fn owned_nodes<'m>(
         let key = match &n.kind {
             NodeKind::Owned(OwnedRole::Channel(id)) => Some(DesiredNodeKey::Channel(*id)),
             NodeKind::Owned(OwnedRole::Vmic(id)) => Some(DesiredNodeKey::Vmic(*id)),
-            NodeKind::Owned(OwnedRole::Cell(hash)) => desired.hash_to_key.get(hash).cloned(),
+            NodeKind::Owned(OwnedRole::Cell(hash) | OwnedRole::Denoise(hash)) => {
+                desired.hash_to_key.get(hash).cloned()
+            }
             _ => None,
         };
         if let Some(k) = key {
@@ -429,12 +487,24 @@ fn resolve(
             let role = match (k, as_source) {
                 (DesiredNodeKey::Channel(_), true) => PortRole::Monitor,
                 (DesiredNodeKey::Vmic(_), false) => PortRole::VmicIn,
-                (DesiredNodeKey::Cell(_), true) => PortRole::FilterOut,
-                (DesiredNodeKey::Cell(_), false) => PortRole::FilterIn,
+                (DesiredNodeKey::Cell(_) | DesiredNodeKey::Denoiser(_), true) => {
+                    PortRole::FilterOut
+                }
+                (DesiredNodeKey::Cell(_) | DesiredNodeKey::Denoiser(_), false) => {
+                    PortRole::FilterIn
+                }
                 _ => return None,
             };
             Some((n.id, role))
         }
+        Endpoint::Meter(slot) if !as_source => {
+            let n = m.nodes.values().find(
+                |n| matches!(&n.kind, NodeKind::Owned(OwnedRole::Meter(s)) if *s == slot.0),
+            )?;
+            // A capture stream's ports are `input_FL` / `input_FR`, like a filter's.
+            Some((n.id, PortRole::FilterIn))
+        }
+        Endpoint::Meter(_) => None,
         Endpoint::Device(key) => {
             let n = device_node(m, key)?;
             let role = if as_source {
@@ -485,6 +555,7 @@ fn owned_key_of(k: &DesiredNodeKey) -> OwnedKey {
         DesiredNodeKey::Channel(id) => OwnedKey::Channel(*id),
         DesiredNodeKey::Vmic(id) => OwnedKey::Vmic(*id),
         DesiredNodeKey::Cell(c) => OwnedKey::Cell(c.0.clone()),
+        DesiredNodeKey::Denoiser(k) => OwnedKey::Denoiser(k.clone()),
     }
 }
 
@@ -493,6 +564,7 @@ fn desired_key_of(k: &OwnedKey) -> Option<DesiredNodeKey> {
         OwnedKey::Channel(id) => Some(DesiredNodeKey::Channel(*id)),
         OwnedKey::Vmic(id) => Some(DesiredNodeKey::Vmic(*id)),
         OwnedKey::Cell(c) => Some(DesiredNodeKey::Cell(CellKeyOrd(c.clone()))),
+        OwnedKey::Denoiser(k) => Some(DesiredNodeKey::Denoiser(k.clone())),
         _ => None,
     }
 }
@@ -540,6 +612,30 @@ fn cell_props(node_name: &str, key: &CellKey, instance: &str) -> Props {
             super::desired::CELL_LINKS_PASSIVE.to_string(),
         ),
         ("estuary.role", "cell".to_owned()),
+        ("estuary.instance", instance.to_owned()),
+    ]
+    .into_iter()
+    .map(|(k, v)| (k.to_owned(), v))
+    .collect()
+}
+
+/// C5 props for a denoiser (`FilterNode`), passive like the cells.
+fn denoise_props(node_name: &str, input: &DeviceKey, instance: &str) -> Props {
+    [
+        ("node.name", node_name.to_owned()),
+        (
+            "node.description",
+            format!("Estuary noise suppression: {}", input.0),
+        ),
+        ("media.type", "Audio".to_owned()),
+        ("media.category", "Filter".to_owned()),
+        ("media.role", "DSP".to_owned()),
+        ("node.autoconnect", "false".to_owned()),
+        (
+            "node.passive",
+            super::desired::CELL_LINKS_PASSIVE.to_string(),
+        ),
+        ("estuary.role", "denoise".to_owned()),
         ("estuary.instance", instance.to_owned()),
     ]
     .into_iter()

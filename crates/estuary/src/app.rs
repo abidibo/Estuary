@@ -48,6 +48,8 @@ pub struct AppModel {
     matrix_page: Controller<MatrixPage>,
     /// Setup issues already toasted (by `SetupIssue::key`), so each shows once.
     toasted_issues: std::collections::HashSet<String>,
+    /// Engine warnings shown as badges (UI M10.2 / M11.5).
+    warnings: crate::state::warnings::Warnings,
     toasts: adw::ToastOverlay,
     main_view: adw::ViewStack,
     meters: MeterHub,
@@ -88,6 +90,8 @@ pub enum AppMsg {
     SaveTick,
     /// The window became visible: show queued notices (UI M6.3).
     WindowShown,
+    /// Periodic: drop warning badges older than a minute.
+    ExpireWarnings,
 }
 
 impl Component for AppModel {
@@ -209,6 +213,13 @@ impl Component for AppModel {
         });
 
         install_actions(&root, &main_view, &sender);
+        {
+            let s = sender.input_sender().clone();
+            gtk::glib::timeout_add_seconds_local(10, move || {
+                s.emit(AppMsg::ExpireWarnings);
+                gtk::glib::ControlFlow::Continue
+            });
+        }
         dev_snapshot(&root, &main_view);
         connect_meter_visibility(&root, &main_view, apps_page.widget(), &sender);
 
@@ -224,6 +235,7 @@ impl Component for AppModel {
             apps_page,
             matrix_page,
             toasted_issues: std::collections::HashSet::new(),
+            warnings: crate::state::warnings::Warnings::default(),
             toasts,
             main_view: main_view.clone(),
             meters,
@@ -267,6 +279,11 @@ impl Component for AppModel {
             AppMsg::ScheduleMeters => self.schedule_meters(&sender),
             AppMsg::Edit(edit) => self.dispatch_edit(edit),
             AppMsg::SaveTick => self.save_now(),
+            AppMsg::ExpireWarnings => {
+                if self.warnings.expire(std::time::Instant::now()) {
+                    self.push_to_pages();
+                }
+            }
             AppMsg::WindowShown => {
                 if let Some(outcome) = self.pending_notice.take() {
                     self.show_load_notice(outcome, root);
@@ -345,6 +362,7 @@ impl AppModel {
         self.matrix_page.emit(MatrixMsg::Update {
             snapshot: self.snapshot.clone(),
             setup,
+            warnings: Arc::new(self.warnings.clone()),
         });
     }
 
@@ -473,6 +491,12 @@ impl AppModel {
             Event::Restored => self.show_toast(&i18n("Audio system restarted, setup restored")),
             Event::MeterAssignments(a) => self.meters.set_assignments(a),
             Event::Warning(EngineWarning::MeterFailed(target)) => self.meters.set_failed(target),
+            Event::Warning(w) => {
+                if let Some(text) = self.warnings.on_warning(&w, std::time::Instant::now()) {
+                    self.show_toast(&text);
+                }
+                self.push_to_pages();
+            }
             // Issues tied to a cell show on the cell through its status (UI M9.9).
             Event::SetupIssues(issues) => {
                 for issue in issues.iter().filter(|i| i.cell().is_none()) {

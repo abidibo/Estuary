@@ -1227,3 +1227,180 @@ fn virtual_mic_mixes_two_clocks() {
     let _ = std::fs::remove_file(&path);
     result.unwrap();
 }
+
+/// M10.4 `denoise_attenuates`: white noise into a fake mic (a virtual source), through the
+/// denoiser and a send into a virtual mic. The voice gate (set live) silences the noise and
+/// bypass is transparent. (RNNoise's attenuation of synthetic noise isn't predictable; see the
+/// dsp test `denoise_attenuates_noise`.)
+/// Silent: null nodes and meter streams only.
+#[test]
+#[ignore = "live-pw: needs a running PipeWire + WirePlumber session"]
+fn denoise_attenuates() {
+    use estuary_engine::setup::{CellDef, DenoiserDef, VirtualMicDef};
+    use estuary_engine::{
+        Command, DeviceKey, MatrixDest, MatrixSource, MeterTarget, Setup, VirtualMicId, Volume,
+    };
+    const MIC: &str = "estuary-test-noisy-mic";
+    init_logs();
+    destroy_node_named(MIC);
+    let ok = std::process::Command::new("pw-cli")
+        .args([
+            "create-node",
+            "adapter",
+            &format!(
+                "{{ factory.name=support.null-audio-sink node.name={MIC} node.description=\"Noisy Mic\" \
+                 media.class=Audio/Source/Virtual audio.position=[FL FR] object.linger=true }}"
+            ),
+        ])
+        .status()
+        .unwrap()
+        .success();
+    assert!(ok, "create the fake mic");
+    // −30 dBFS RMS white noise, 12 s.
+    let path = std::env::temp_dir().join("estuary-noise-test.raw");
+    let amp = 10f32.powf(-30.0 / 20.0) * 3f32.sqrt();
+    let mut seed = 9_u64; // the unit test's fixture (see denoise_attenuates_noise)
+    let mut pcm = Vec::with_capacity(48_000 * 12 * 4);
+    for _ in 0..48_000 * 12 {
+        seed ^= seed << 13;
+        seed ^= seed >> 7;
+        seed ^= seed << 17;
+        #[allow(clippy::cast_precision_loss)]
+        let u = (seed >> 40) as f32 / (1u64 << 24) as f32 * 2.0 - 1.0;
+        #[allow(clippy::cast_possible_truncation)] // |u·amp| < 1
+        let v = (u * amp * 32767.0) as i16;
+        pcm.extend_from_slice(&v.to_le_bytes());
+        pcm.extend_from_slice(&v.to_le_bytes());
+    }
+    std::fs::write(&path, pcm).unwrap();
+    let vmic = VirtualMicId::new_random();
+    let mic = DeviceKey(MIC.into());
+    let cell = CellDef {
+        source: MatrixSource::Denoised { key: mic.clone() },
+        dest: MatrixDest::VirtualMic { id: vmic },
+        gain_db: 0.0,
+        enabled: true,
+    };
+    let setup = |enabled| Setup {
+        virtual_mics: vec![VirtualMicDef {
+            id: vmic,
+            name: "Denoise Test".into(),
+            volume: Volume::unity(2),
+            position: None,
+        }],
+        denoisers: vec![DenoiserDef {
+            input: mic.clone(),
+            enabled,
+            vad_gate: 0.0,
+        }],
+        cells: vec![cell.clone()],
+        ..Default::default()
+    };
+    let (engine, rx) = connected_engine();
+    let mut player = None;
+    let mut linker = Vec::new();
+    let result = (|| -> Result<(), String> {
+        engine
+            .send(Command::SetSetup(setup(true)))
+            .map_err(|e| e.to_string())?;
+        wait_cells_active(&rx, &[cell.key()], Duration::from_secs(3))?;
+        player = Some(
+            std::process::Command::new("pw-cat")
+                .args(["--playback", "--raw", "--format", "s16", "--rate", "48000", "--channels", "2"])
+                .args(["--volume", "1.0"])
+                .args([
+                    "-P",
+                    "{ application.name = \"Estuary Noise Test\" node.name = \"estuary-noise-player\" \
+                     node.autoconnect = false state.restore-props = false }",
+                ])
+                .arg(&path)
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::null())
+                .spawn()
+                .map_err(|e| e.to_string())?,
+        );
+        std::thread::sleep(Duration::from_millis(500));
+        for ch in ["FL", "FR"] {
+            linker.push(
+                std::process::Command::new("pw-link")
+                    .args([
+                        format!("estuary-noise-player:output_{ch}"),
+                        format!("{MIC}:input_{ch}"),
+                    ])
+                    .status()
+                    .map_err(|e| e.to_string())?,
+            );
+        }
+        let a = meter(
+            &engine,
+            &rx,
+            vec![
+                MeterTarget::VirtualMic(vmic),
+                MeterTarget::Device(mic.clone()),
+                MeterTarget::Denoised(mic.clone()),
+            ],
+        );
+        // Mean peak in dBFS per target over 2 s: [vmic, raw mic, denoiser output].
+        let levels = |engine: &Engine| -> Vec<f64> {
+            let bank = engine.meters();
+            let mut sum = vec![0.0f64; a.len()];
+            let mut n = 0u32;
+            let end = Instant::now() + Duration::from_secs(2);
+            while Instant::now() < end {
+                std::thread::sleep(Duration::from_millis(50));
+                n += 1;
+                for (i, (_, slots)) in a.iter().enumerate() {
+                    for s in slots {
+                        let r = bank.read(*s);
+                        sum[i] += f64::from(r.peak[0].max(r.peak[1]));
+                    }
+                }
+            }
+            sum.iter()
+                .map(|x| 20.0 * (x / f64::from(n.max(1))).max(1e-9).log10())
+                .collect()
+        };
+        std::thread::sleep(Duration::from_millis(1000));
+        let on = levels(&engine);
+        // The voice gate closes on noise: a large, deterministic effect of the wet path.
+        engine
+            .send(Command::SetVadGate {
+                input: mic.clone(),
+                gate: 0.9,
+            })
+            .map_err(|e| e.to_string())?;
+        std::thread::sleep(Duration::from_millis(1000));
+        let gated = levels(&engine);
+        engine
+            .send(Command::SetSetup(setup(false)))
+            .map_err(|e| e.to_string())?;
+        std::thread::sleep(Duration::from_millis(500));
+        let off = levels(&engine);
+        eprintln!("[vmic, raw mic, denoised] on {on:.1?} | gate 0.9 {gated:.1?} | off {off:.1?}");
+        if off[0] < -60.0 {
+            return Err(format!(
+                "no signal reached the virtual mic ({:.1} dBFS)",
+                off[0]
+            ));
+        }
+        if gated[2] > -60.0 || gated[0] > -60.0 {
+            return Err(format!("the voice gate didn't close: {gated:.1?}"));
+        }
+        if (off[0] - off[1]).abs() > 1.0 {
+            return Err(format!("bypass changed the level: {off:.1?}"));
+        }
+        Ok(())
+    })();
+    if let Some(mut p) = player {
+        let _ = p.kill();
+        let _ = p.wait();
+    }
+    let _ = engine.send(Command::Teardown);
+    let _ = recv_until(&rx, Duration::from_secs(3), |ev| {
+        matches!(ev, Event::TeardownComplete).then_some(())
+    });
+    let _ = engine.shutdown(Duration::from_secs(1));
+    let _ = std::fs::remove_file(&path);
+    destroy_node_named(MIC);
+    result.unwrap();
+}

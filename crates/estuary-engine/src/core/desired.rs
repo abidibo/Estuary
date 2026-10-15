@@ -3,14 +3,17 @@
 use std::collections::BTreeMap;
 
 use crate::graph::{GraphMirror, NodeKind};
+use crate::meter::MeterSlotId;
 use crate::model::{CellKey, ChannelId, DeviceKey, MatrixDest, MatrixSource, VirtualMicId, Volume};
-use crate::setup::{Setup, cell_hash};
+use crate::setup::{Setup, cell_hash, input_hash};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) enum DesiredNodeKey {
     Channel(ChannelId),
     Vmic(VirtualMicId),
     Cell(CellKeyOrd),
+    /// The noise suppressor of this input.
+    Denoiser(DeviceKey),
 }
 
 /// `CellKey` with a total order (by its canonical string) for map keys.
@@ -34,6 +37,7 @@ pub(crate) enum DesiredNode {
     Channel { name: String, volume: Volume },
     Vmic { name: String, volume: Volume },
     Cell { gain_db: f32 },
+    Denoiser { enabled: bool, vad_gate: f32 },
 }
 
 /// A link endpoint before resolution to node/port ids.
@@ -41,6 +45,8 @@ pub(crate) enum DesiredNode {
 pub(crate) enum Endpoint {
     Owned(DesiredNodeKey),
     Device(DeviceKey),
+    /// A meter stream (`estuary.meter.<slot>`), only as a link destination.
+    Meter(MeterSlotId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -54,14 +60,19 @@ pub(crate) struct DesiredLink {
 pub(crate) struct DesiredGraph {
     pub nodes: BTreeMap<DesiredNodeKey, DesiredNode>,
     pub links: Vec<DesiredLink>,
-    /// `estuary.cell.<hash>` → key, to recognise our own cell nodes in the registry.
+    /// `estuary.cell.<hash>` / `estuary.denoise.<hash>` → key, to recognise our own DSP nodes.
     pub hash_to_key: BTreeMap<String, DesiredNodeKey>,
 }
 
 /// Passivity of cell nodes and their links (C5; confirmed by the M8.1 experiment).
 pub(crate) const CELL_LINKS_PASSIVE: bool = true;
 
-pub(crate) fn build_desired(setup: &Setup, m: &GraphMirror) -> DesiredGraph {
+/// `denoised_meters`: meter slots metering a denoiser's output (linked by us, C5/M10.3).
+pub(crate) fn build_desired(
+    setup: &Setup,
+    m: &GraphMirror,
+    denoised_meters: &[(DeviceKey, MeterSlotId)],
+) -> DesiredGraph {
     let mut g = DesiredGraph::default();
     for c in &setup.channels {
         g.nodes.insert(
@@ -94,6 +105,37 @@ pub(crate) fn build_desired(setup: &Setup, m: &GraphMirror) -> DesiredGraph {
             .values()
             .any(|n| &n.kind == kind && n.props.get("node.name") == Some(&key.0))
     };
+    // A denoiser exists while its entry exists and its input is present, on or off: toggling
+    // only flips the handle (C11), so the node and its latency stay put.
+    for d in &setup.denoisers {
+        let key = DesiredNodeKey::Denoiser(d.input.clone());
+        g.hash_to_key.insert(input_hash(&d.input), key.clone());
+        if !device_present(&d.input, &NodeKind::Input) {
+            continue;
+        }
+        g.nodes.insert(
+            key.clone(),
+            DesiredNode::Denoiser {
+                enabled: d.enabled,
+                vad_gate: d.vad_gate,
+            },
+        );
+        g.links.push(DesiredLink {
+            from: Endpoint::Device(d.input.clone()),
+            to: Endpoint::Owned(key),
+            passive: CELL_LINKS_PASSIVE,
+        });
+    }
+    for (input, slot) in denoised_meters {
+        let key = DesiredNodeKey::Denoiser(input.clone());
+        if g.nodes.contains_key(&key) {
+            g.links.push(DesiredLink {
+                from: Endpoint::Owned(key),
+                to: Endpoint::Meter(*slot),
+                passive: true,
+            });
+        }
+    }
     for cell in setup.cells.iter().filter(|c| c.enabled) {
         let from = match &cell.source {
             MatrixSource::Channel { id } if g.nodes.contains_key(&DesiredNodeKey::Channel(*id)) => {
@@ -102,7 +144,11 @@ pub(crate) fn build_desired(setup: &Setup, m: &GraphMirror) -> DesiredGraph {
             MatrixSource::Input { key } if device_present(key, &NodeKind::Input) => {
                 Endpoint::Device(key.clone())
             }
-            // Denoisers arrive in M10.
+            MatrixSource::Denoised { key }
+                if g.nodes.contains_key(&DesiredNodeKey::Denoiser(key.clone())) =>
+            {
+                Endpoint::Owned(DesiredNodeKey::Denoiser(key.clone()))
+            }
             _ => continue,
         };
         let to = match &cell.dest {

@@ -239,6 +239,10 @@ pub(crate) struct FakeShell {
     pub fail_cell_creates: usize,
     /// While set, new nodes' ports are held back here instead of announced.
     pub held_ports: Option<Vec<GraphChange>>,
+    pub created_denoisers: usize,
+    /// Settings each denoiser handle holds (enabled, VAD gate).
+    pub denoise: std::collections::HashMap<crate::model::DeviceKey, (bool, f32)>,
+    meters: std::collections::BTreeMap<crate::meter::MeterSlotId, u32>,
 }
 
 impl FakeShell {
@@ -371,6 +375,63 @@ impl FakeShell {
                 self.gains.insert(key.clone(), *db);
                 Vec::new()
             }
+            PwOp::CreateDenoiser {
+                key,
+                props,
+                enabled,
+                vad_gate,
+                ..
+            } => {
+                self.created_denoisers += 1;
+                self.denoise.insert(key.clone(), (*enabled, *vad_gate));
+                self.node_with_ports(
+                    props.clone(),
+                    &[
+                        ("input_FL", PortDir::In, false),
+                        ("input_FR", PortDir::In, false),
+                        ("output_FL", PortDir::Out, false),
+                        ("output_FR", PortDir::Out, false),
+                    ],
+                )
+            }
+            PwOp::SetDenoise {
+                key,
+                enabled,
+                vad_gate,
+            } => {
+                self.denoise.insert(key.clone(), (*enabled, *vad_gate));
+                Vec::new()
+            }
+            // Only unlinked meters (denoiser outputs) need a node here: the engine links them.
+            PwOp::CreateMeter {
+                slot,
+                autoconnect: false,
+                ..
+            } => {
+                let props: Props = [
+                    ("node.name", format!("estuary.meter.{}", slot.0)),
+                    ("estuary.role", "meter".to_owned()),
+                    ("estuary.instance", "inst".to_owned()),
+                ]
+                .into_iter()
+                .map(|(k, v)| (k.to_owned(), v))
+                .collect();
+                let changes = self.node_with_ports(
+                    props,
+                    &[
+                        ("input_FL", PortDir::In, false),
+                        ("input_FR", PortDir::In, false),
+                    ],
+                );
+                if let Some(GraphChange::NodeAdded { id, .. }) = changes.first() {
+                    self.meters.insert(*slot, *id);
+                }
+                changes
+            }
+            PwOp::DestroyMeter { slot } => match self.meters.remove(slot) {
+                Some(id) if self.nodes.remove(&id) => vec![GraphChange::NodeRemoved(id)],
+                _ => Vec::new(),
+            },
             _ => Vec::new(),
         }
     }

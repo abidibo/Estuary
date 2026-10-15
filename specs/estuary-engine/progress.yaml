@@ -1061,90 +1061,90 @@ steps:
     completed_at: '2026-10-14T18:08:30+02:00'
 - id: M10.1
   title: Desired denoisers and links
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-15T12:08:53+02:00'
+  completed_at: '2026-10-15T12:08:53+02:00'
   tasks:
   - id: M10.1.1
     description: Add Denoised endpoint resolution (FilterOut role) to match_ports/desired graph
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:08:53+02:00'
+    completed_at: '2026-10-15T12:08:53+02:00'
   - id: M10.1.2
     description: Add DenoisedWithoutDenoiser validation to setup::validate
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:08:53+02:00'
+    completed_at: '2026-10-15T12:08:53+02:00'
 - id: M10.2
   title: Executor and handle updates
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-15T12:08:53+02:00'
+  completed_at: '2026-10-15T12:08:53+02:00'
   tasks:
   - id: M10.2.1
     description: Wire SetSetup enabled/vad_gate changes to SetDenoise without node recreation
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:08:53+02:00'
+    completed_at: '2026-10-15T12:08:53+02:00'
   - id: M10.2.2
     description: Implement SetVadGate fast path (clamp, fold into Setup, SetDenoise) (moved from M8.8.4)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:08:53+02:00'
+    completed_at: '2026-10-15T12:08:53+02:00'
   - id: M10.2.3
     description: Implement denoiser underruns warn-log with delta, at most once per minute (moved from M8.12.3)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:08:53+02:00'
+    completed_at: '2026-10-15T12:08:53+02:00'
   - id: M10.2.4
     description: Implement unsupported_rate change detection → Warning(DenoiseRateUnsupported) (moved from M8.12.4)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:08:53+02:00'
+    completed_at: '2026-10-15T12:08:53+02:00'
 - id: M10.3
   title: Denoised meters and DenoiserState
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-15T12:08:53+02:00'
+  completed_at: '2026-10-15T12:08:53+02:00'
   tasks:
   - id: M10.3.1
     description: Resolve Denoised meter links to estuary.meter.<slot> ports once the meter node appears
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:08:53+02:00'
+    completed_at: '2026-10-15T12:08:53+02:00'
   - id: M10.3.2
     description: Populate DenoiserState (enabled, active, xruns) in the snapshot
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:08:53+02:00'
+    completed_at: '2026-10-15T12:08:53+02:00'
 - id: M10.4
   title: Tests
-  status: pending
-  started_at: null
-  completed_at: null
+  status: completed
+  started_at: '2026-10-15T12:08:53+02:00'
+  completed_at: '2026-10-15T12:08:53+02:00'
   tasks:
   - id: M10.4.1
     description: 'Fake test: denoiser absent input → no node; input appears → node + mono fan-out links'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:08:53+02:00'
+    completed_at: '2026-10-15T12:08:53+02:00'
   - id: M10.4.2
     description: 'Fake test: toggle and SetVadGate → SetDenoise only, Setup copy updated'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:08:53+02:00'
+    completed_at: '2026-10-15T12:08:53+02:00'
   - id: M10.4.3
     description: 'Fake test: Denoised meter links created and not destroyed by C8'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:08:53+02:00'
+    completed_at: '2026-10-15T12:08:53+02:00'
   - id: M10.4.4
     description: Live test denoise_attenuates (>= 10 dB on stationary noise, threshold tuned in M10)
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:08:53+02:00'
+    completed_at: '2026-10-15T12:08:53+02:00'
   - id: M10.4.5
     description: 'Unit test: Denoised target → autoconnect=false meter and desired meter links (moved from M4.5.3)'
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-10-15T12:08:53+02:00'
+    completed_at: '2026-10-15T12:08:53+02:00'

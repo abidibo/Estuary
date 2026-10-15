@@ -925,6 +925,8 @@ Reconciliation pass after the five sub-specs were drafted (2026-10-14). Every am
 | C13 | WirePlumber ≥ 0.5 detected via `sm-settings`, with a 5 s grace wait | engine |
 | C14 | GNOME 51 runtime + rust-stable 26.08; autostart filesystem permission removed (Flathub does not grant it) | packaging |
 | F19 | Rewritten to match the C10 start-at-login rules | desktop, packaging |
+| C5 | Capture role: a source's non-monitor outputs, else all its outputs. Virtual sources flag every output `port.monitor` | M10 live test (engine M10 notes) |
+| C11 / M10 exit | RNNoise's attenuation of synthetic noise depends on the noise realization and start offset (1.4–59 dB), so automated tests pin a fixture offline and check the voice gate live; real-world suppression is a manual check | dsp M10 notes |
 
 Conflict resolutions:
 

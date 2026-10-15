@@ -137,6 +137,17 @@ impl MeterPlan {
         delta
     }
 
+    /// Slots metering a denoiser's output: the reconciler links them (M10.3).
+    pub fn denoised_slots(&self) -> Vec<(DeviceKey, MeterSlotId)> {
+        self.active
+            .values()
+            .filter_map(|a| match &a.target {
+                MeterTarget::Denoised(k) => Some((k.clone(), a.slot)),
+                _ => None,
+            })
+            .collect()
+    }
+
     /// Target → slots, in subscription order (slots ordered by node id).
     fn assignments(&self) -> Vec<(MeterTarget, Vec<MeterSlotId>)> {
         let mut out: Vec<(MeterTarget, Vec<MeterSlotId>)> = Vec::new();
@@ -203,8 +214,12 @@ fn resolve<'m>(t: &MeterTarget, m: &'m GraphMirror) -> Vec<&'m NodeEntry> {
         MeterTarget::VirtualMic(id) => nodes
             .filter(|n| matches!(&n.kind, NodeKind::Owned(OwnedRole::Vmic(v)) if v == id))
             .collect(),
-        // Denoiser nodes are identified by hash once the reconciler exists (M10).
-        MeterTarget::Denoised(_) => Vec::new(),
+        MeterTarget::Denoised(key) => {
+            let hash = crate::setup::input_hash(key);
+            nodes
+                .filter(|n| matches!(&n.kind, NodeKind::Owned(OwnedRole::Denoise(h)) if *h == hash))
+                .collect()
+        }
     }
 }
 
